@@ -1,1 +1,22 @@
-<p>connexion works!</p>
+<section class="connexion">
+  <div class="card">
+    <h2>Connexion administration</h2>
+    <p>Connecte-toi avec ton compte Warm's pour accéder au tableau de bord.</p>
+
+    <form [formGroup]="form" (ngSubmit)="soumettre()">
+      <label>
+        Username
+        <input type="text" formControlName="username" />
+      </label>
+      <label>
+        Mot de passe
+        <input type="password" formControlName="password" />
+      </label>
+      <button type="submit" [disabled]="enCours">{{ enCours ? 'Connexion...' : 'Se connecter' }}</button>
+    </form>
+
+    @if (erreur) {
+      <p class="erreur">{{ erreur }}</p>
+    }
+  </div>
+</section>

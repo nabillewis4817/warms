@@ -1,1 +1,31 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap');
+
+:root {
+  --warms-navy: #0d1b3e;
+  --warms-blue: #1a2e6b;
+  --warms-accent: #1e4db7;
+  --warms-bg: #f0f4ff;
+  --warms-card: #ffffff;
+  --warms-gray: #4a5568;
+  --warms-font-title: 'Bebas Neue', sans-serif;
+  --warms-font-body: 'DM Sans', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--warms-font-body);
+  background: var(--warms-bg);
+  color: var(--warms-gray);
+}
+
+body.theme-sombre {
+  --warms-bg: #0b1530;
+  --warms-card: #182543;
+  --warms-gray: #d6deef;
+}
+
+// #EbaJioloLewis

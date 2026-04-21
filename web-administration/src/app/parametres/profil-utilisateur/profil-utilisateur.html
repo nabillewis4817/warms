@@ -1,1 +1,42 @@
-<p>profil-utilisateur works!</p>
+<section class="profil">
+  <h2>{{ traductionService.t('profile') }}</h2>
+  <p class="hint">Personnalise ton compte, tes notifications et l'interface.</p>
+
+  @if (enChargement) {
+    <p>Chargement...</p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="enregistrer()">
+      <div class="grid">
+        <label>Prénom <input type="text" formControlName="first_name" /></label>
+        <label>Nom <input type="text" formControlName="last_name" /></label>
+        <label>Email <input type="email" formControlName="email" /></label>
+        <label>Téléphone <input type="text" formControlName="telephone" /></label>
+        <label>
+          Langue
+          <select formControlName="langue_interface">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label class="toggle">
+          Mode sombre
+          <input type="checkbox" formControlName="mode_sombre" />
+        </label>
+      </div>
+
+      <h3>Notifications et rappels</h3>
+      <div class="grid notif">
+        <label class="toggle">Email <input type="checkbox" formControlName="notif_email" /></label>
+        <label class="toggle">SMS <input type="checkbox" formControlName="notif_sms" /></label>
+        <label class="toggle">Push <input type="checkbox" formControlName="notif_push" /></label>
+        <label class="toggle">Rappels auto <input type="checkbox" formControlName="notif_rappels_auto" /></label>
+      </div>
+
+      <button type="submit">{{ traductionService.t('save') }}</button>
+    </form>
+  }
+
+  @if (message) {
+    <p class="message">{{ message }}</p>
+  }
+</section>

@@ -1,1 +1,36 @@
-<p>tableau-de-bord works!</p>
+<section>
+  <h2>Tableau de bord Warm's</h2>
+  @if (chargement) {
+    <p>Chargement des statistiques...</p>
+  } @else if (stats) {
+    <div class="kpi-grid">
+      <article class="kpi">
+        <h3>Consultations (30j)</h3>
+        <strong>{{ stats.kpis.consultations_30j }}</strong>
+      </article>
+      <article class="kpi">
+        <h3>Rendez-vous (30j)</h3>
+        <strong>{{ stats.kpis.rendez_vous_30j }}</strong>
+      </article>
+      <article class="kpi">
+        <h3>Absences (30j)</h3>
+        <strong>{{ stats.kpis.absents_30j }}</strong>
+      </article>
+      <article class="kpi">
+        <h3>Taux absentéisme</h3>
+        <strong>{{ stats.kpis.taux_absenteisme_30j }}%</strong>
+      </article>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Évolution des consultations</h3>
+        <canvas baseChart [data]="consultationsChartData" [type]="'line'"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Pathologies fréquentes</h3>
+        <canvas baseChart [data]="pathologiesChartData" [type]="'bar'"></canvas>
+      </div>
+    </div>
+  }
+</section>

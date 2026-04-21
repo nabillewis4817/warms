@@ -1,0 +1,55 @@
+.connexion {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+}
+
+.card {
+  width: min(460px, 100%);
+  background: var(--warms-card);
+  border-radius: 20px;
+  box-shadow: 0 12px 28px rgba(26, 46, 107, 0.18);
+  padding: 24px;
+}
+
+h2 {
+  margin: 0 0 8px;
+  color: var(--warms-blue);
+  font-family: var(--warms-font-title);
+  letter-spacing: 0.8px;
+}
+
+form {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+}
+
+input {
+  padding: 10px;
+  border: 1px solid #c9d6f2;
+  border-radius: 12px;
+}
+
+button {
+  margin-top: 8px;
+  border: none;
+  border-radius: 12px;
+  background: var(--warms-accent);
+  color: #fff;
+  padding: 11px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.erreur {
+  margin-top: 10px;
+  color: #c53030;
+}
+
+// #EbaJioloLewis
