@@ -1,1 +1,16 @@
-<p>fil-messages works!</p>
+<section>
+  <h2>Fil de messages</h2>
+  <div class="messages">
+    @for (message of messages; track message.id) {
+      <article>
+        <strong>{{ message.auteur_username || 'Utilisateur' }}</strong>
+        <p>{{ message.contenu }}</p>
+      </article>
+    }
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="envoyer()">
+    <input type="text" formControlName="contenu" placeholder="Écrire un message..." />
+    <button type="submit">Envoyer</button>
+  </form>
+</section>

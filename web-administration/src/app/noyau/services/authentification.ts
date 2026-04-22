@@ -7,6 +7,16 @@ export interface JetonsAuth {
   refresh: string;
 }
 
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  telephone?: string;
+  role: 'chirurgien_dentiste' | 'secretaire' | 'infirmiere' | 'patient';
+  password: string;
+}
+
 export interface UtilisateurConnecte {
   id: number;
   username: string;
@@ -42,6 +52,27 @@ export class Authentification {
     );
   }
 
+  register(payload: RegisterPayload): Observable<{ id: number; username: string; role: string }> {
+    return this.http.post<{ id: number; username: string; role: string }>(
+      `${this.baseUrl}/auth/register/`,
+      payload
+    );
+  }
+
+  forgotPassword(email: string): Observable<{ detail: string; token?: string }> {
+    return this.http.post<{ detail: string; token?: string }>(
+      `${this.baseUrl}/auth/forgot-password/`,
+      { email }
+    );
+  }
+
+  resetPassword(token: string, nouveau_mot_de_passe: string): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${this.baseUrl}/auth/reset-password/`, {
+      token,
+      nouveau_mot_de_passe,
+    });
+  }
+
   deconnexion(): void {
     localStorage.removeItem('warms_access');
     localStorage.removeItem('warms_refresh');
@@ -54,6 +85,22 @@ export class Authentification {
 
   tokenAccess(): string | null {
     return localStorage.getItem('warms_access');
+  }
+
+  tokenRefresh(): string | null {
+    return localStorage.getItem('warms_refresh');
+  }
+
+  rafraichirAccessToken(): Observable<JetonsAuth | { access: string }> {
+    const refresh = this.tokenRefresh();
+    return this.http
+      .post<JetonsAuth | { access: string }>(`${this.baseUrl}/auth/token/refresh/`, { refresh })
+      .pipe(
+        tap((res: any) => {
+          if (res?.access) localStorage.setItem('warms_access', res.access);
+          if (res?.refresh) localStorage.setItem('warms_refresh', res.refresh);
+        })
+      );
   }
 }
 

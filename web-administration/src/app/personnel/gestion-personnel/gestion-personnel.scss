@@ -1,0 +1,9 @@
+h2 { margin-top: 0; color: var(--warms-blue); font-family: var(--warms-font-title); }
+.hint { margin-bottom: 12px; }
+form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; }
+input, select { border: 1px solid #c9d6f2; border-radius: 12px; padding: 10px; }
+button { border: none; border-radius: 12px; background: var(--warms-accent); color: #fff; padding: 10px 12px; font-weight: 700; }
+.table { display: grid; gap: 8px; }
+.row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; background: #f7f9ff; border-radius: 12px; padding: 10px; align-items: center; }
+.head { background: #e8efff; font-weight: 700; }
+// #EbaJioloLewis

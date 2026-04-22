@@ -69,6 +69,12 @@ class Message(models.Model):
 
 
 class NotificationInterne(models.Model):
+    class Niveau(models.TextChoices):
+        INFO = "info", "Info"
+        RAPPEL = "rappel", "Rappel"
+        MESSAGE = "message", "Message"
+        CRITIQUE = "critique", "Critique"
+
     """
     Notification applicative de base (push/email branchés ensuite).
     """
@@ -78,6 +84,7 @@ class NotificationInterne(models.Model):
     )
     titre = models.CharField(max_length=255)
     contenu = models.CharField(max_length=255, blank=True)
+    niveau = models.CharField(max_length=16, choices=Niveau.choices, default=Niveau.INFO)
     lu = models.BooleanField(default=False)
     cree_le = models.DateTimeField(auto_now_add=True)
 

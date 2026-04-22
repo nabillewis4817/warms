@@ -5,6 +5,12 @@ from django.db import models
 
 
 class Patient(models.Model):
+    class StatutParcours(models.TextChoices):
+        NOUVEAU = "nouveau", "Nouveau"
+        EN_COURS = "en_cours", "En cours"
+        OPERE = "opere", "Opéré"
+        TERMINE = "termine", "Terminé"
+
     """
     Profil patient (données biographiques + lien éventuel vers un compte).
     """
@@ -26,6 +32,14 @@ class Patient(models.Model):
     telephone = models.CharField(max_length=32, blank=True)
     email = models.EmailField(blank=True)
     adresse = models.TextField(blank=True)
+    age = models.PositiveIntegerField(null=True, blank=True)
+    taille_cm = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    poids_kg = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    symptomes = models.TextField(blank=True)
+    consultations_precedentes = models.TextField(blank=True)
+    statut_parcours = models.CharField(
+        max_length=16, choices=StatutParcours.choices, default=StatutParcours.NOUVEAU
+    )
 
     infirmiere_referente = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -110,3 +124,16 @@ class PieceJointeDossier(models.Model):
 
     def __str__(self) -> str:
         return self.libelle or self.fichier.name
+
+
+class AvisPatient(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="avis")
+    auteur = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    note = models.PositiveSmallIntegerField(default=5)
+    commentaire = models.TextField(blank=True)
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-cree_le"]

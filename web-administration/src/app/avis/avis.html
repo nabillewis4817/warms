@@ -1,0 +1,13 @@
+<section>
+  <h2>Avis patients</h2>
+  <div class="list">
+    @for (a of avis; track a.id) {
+      <article class="item">
+        <strong>{{ a.patient_prenom }} {{ a.patient_nom }}</strong>
+        <p>Note: {{ a.note }}/5</p>
+        <p>{{ a.commentaire || '-' }}</p>
+        <small>{{ a.cree_le }}</small>
+      </article>
+    }
+  </div>
+</section>

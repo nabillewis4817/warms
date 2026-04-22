@@ -1,22 +1,49 @@
-<section class="connexion">
-  <div class="card">
-    <h2>Connexion administration</h2>
-    <p>Connecte-toi avec ton compte Warm's pour accéder au tableau de bord.</p>
+<section class="connexion-scene">
+  <div class="aurora"></div>
+  <div class="bubble bubble-a"></div>
+  <div class="bubble bubble-b"></div>
+  <div class="diamond"></div>
 
-    <form [formGroup]="form" (ngSubmit)="soumettre()">
-      <label>
-        Username
-        <input type="text" formControlName="username" />
-      </label>
-      <label>
-        Mot de passe
-        <input type="password" formControlName="password" />
-      </label>
-      <button type="submit" [disabled]="enCours">{{ enCours ? 'Connexion...' : 'Se connecter' }}</button>
-    </form>
+  <div class="login-shell">
+    <aside class="login-brand">
+      <h1>Warm's Administration</h1>
+      <p>
+        Une gestion dentaire moderne, fluide et élégante. Connecte-toi pour piloter
+        les patients, rendez-vous, consultations et statistiques en temps réel.
+      </p>
+      <ul>
+        <li><i class="bi bi-heart-pulse"></i> Suivi clinique intelligent</li>
+        <li><i class="bi bi-calendar-check"></i> Agenda optimisé</li>
+        <li><i class="bi bi-chat-left-text"></i> Communication intégrée</li>
+      </ul>
+    </aside>
 
-    @if (erreur) {
-      <p class="erreur">{{ erreur }}</p>
-    }
+    <div class="card glass">
+      <h2>Connexion sécurisée</h2>
+      <p>Bienvenue de retour.</p>
+
+      <form [formGroup]="form" (ngSubmit)="soumettre()">
+        <label>
+          <span><i class="bi bi-person-circle"></i> Username</span>
+          <input type="text" formControlName="username" placeholder="Ex: admin_warms" />
+        </label>
+        <label>
+          <span><i class="bi bi-shield-lock"></i> Mot de passe</span>
+          <input type="password" formControlName="password" placeholder="Ton mot de passe" />
+        </label>
+        <button type="submit" [disabled]="enCours">
+          {{ enCours ? 'Connexion...' : 'Se connecter' }}
+        </button>
+      </form>
+
+      <div class="links">
+        <a routerLink="/inscription">Créer un compte</a>
+        <a routerLink="/mot-de-passe-oublie">Mot de passe oublié ?</a>
+      </div>
+
+      @if (erreur) {
+        <p class="erreur">{{ erreur }}</p>
+      }
+    </div>
   </div>
 </section>

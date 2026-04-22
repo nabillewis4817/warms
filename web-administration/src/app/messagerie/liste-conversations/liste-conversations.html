@@ -1,1 +1,18 @@
-<p>liste-conversations works!</p>
+<section>
+  <h2>Conversations</h2>
+  <div class="actions">
+    <input [(ngModel)]="titre" placeholder="Titre conversation" />
+    <button (click)="creerConversation()"><i class="bi bi-send-fill"></i> Envoyer un message</button>
+  </div>
+  <div class="actions">
+    <input [(ngModel)]="contact" placeholder="Contact à enregistrer" />
+    <button (click)="enregistrerContact()"><i class="bi bi-person-plus-fill"></i> Enregistrer contact</button>
+  </div>
+  <div class="list">
+    @for (conversation of conversations; track conversation.id) {
+      <a [routerLink]="['/messagerie/conversation', conversation.id]">
+        {{ conversation.titre || ('Conversation #' + conversation.id) }}
+      </a>
+    }
+  </div>
+</section>

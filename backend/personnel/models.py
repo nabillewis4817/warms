@@ -1,5 +1,8 @@
+import secrets
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class Utilisateur(AbstractUser):
@@ -47,10 +50,49 @@ class Utilisateur(AbstractUser):
         blank=True,
         help_text="Ex: {'email': true, 'sms': false, 'push': true, 'rappels_auto': true}",
     )
+    est_valide_par_chirurgien = models.BooleanField(
+        default=True,
+        help_text="Pour le personnel créé par une secrétaire, validation du chirurgien requise.",
+    )
+    valide_par = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="personnels_valides",
+    )
+    valide_le = models.DateTimeField(null=True, blank=True)
 
     def __str__(self) -> str:
         base = self.get_full_name() or self.username
         return f"{base} ({self.get_role_display()})"
+
+    def valider_par_chirurgien(self, chirurgien):
+        self.est_valide_par_chirurgien = True
+        self.is_active = True
+        self.valide_par = chirurgien
+        self.valide_le = timezone.now()
+        self.save(
+            update_fields=[
+                "est_valide_par_chirurgien",
+                "is_active",
+                "valide_par",
+                "valide_le",
+            ]
+        )
+
+
+class PasswordResetToken(models.Model):
+    utilisateur = models.ForeignKey(
+        Utilisateur, on_delete=models.CASCADE, related_name="password_reset_tokens"
+    )
+    token = models.CharField(max_length=128, unique=True, db_index=True)
+    utilise = models.BooleanField(default=False)
+    cree_le = models.DateTimeField(auto_now_add=True)
+
+    @staticmethod
+    def generate() -> str:
+        return secrets.token_urlsafe(48)
 
 
 #EbaJioloLewis

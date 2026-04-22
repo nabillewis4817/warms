@@ -1,1 +1,34 @@
-<p>nouveau-patient works!</p>
+<section>
+  <h2>Nouveau patient</h2>
+  <form [formGroup]="form" (ngSubmit)="creer()">
+    <label>Prénom <input type="text" formControlName="prenom" /></label>
+    <label>Nom <input type="text" formControlName="nom" /></label>
+    <label>Téléphone (+237XXXXXXXXX) <input type="text" formControlName="telephone" placeholder="+2376XXXXXXXX" /></label>
+    <label>Email <input type="email" formControlName="email" /></label>
+    <label>Username patient (optionnel) <input type="text" formControlName="username_patient" /></label>
+    <label>Password patient (optionnel) <input type="text" formControlName="password_patient" /></label>
+    <label>Sexe</label>
+    <div class="sexe-radio">
+      <label><input type="radio" formControlName="sexe" [value]="'M'" /> Homme</label>
+      <label><input type="radio" formControlName="sexe" [value]="'F'" /> Femme</label>
+    </div>
+    <button type="submit" [disabled]="enCreation" [style.cursor]="enCreation ? 'wait' : 'pointer'">
+      {{ enCreation ? 'Création...' : 'Créer' }}
+    </button>
+  </form>
+  @if (message) {
+    <p>{{ message }}</p>
+  }
+  @if (patientCree) {
+    <div class="qr-card">
+      <p><strong>Dossier:</strong> {{ patientCree.numero_dossier || '-' }}</p>
+      <p><strong>QR token:</strong> {{ patientCree.qr_token || '-' }}</p>
+      @if (qrImageData) {
+        <div class="qr-box">
+          <img [src]="qrImageData" alt="QR Code Patient" />
+        </div>
+      }
+      <button (click)="allerListe()">Voir la liste des patients</button>
+    </div>
+  }
+</section>

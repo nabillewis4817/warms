@@ -1,9 +1,14 @@
+import re
+
 from rest_framework import serializers
 
-from .models import DossierPatient, PageCarnet, Patient, PieceJointeDossier
+from .models import AvisPatient, DossierPatient, PageCarnet, Patient, PieceJointeDossier
 
 
 class PatientSerializer(serializers.ModelSerializer):
+    numero_dossier = serializers.CharField(source="dossier.numero_dossier", read_only=True)
+    qr_token = serializers.CharField(source="dossier.qr.token", read_only=True)
+
     class Meta:
         model = Patient
         fields = [
@@ -15,11 +20,24 @@ class PatientSerializer(serializers.ModelSerializer):
             "telephone",
             "email",
             "adresse",
+            "age",
+            "taille_cm",
+            "poids_kg",
+            "symptomes",
+            "consultations_precedentes",
+            "statut_parcours",
             "infirmiere_referente",
+            "numero_dossier",
+            "qr_token",
             "actif",
             "cree_le",
             "modifie_le",
         ]
+
+    def validate_telephone(self, value):
+        if value and not re.match(r"^\+237\d{9}$", value):
+            raise serializers.ValidationError("Le téléphone doit respecter le format +237 suivi de 9 chiffres.")
+        return value
 
 
 class PageCarnetSerializer(serializers.ModelSerializer):
@@ -85,3 +103,22 @@ class DossierPatientCreateSerializer(serializers.ModelSerializer):
         patient = Patient.objects.create(**patient_data)
         dossier = DossierPatient.objects.create(patient=patient, **validated_data)
         return dossier
+
+
+class AvisPatientSerializer(serializers.ModelSerializer):
+    patient_nom = serializers.CharField(source="patient.nom", read_only=True)
+    patient_prenom = serializers.CharField(source="patient.prenom", read_only=True)
+
+    class Meta:
+        model = AvisPatient
+        fields = [
+            "id",
+            "patient",
+            "patient_nom",
+            "patient_prenom",
+            "auteur",
+            "note",
+            "commentaire",
+            "cree_le",
+        ]
+        read_only_fields = ["auteur", "cree_le"]

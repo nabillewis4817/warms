@@ -1,5 +1,8 @@
 <section>
-  <h2>Tableau de bord Warm's</h2>
+  <div class="head">
+    <h2>Tableau de bord Warm's</h2>
+    <button class="refresh-btn" (click)="charger()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+  </div>
   @if (chargement) {
     <p>Chargement des statistiques...</p>
   } @else if (stats) {

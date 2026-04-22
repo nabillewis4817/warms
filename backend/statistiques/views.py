@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from consultations.models import ActeRealise, Consultation
+from patients.models import Patient
 from rendez_vous.models import RendezVous
 
 
@@ -100,6 +101,17 @@ def absentéisme(request):
             "par_patient": list(par_patient),
         }
     )
+
+
+@api_view(["GET"])
+def parcours_patient(request):
+    patient = Patient.objects.filter(user=request.user).first()
+    if not patient:
+        return Response({"detail": "Profil patient introuvable."}, status=404)
+    now = timezone.now()
+    avant = RendezVous.objects.filter(patient=patient, debut__lt=now).count()
+    apres = RendezVous.objects.filter(patient=patient, debut__gte=now).count()
+    return Response({"avant": avant, "apres": apres})
 
 
 #EbaJioloLewis

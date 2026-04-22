@@ -35,6 +35,18 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         serializer = PrescriptionSerializer(qs, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["get"], url_path="me")
+    def me(self, request):
+        patient = getattr(request.user, "patient_profile", None)
+        if not patient:
+            return Response({"detail": "Profil patient introuvable."}, status=404)
+        qs = self.get_queryset().filter(patient=patient)
+        serializer = PrescriptionSerializer(qs, many=True)
+        data = serializer.data
+        for item in data:
+            item["pdf_url"] = f"/api/v1/prescriptions/{item['id']}/pdf/"
+        return Response(data)
+
     @action(detail=True, methods=["get"])
     def pdf(self, request, pk=None):
         """

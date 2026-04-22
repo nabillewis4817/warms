@@ -1,0 +1,14 @@
+.dropzone {
+  border: 2px dashed #8ea9e8;
+  border-radius: 20px;
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  margin: 1rem 0;
+  color: #1a2e6b;
+}
+
+.actions {
+  display: flex;
+  gap: 0.8rem;
+}

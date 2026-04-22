@@ -1,6 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 import { routes } from './app.routes';
 import { erreurInterceptor } from './noyau/intercepteurs/erreur-interceptor';
@@ -10,6 +11,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(withInterceptors([jwtInterceptor, erreurInterceptor])),
-    provideRouter(routes)
+    provideRouter(routes),
+    provideCharts(withDefaultRegisterables())
   ]
 };

@@ -27,6 +27,10 @@ export class TableauDeBord implements OnInit {
   };
 
   ngOnInit(): void {
+    this.charger();
+  }
+
+  charger(): void {
     this.chargement = true;
     this.statsService.vueGenerale().subscribe({
       next: (data) => {

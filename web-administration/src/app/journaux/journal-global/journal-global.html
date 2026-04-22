@@ -1,1 +1,12 @@
-<p>journal-global works!</p>
+<section>
+  <h2>Journal global</h2>
+  <div class="logs">
+    @for (log of logs; track log.id) {
+      <article>
+        <strong>{{ log.action }} ({{ log.objet_type }} #{{ log.objet_id || '-' }})</strong>
+        <p>{{ log.message || '-' }}</p>
+        <small>{{ log.cree_le }} | {{ log.acteur_username || 'systeme' }}</small>
+      </article>
+    }
+  </div>
+</section>

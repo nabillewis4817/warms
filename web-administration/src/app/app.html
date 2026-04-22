@@ -4,6 +4,16 @@
     <h1>{{ traductionService.t('appTitle') }}</h1>
     <a routerLink="/tableau-de-bord" routerLinkActive="active">{{ traductionService.t('dashboard') }}</a>
     <a routerLink="/statistiques" routerLinkActive="active">Statistiques</a>
+    <a routerLink="/patients" routerLinkActive="active">Patients</a>
+    <a routerLink="/patients/nouveau" routerLinkActive="active">Nouveau patient</a>
+    <a routerLink="/carnets" routerLinkActive="active">Carnets</a>
+    <a routerLink="/messagerie" routerLinkActive="active">Messagerie</a>
+    @if (badges.message > 0) { <span class="badge badge-green">{{ badges.message }}</span> }
+    <a routerLink="/journaux" routerLinkActive="active">Journaux</a>
+    @if (badges.critique > 0) { <span class="badge badge-red">{{ badges.critique }}</span> }
+    <a routerLink="/avis" routerLinkActive="active">Avis</a>
+    @if (badges.rappel > 0) { <span class="badge badge-yellow">{{ badges.rappel }}</span> }
+    <a routerLink="/personnel" routerLinkActive="active">Personnel</a>
     <a routerLink="/parametres/profil" routerLinkActive="active">{{ traductionService.t('settings') }}</a>
   </aside>
   }
@@ -23,6 +33,9 @@
             <option value="en">EN</option>
           </select>
         </label>
+        <button class="quick-action" (click)="actionRapide()"><i class="bi bi-lightning-charge-fill"></i> Action rapide</button>
+        <button class="ia-float" (click)="ouvrirWarms()"><i class="bi bi-stars"></i> Warms</button>
+        <a routerLink="/ocr" class="ocr-link"><i class="bi bi-camera"></i> OCR</a>
       </header>
     }
 

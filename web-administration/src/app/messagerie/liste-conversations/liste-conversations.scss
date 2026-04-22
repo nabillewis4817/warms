@@ -1,0 +1,41 @@
+h2 {
+  margin-top: 0;
+  color: var(--warms-blue);
+  font-family: var(--warms-font-title);
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+input {
+  border: 1px solid #c9d6f2;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #1e4db7;
+  color: #fff;
+}
+
+a {
+  background: #f7f9ff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: var(--warms-blue);
+  font-weight: 600;
+}
+
+// #EbaJioloLewis

@@ -1,0 +1,20 @@
+<section class="auth-card">
+  <h2>Créer un compte</h2>
+  <form [formGroup]="form" (ngSubmit)="soumettre()">
+    <input placeholder="Username" formControlName="username" />
+    <input placeholder="Email" formControlName="email" />
+    <input placeholder="Prénom" formControlName="first_name" />
+    <input placeholder="Nom" formControlName="last_name" />
+    <input placeholder="Téléphone" formControlName="telephone" />
+    <select formControlName="role">
+      <option value="patient">Patient</option>
+      <option value="infirmiere">Infirmière</option>
+      <option value="secretaire">Secrétaire</option>
+      <option value="chirurgien_dentiste">Chirurgien-dentiste</option>
+    </select>
+    <input placeholder="Mot de passe" type="password" formControlName="password" />
+    <button type="submit">S'inscrire</button>
+  </form>
+  <a routerLink="/connexion">Retour connexion</a>
+  @if (message) { <p class="msg">{{ message }}</p> }
+</section>

@@ -1,1 +1,33 @@
-<p>liste-patients works!</p>
+<section>
+  <div class="head-title">
+    <h2>Liste des patients</h2>
+    <button class="refresh-btn" (click)="charger()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+  </div>
+  @if (chargement) {
+    <p>Chargement...</p>
+  } @else {
+    <div class="table">
+      <div class="head row">
+        <span>Nom complet</span>
+        <span>Téléphone</span>
+        <span>Email</span>
+        <span>Statut</span>
+        <span>Actions</span>
+      </div>
+      @for (patient of patients; track patient.id) {
+        <div class="row">
+          <span>{{ patient.prenom }} {{ patient.nom }}</span>
+          <span>{{ patient.telephone || '-' }}</span>
+          <span>{{ patient.email || '-' }}</span>
+          <span>
+            <span class="etat etat-{{ patient.statut_parcours || 'nouveau' }}">{{ patient.statut_parcours || 'nouveau' }}</span>
+          </span>
+          <span class="actions">
+            <button (click)="archiver(patient)"><i class="bi bi-archive"></i></button>
+            <button (click)="supprimer(patient)"><i class="bi bi-trash"></i></button>
+          </span>
+        </div>
+      }
+    </div>
+  }
+</section>

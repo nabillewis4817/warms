@@ -50,7 +50,7 @@ class ConversationSerializer(serializers.ModelSerializer):
 class NotificationInterneSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationInterne
-        fields = ["id", "destinataire", "titre", "contenu", "lu", "cree_le"]
+        fields = ["id", "destinataire", "titre", "contenu", "niveau", "lu", "cree_le"]
         read_only_fields = ["destinataire", "cree_le"]
 
 

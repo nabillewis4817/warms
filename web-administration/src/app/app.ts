@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter } from 'rxjs';
 
 import { Authentification } from './noyau/services/authentification';
+import { Messagerie } from './noyau/services/messagerie';
 import { ThemeService } from './noyau/services/theme';
 import { TraductionService } from './noyau/services/traduction';
 
@@ -14,10 +15,12 @@ import { TraductionService } from './noyau/services/traduction';
   styleUrl: './app.scss',
 })
 export class App {
+  badges = { rappel: 0, message: 0, critique: 0 };
   constructor(
     readonly themeService: ThemeService,
     readonly traductionService: TraductionService,
     readonly authService: Authentification,
+    private readonly messagerie: Messagerie,
     private readonly router: Router
   ) {
     this.router.events
@@ -30,6 +33,9 @@ export class App {
               this.traductionService.definirLangue(((profil as any).langue_interface ?? 'fr') as 'fr' | 'en');
             },
           });
+        }
+        if (this.authService.estConnecte()) {
+          this.messagerie.badges().subscribe({ next: (b) => (this.badges = b) });
         }
       });
   }
@@ -45,6 +51,14 @@ export class App {
   basculerTheme(event: Event): void {
     const cible = event.target as HTMLInputElement;
     this.themeService.appliquer(cible.checked);
+  }
+
+  actionRapide(): void {
+    this.router.navigate(['/patients/nouveau']);
+  }
+
+  ouvrirWarms(): void {
+    this.router.navigate(['/statistiques']);
   }
 }
 

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # API
+    "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
     # Apps métier Warm's
@@ -58,6 +59,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -142,6 +144,22 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
 }
+
+# CORS: autorise le front web-admin en local
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=[
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "http://localhost:51155",
+        "http://127.0.0.1:51155",
+    ],
+)
+# Autorise les ports dynamiques (Angular/Flutter web en dev local).
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+]
 
 # Utilisateur applicatif (avec rôles Warm's)
 AUTH_USER_MODEL = "personnel.Utilisateur"

@@ -1,6 +1,8 @@
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db.models import Count
 
 from journaux.utils import journaliser
 
@@ -91,9 +93,13 @@ class NotificationInterneViewSet(
     mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
 ):
     serializer_class = NotificationInterneSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return NotificationInterne.objects.filter(destinataire=self.request.user)
+        user = self.request.user
+        if not getattr(user, "is_authenticated", False):
+            return NotificationInterne.objects.none()
+        return NotificationInterne.objects.filter(destinataire=user)
 
     @action(detail=True, methods=["post"])
     def marquer_lu(self, request, pk=None):
@@ -101,6 +107,17 @@ class NotificationInterneViewSet(
         notif.lu = True
         notif.save(update_fields=["lu"])
         return Response(NotificationInterneSerializer(notif).data)
+
+    @action(detail=False, methods=["get"])
+    def badges(self, request):
+        qs = self.get_queryset().filter(lu=False)
+        counts = qs.values("niveau").annotate(total=Count("id"))
+        resume = {"rappel": 0, "message": 0, "critique": 0}
+        for row in counts:
+            niveau = row["niveau"]
+            if niveau in resume:
+                resume[niveau] = row["total"]
+        return Response(resume)
 
 
 #EbaJioloLewis

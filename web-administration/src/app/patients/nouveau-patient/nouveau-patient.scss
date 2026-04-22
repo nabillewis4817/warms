@@ -1,0 +1,63 @@
+h2 {
+  margin-top: 0;
+  color: var(--warms-blue);
+  font-family: var(--warms-font-title);
+}
+
+form {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+}
+
+.sexe-radio {
+  display: flex;
+  gap: 1rem;
+}
+
+input {
+  border: 1px solid #c9d6f2;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  background: var(--warms-accent);
+  color: #fff;
+  padding: 11px 14px;
+  font-weight: 700;
+}
+
+.qr-card {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #ecf2ff;
+}
+
+.qr-box {
+  margin: 10px 0;
+  width: 230px;
+  height: 230px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid #d2e0ff;
+  display: grid;
+  place-items: center;
+}
+
+.qr-box img {
+  width: 210px;
+  height: 210px;
+  object-fit: contain;
+}
+
+// #EbaJioloLewis

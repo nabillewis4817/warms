@@ -1,0 +1,45 @@
+<section>
+  <h2>Paramètres patient & génération carnet</h2>
+  <div class="progress">
+    <div class="bar" [style.width.%]="etape === 1 ? 50 : 100"></div>
+  </div>
+
+  <div class="book" [formGroup]="form">
+    <div class="page" [class.page-flip]="etape === 2">
+      @if (etape === 1) {
+        <div class="grid">
+          <label>Sexe</label>
+          <div class="radios">
+            <label><input type="radio" formControlName="sexe" [value]="'M'" /> Homme</label>
+            <label><input type="radio" formControlName="sexe" [value]="'F'" /> Femme</label>
+          </div>
+          <label>Age</label>
+          <input type="number" min="0" [formControl]="form.controls.age" />
+          <label>Taille (cm)</label>
+          <input type="number" min="0" [formControl]="form.controls.taille_cm" />
+          <label>Poids (kg)</label>
+          <input type="number" min="0" [formControl]="form.controls.poids_kg" />
+        </div>
+      } @else {
+        <div class="grid">
+          <label>Symptômes</label>
+          <textarea rows="4" [formControl]="form.controls.symptomes"></textarea>
+          <label>Consultations précédentes</label>
+          <textarea rows="4" [formControl]="form.controls.consultations_precedentes"></textarea>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="actions">
+    <button (click)="precedent()" [disabled]="etape === 1">Précédent</button>
+    @if (etape === 1) {
+      <button (click)="suivant()">Suivant</button>
+    } @else {
+      <button class="primary" (click)="genererCarnet()">Générer le carnet</button>
+    }
+  </div>
+  @if (message) {
+    <p>{{ message }}</p>
+  }
+</section>

@@ -1,0 +1,21 @@
+<section>
+  <div class="head-title">
+    <h2>Onglet Carnets</h2>
+    <button class="refresh-btn" (click)="charger()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+  </div>
+
+  <div class="folders">
+    @for (patient of patients; track patient.id) {
+      <article class="folder card">
+        <div class="folder-tab">{{ initiale(patient) }}</div>
+        <div class="folder-body">
+          <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
+          <p>{{ patient.numero_dossier }}</p>
+          @if (patient.qr_token) {
+            <img [src]="'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + patient.qr_token" alt="QR" />
+          }
+        </div>
+      </article>
+    }
+  </div>
+</section>

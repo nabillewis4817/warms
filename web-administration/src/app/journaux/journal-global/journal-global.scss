@@ -1,0 +1,26 @@
+h2 {
+  margin-top: 0;
+  color: var(--warms-blue);
+  font-family: var(--warms-font-title);
+}
+
+.logs {
+  display: grid;
+  gap: 8px;
+}
+
+article {
+  background: #f7f9ff;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+p {
+  margin: 4px 0;
+}
+
+small {
+  color: #65708a;
+}
+
+// #EbaJioloLewis
