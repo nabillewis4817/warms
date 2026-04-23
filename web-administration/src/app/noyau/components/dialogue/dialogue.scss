@@ -1,0 +1,179 @@
+.dialogue-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.dialogue-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: dialogueSlideIn 0.3s ease-out;
+}
+
+.dialogue-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+
+  .dialogue-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+  }
+}
+
+.dialogue-content {
+  padding: 1.5rem;
+  
+  p {
+    margin: 0;
+    line-height: 1.6;
+    color: #4a5568;
+  }
+}
+
+.dialogue-actions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #4a5568;
+
+  &:hover {
+    background: #cbd5e0;
+  }
+}
+
+// Styles par type de dialogue
+.dialogue-confirmation {
+  .dialogue-icon {
+    background: #fef3c7;
+    color: #f59e0b;
+  }
+}
+
+.dialogue-information {
+  .dialogue-icon {
+    background: #dbeafe;
+    color: #3b82f6;
+  }
+}
+
+.dialogue-erreur {
+  .dialogue-icon {
+    background: #fee2e2;
+    color: #ef4444;
+  }
+}
+
+.dialogue-succes {
+  .dialogue-icon {
+    background: #d1fae5;
+    color: #10b981;
+  }
+}
+
+@keyframes dialogueSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// Responsive
+@media (max-width: 640px) {
+  .dialogue-container {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .dialogue-header {
+    padding: 1rem;
+    
+    .dialogue-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1.25rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+    }
+  }
+
+  .dialogue-content {
+    padding: 1rem;
+  }
+
+  .dialogue-actions {
+    padding: 1rem;
+    flex-direction: column-reverse;
+    
+    .btn {
+      width: 100%;
+    }
+  }
+}

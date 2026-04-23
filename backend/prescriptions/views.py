@@ -5,6 +5,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import LignePrescription, Prescription
@@ -16,6 +17,7 @@ from .serializers import (
 
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Prescription.objects.select_related(
         "patient", "dossier", "consultation", "praticien"
     ).prefetch_related("lignes")
@@ -24,6 +26,15 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         if self.action == "create":
             return PrescriptionCreateSerializer
         return PrescriptionSerializer
+
+    def get_permissions(self):
+        """
+        Définir les permissions en fonction de l'action
+        """
+        if self.action == 'me':
+            # L'action 'me' est accessible par tout utilisateur authentifié (patients)
+            self.permission_classes = [IsAuthenticated]
+        return super().get_permissions()
 
     @action(detail=False, methods=["get"], url_path=r"patient/(?P<patient_id>\d+)/historique")
     def historique_patient(self, request, patient_id=None):
@@ -37,15 +48,57 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="me")
     def me(self, request):
-        patient = getattr(request.user, "patient_profile", None)
-        if not patient:
-            return Response({"detail": "Profil patient introuvable."}, status=404)
-        qs = self.get_queryset().filter(patient=patient)
-        serializer = PrescriptionSerializer(qs, many=True)
-        data = serializer.data
-        for item in data:
-            item["pdf_url"] = f"/api/v1/prescriptions/{item['id']}/pdf/"
-        return Response(data)
+        try:
+            # Vérifier l'authentification
+            if not request.user.is_authenticated:
+                return Response({"detail": "Utilisateur non authentifié."}, status=401)
+            
+            # Vérifier si l'utilisateur est un patient (vérification plus flexible)
+            user_role = getattr(request.user, 'role', None)
+            if user_role and user_role != 'PATIENT':
+                return Response({"detail": "L'utilisateur n'est pas un patient."}, status=403)
+            
+            # Rechercher le patient lié à cet utilisateur
+            patient = Patient.objects.filter(user=request.user).first()
+            if not patient:
+                return Response({
+                    "detail": "Profil patient introuvable.",
+                    "user_id": request.user.id,
+                    "username": request.user.username,
+                    "debug_role": user_role
+                }, status=404)
+            
+            # Récupérer les prescriptions du patient
+            qs = self.get_queryset().filter(patient=patient)
+            serializer = PrescriptionSerializer(qs, many=True)
+            data = serializer.data
+            
+            # Ajouter les URLs PDF pour chaque prescription
+            for item in data:
+                try:
+                    item["pdf_url"] = f"/api/v1/prescriptions/{item['id']}/pdf/"
+                except KeyError:
+                    item["pdf_url"] = None
+            
+            return Response(data)
+            
+        except Patient.DoesNotExist:
+            return Response({
+                "detail": "Profil patient introuvable.",
+                "user_id": getattr(request.user, 'id', None),
+                "debug_role": getattr(request.user, 'role', None)
+            }, status=404)
+        except Exception as e:
+            return Response({
+                "detail": "Erreur lors de la récupération des prescriptions",
+                "error": str(e),
+                "debug_info": {
+                    "user_id": getattr(request.user, 'id', None),
+                    "username": getattr(request.user, 'username', None),
+                    "is_authenticated": getattr(request.user, 'is_authenticated', False),
+                    "role": getattr(request.user, 'role', None)
+                }
+            }, status=500)
 
     @action(detail=True, methods=["get"])
     def pdf(self, request, pk=None):

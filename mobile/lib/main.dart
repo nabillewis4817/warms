@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
-  runApp(const WarmsMobileApp());
+  runApp(const MaterialApp(
+    home: WarmsMobileApp(),
+    debugShowCheckedModeBanner: false,
+    localizationsDelegates: [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: [
+      const Locale('fr', 'FR'),
+      const Locale('en', 'US'),
+    ],
+  ));
 }
 
 class WarmsMobileApp extends StatefulWidget {
@@ -31,6 +44,11 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
   Map<String, dynamic>? stats;
   Map<String, dynamic> badges = {'rappel': 0, 'message': 0, 'critique': 0};
   List<dynamic> ordonnancesPatient = [];
+  
+  // Variables pour le chat WARMS mobile
+  List<String> warmsMessages = [];
+  List<String> warmsResponses = [];
+  final TextEditingController _warmsController = TextEditingController();
 
   bool modeSombre = false;
   String langue = 'fr';
@@ -40,6 +58,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
   bool rappelsAuto = true;
   bool _refreshEnCours = false;
   bool chargeOcrIa = false;
+  List<Map<String, dynamic>> messages = [];
 
   @override
   void initState() {
@@ -72,15 +91,30 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
   }
 
   Future<void> _restaurerSession() async {
-    final token = await _storage.read(key: 'warms_access');
-    if (token == null || token.isEmpty) return;
-    _dio.options.headers['Authorization'] = 'Bearer $token';
-    final access = await _rafraichirAccessToken();
-    if (access == null) {
+    try {
+      final token = await _storage.read(key: 'warms_access');
+      if (token == null || token.isEmpty) {
+        print('Aucun token trouvé, reste sur écran de connexion');
+        return;
+      }
+      
+      print('Token trouvé, tentative de restauration de session');
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+      
+      // Vérifier si le token est valide en essayant de rafraîchir
+      final access = await _rafraichirAccessToken();
+      if (access == null) {
+        print('Token invalide, déconnexion');
+        await _deconnexion();
+        return;
+      }
+      
+      print('Session restaurée avec succès, chargement du profil');
+      await _chargerProfil();
+    } catch (e) {
+      print('Erreur lors de la restauration de session: $e');
       await _deconnexion();
-      return;
     }
-    await _chargerProfil();
   }
 
   Future<void> _connexion() async {
@@ -88,25 +122,58 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
       chargement = true;
       message = '';
     });
+    
+    final username = _usernameCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    
+    print('Tentative de connexion avec: $username');
+    
     try {
+      print('Envoi de la requête d\'authentification...');
       final rep = await _dio.post('/personnel/auth/token/', data: {
-        'username': _usernameCtrl.text.trim(),
-        'password': _passwordCtrl.text,
+        'username': username,
+        'password': password,
       });
+      
+      print('Réponse reçue: ${rep.statusCode}');
+      print('Données: ${rep.data}');
+      
       final access = rep.data['access'] as String?;
       final refresh = rep.data['refresh'] as String?;
+      
       if (access == null || access.isEmpty) {
-        setState(() => message = 'Token invalide reçu.');
+        setState(() => message = 'Token d\'accès invalide reçu du serveur.');
         return;
       }
+      
       await _storage.write(key: 'warms_access', value: access);
       if (refresh != null && refresh.isNotEmpty) {
         await _storage.write(key: 'warms_refresh', value: refresh);
       }
+      
       _dio.options.headers['Authorization'] = 'Bearer $access';
+      print('Authentification réussie, chargement du profil...');
       await _chargerProfil();
-    } on DioException {
-      setState(() => message = 'Échec de connexion. Vérifie tes identifiants.');
+      
+    } on DioError catch (e) {
+      print('Erreur de connexion: ${e.response?.statusCode} - ${e.message}');
+      print('Données d\'erreur: ${e.response?.data}');
+      
+      String messageErreur = 'Échec de connexion';
+      if (e.response?.statusCode == 401) {
+        messageErreur = 'Identifiants incorrects. Vérifiez votre username et mot de passe.';
+      } else if (e.response?.statusCode == 404) {
+        messageErreur = 'Service d\'authentification indisponible.';
+      } else if (e.type == DioErrorType.connectionTimeout) {
+        messageErreur = 'Délai de connexion dépassé. Vérifiez votre connexion.';
+      } else if (e.type == DioErrorType.connectionError) {
+        messageErreur = 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré.';
+      }
+      
+      setState(() => message = messageErreur);
+    } catch (e) {
+      print('Erreur inattendue lors de la connexion: $e');
+      setState(() => message = 'Erreur inattendue lors de la connexion.');
     } finally {
       setState(() => chargement = false);
     }
@@ -114,8 +181,12 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
 
   Future<void> _chargerProfil() async {
     try {
+      print('Chargement du profil utilisateur...');
       final rep = await _dio.get('/personnel/me/');
       final data = rep.data as Map<String, dynamic>;
+      
+      print('Profil chargé: ${data['username']} - Role: ${data['role']}');
+      
       final prefs = (data['preferences_notifications'] as Map?)?.cast<String, dynamic>() ?? {};
       setState(() {
         connecte = true;
@@ -128,13 +199,27 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
         notifPush = prefs['push'] == null ? true : prefs['push'] == true;
         rappelsAuto = prefs['rappels_auto'] == null ? true : prefs['rappels_auto'] == true;
       });
+      
+      print('Chargement des badges...');
       await _chargerBadges();
+      
       if (roleUtilisateur == 'patient') {
+        print('Chargement des données spécifiques au patient...');
         await Future.wait([_chargerProfilPatient(), _chargerOrdonnancesPatient()]);
       }
+      
+      print('Chargement des données générales...');
       await Future.wait([_chargerPatients(), _chargerStats()]);
-    } on DioException {
-      setState(() => message = 'Impossible de charger le profil.');
+      
+      print('Profil et données chargés avec succès');
+    } on DioError catch (e) {
+      print('Erreur Dio lors du chargement du profil: ${e.response?.statusCode} - ${e.message}');
+      setState(() => message = 'Impossible de charger le profil (${e.response?.statusCode}).');
+      await _deconnexion();
+    } catch (e) {
+      print('Erreur inattendue lors du chargement du profil: $e');
+      setState(() => message = 'Erreur lors du chargement du profil.');
+      await _deconnexion();
     }
   }
 
@@ -142,7 +227,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
     try {
       final rep = await _dio.get('/patients/');
       setState(() => patients = rep.data as List<dynamic>);
-    } on DioException {
+    } on DioError {
       // silencieux pour éviter de bloquer l'app en cas d'erreur ponctuelle
     }
   }
@@ -151,7 +236,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
     try {
       final rep = await _dio.get('/statistiques/vue-generale/');
       setState(() => stats = (rep.data as Map<String, dynamic>));
-    } on DioException {
+    } on DioError {
       // silencieux, le dashboard affichera un message de fallback
     }
   }
@@ -160,41 +245,79 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
     try {
       final rep = await _dio.get('/notifications/badges/');
       setState(() => badges = (rep.data as Map<String, dynamic>));
-    } on DioException {
+    } on DioError {
       // non bloquant
     }
   }
 
   Future<void> _chargerProfilPatient() async {
     try {
+      print('Chargement du profil patient...');
       final rep = await _dio.get('/patients/me/');
       final data = rep.data as Map<String, dynamic>;
+      
+      print('Profil patient chargé: ID ${data['id']} - Dossier: ${data['numero_dossier']}');
       setState(() => patientId = data['id'] as int?);
-    } on DioException {
-      // non bloquant
+    } on DioError catch (e) {
+      print('Erreur lors du chargement du profil patient: ${e.response?.statusCode} - ${e.message}');
+      // Ne pas bloquer l'application, mais logger l'erreur
+    } catch (e) {
+      print('Erreur inattendue lors du chargement du profil patient: $e');
     }
   }
 
   Future<void> _envoyerAvisPatient() async {
     if (patientId == null) return;
+    
+    // Confirmation avec alert Flutter
+    bool confirme = false;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Envoyer un avis'),
+          content: const Text('Voulez-vous envoyer un avis de satisfaction pour votre prise en charge ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Envoyer'),
+            ),
+          ],
+        );
+      },
+    ).then((value) => confirme = value ?? false);
+    
+    if (!confirme) return;
+    
     try {
       await _dio.post('/avis/', data: {
         'patient': patientId,
         'note': 5,
         'commentaire': 'Merci pour la prise en charge.',
       });
-      setState(() => message = 'Avis envoyé.');
-    } on DioException {
-      setState(() => message = 'Impossible d\'envoyer l\'avis.');
+      setState(() => message = 'Avis envoyé avec succès !');
+    } on DioError catch (e) {
+      setState(() => message = 'Impossible d\'envoyer l\'avis (${e.response?.statusCode}).');
     }
   }
 
   Future<void> _chargerOrdonnancesPatient() async {
     try {
+      print('Chargement des ordonnances patient...');
       final rep = await _dio.get('/prescriptions/me/');
-      setState(() => ordonnancesPatient = rep.data as List<dynamic>);
-    } on DioException {
-      // non bloquant
+      final ordonnances = rep.data as List<dynamic>;
+      
+      print('Ordonnances patient chargées: ${ordonnances.length} ordonnance(s)');
+      setState(() => ordonnancesPatient = ordonnances);
+    } on DioError catch (e) {
+      print('Erreur lors du chargement des ordonnances patient: ${e.response?.statusCode} - ${e.message}');
+      // Ne pas bloquer l'application, mais logger l'erreur
+    } catch (e) {
+      print('Erreur inattendue lors du chargement des ordonnances patient: $e');
     }
   }
 
@@ -211,18 +334,470 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
         }
       });
       setState(() => message = langue == 'fr' ? 'Préférences enregistrées.' : 'Preferences saved.');
-    } on DioException {
+    } on DioError {
       setState(() => message = langue == 'fr' ? 'Erreur de sauvegarde.' : 'Save failed.');
     }
   }
 
+  Future<void> _afficherConversations() async {
+    try {
+      setState(() => message = 'Chargement des conversations...');
+      
+      // Récupérer les conversations du patient
+      final response = await _dio.get('/conversations/');
+      final conversations = response.data as List<dynamic>;
+      
+      // Si aucune conversation, en créer une automatiquement
+      if (conversations.isEmpty) {
+        await _creerConversationAuto();
+        return;
+      }
+      
+      // Ouvrir directement la première conversation
+      final conversation = conversations.first as Map<String, dynamic>;
+      await _afficherMessagesConversation(conversation['id']);
+      
+      setState(() => message = 'Conversation ouverte avec succès.');
+    } on DioError catch (e) {
+      setState(() => message = 'Erreur lors du chargement des conversations (${e.response?.statusCode}).');
+    } catch (e) {
+      setState(() => message = 'Erreur inattendue lors du chargement des conversations.');
+    }
+  }
+
+  Future<void> _creerConversationAuto() async {
+    try {
+      setState(() => message = 'Création de votre conversation...');
+      
+      // Créer une conversation automatiquement pour le patient
+      final response = await _dio.post('/conversations/', data: {
+        'titre': 'Ma conversation avec le cabinet',
+        'type_conversation': 'patient'
+      });
+      
+      final conversation = response.data as Map<String, dynamic>;
+      await _afficherMessagesConversation(conversation['id']);
+      
+      setState(() => message = 'Conversation créée et ouverte avec succès.');
+    } on DioError catch (e) {
+      setState(() => message = 'Erreur lors de la création de la conversation (${e.response?.statusCode}).');
+    } catch (e) {
+      setState(() => message = 'Erreur inattendue lors de la création de la conversation.');
+    }
+  }
+
+  Future<void> _afficherMessagesConversation(int conversationId) async {
+    try {
+      setState(() => message = 'Chargement des messages...');
+      
+      // Récupérer les messages de la conversation
+      final response = await _dio.get('/conversations/$conversationId/messages/');
+      final messages = response.data as List<dynamic>;
+      
+      // Marquer les messages comme lus
+      try {
+        await _dio.post('/conversations/$conversationId/marquer_lus/');
+      } catch (e) {
+        print('Erreur lors du marquage des messages comme lus: $e');
+      }
+      
+      // Afficher les messages dans une fenêtre de dialogue
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.chat, color: Colors.blue),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Conversation',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Messages
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        final isMe = message['envoyeur'] == 'moi';
+                        final timestamp = message['timestamp'] as DateTime;
+                        final estLu = message['est_lu'] ?? false;
+                        final estRecu = message['est_recu'] ?? false;
+                        
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                            children: [
+                              if (!isMe) ...[
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.blue.shade100,
+                                  child: Icon(Icons.person, color: Colors.blue.shade800, size: 16),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: isMe ? Colors.blue.shade600 : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        message['contenu'] ?? '',
+                                        style: TextStyle(
+                                          color: isMe ? Colors.white : Colors.black,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: isMe ? Colors.white70 : Colors.black54,
+                                            ),
+                                          ),
+                                          if (!isMe) ...[
+                                            const SizedBox(width: 8),
+                                            Icon(
+                                              estLu ? Icons.done_all : Icons.done,
+                                              size: 16,
+                                              color: isMe ? Colors.white70 : Colors.black54,
+                                            ),
+                                          ],
+                                          if (isMe) ...[
+                                            const SizedBox(width: 4),
+                                            Icon(
+                                              estRecu ? Icons.done_all : Icons.done,
+                                              size: 12,
+                                              color: Colors.white70,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (isMe) ...[
+                                const SizedBox(width: 8),
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.blue.shade800,
+                                  child: Icon(Icons.person, color: Colors.white, size: 16),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+      
+      setState(() => message = 'Messages chargés avec succès.');
+    } on DioError catch (e) {
+      setState(() => message = 'Erreur lors du chargement des messages (${e.response?.statusCode}).');
+    } catch (e) {
+      setState(() => message = 'Erreur inattendue lors du chargement des messages.');
+    }
+  }
+
+  Future<void> _mettreAJourBadges() async {
+    try {
+      final response = await _dio.get('/notifications/badges/');
+      final newBadges = response.data as Map<String, dynamic>;
+      setState(() => badges = newBadges);
+    } on DioError catch (e) {
+      print('Erreur lors de la mise à jour des badges: ${e.response?.statusCode}');
+    } catch (e) {
+      print('Erreur inattendue lors de la mise à jour des badges: $e');
+    }
+  }
+
+  Future<void> _ouvrirWarmsMobile() async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('WARMS IA Assistant'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 500,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.blue.shade50, Colors.purple.shade50],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        // Header
+                        Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.blue,
+                                child: Icon(Icons.smart_toy, color: Colors.white),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('WARMS', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    Text('Votre assistant médical intelligent', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Messages
+                        Expanded(
+                          child: ListView(
+                            padding: EdgeInsets.all(16),
+                            children: [
+                              _buildWarmsMessage('Bonjour ! Je suis WARMS, votre assistant médical. Comment puis-je vous aider aujourd\'hui ?'),
+                              if (warmsMessages.isNotEmpty) ...[
+                                for (int i = 0; i < warmsMessages.length; i++) ...[
+                                  _buildUserMessage(warmsMessages[i]),
+                                  if (i < warmsResponses.length)
+                                    _buildWarmsMessage(warmsResponses[i] ?? 'Je réfléchis à votre question...'),
+                                ],
+                              ],
+                            ],
+                          ),
+                        ),
+                        
+                        // Input
+                        Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _warmsController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Posez votre question médicale...',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              IconButton(
+                                onPressed: () => _envoyerMessageWarms(),
+                                icon: Icon(Icons.send, color: Colors.blue),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Fermer'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildWarmsMessage(String message) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.blue,
+            child: Icon(Icons.smart_toy, color: Colors.white, size: 16),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(message),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserMessage(String message) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(message),
+            ),
+          ),
+          SizedBox(width: 8),
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.green,
+            child: Icon(Icons.person, color: Colors.white, size: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _envoyerMessageWarms() async {
+    final message = _warmsController.text.trim();
+    if (message.isEmpty) return;
+
+    setState(() {
+      warmsMessages.add(message);
+      warmsResponses.add('Recherche en cours...');
+    });
+    _warmsController.clear();
+
+    // Simuler une recherche web et réponse de l'IA
+    await Future.delayed(Duration(seconds: 2));
+    
+    String response = await _simulerReponseWarms(message);
+    
+    setState(() {
+      warmsResponses[warmsResponses.length - 1] = response;
+    });
+  }
+
+  Future<String> _simulerReponseWarms(String question) async {
+    // Simuler une recherche web basée sur les mots-clés
+    question = question.toLowerCase();
+    
+    if (question.contains('rendez-vous') || question.contains('rdv')) {
+      return 'Pour vos rendez-vous, vous pouvez consulter votre agenda dans l\'application. Les prochains rendez-vous apparaissent avec les détails du praticien et l\'heure. En cas d\'urgence, n\'hésitez pas à contacter le cabinet directement au numéro indiqué dans vos contacts.';
+    } else if (question.contains('symptôme') || question.contains('mal') || question.contains('douleur')) {
+      return 'Les symptômes que vous décrivez peuvent avoir plusieurs causes. Je vous recommande de consulter votre médecin traitant pour un diagnostic précis. En attendant, vous pouvez prendre du repos et surveiller l\'évolution de vos symptômes. En cas d\'urgence, contactez les services d\'urgence.';
+    } else if (question.contains('médicament') || question.contains('traitement')) {
+      return 'Concernant vos médicaments, il est important de suivre la prescription de votre médecin. Ne modifiez jamais votre traitement sans avis médical. Si vous avez des effets secondaires, contactez votre médecin ou votre pharmacien.';
+    } else if (question.contains('avant') || question.contains('après')) {
+      return 'Selon les statistiques du cabinet, il y a généralement quelques patients en attente avant votre rendez-vous. Après votre consultation, n\'hésitez pas à poser toutes vos questions au praticien. Vous pouvez également demander une ordonnance si nécessaire.';
+    } else if (question.contains('maladie') || question.contains('pathologie')) {
+      return 'Chaque maladie est spécifique et nécessite une prise en charge personnalisée. Votre médecin pourra vous donner des informations précises sur votre état de santé. N\'hésitez pas à lui poser des questions lors de votre prochain rendez-vous.';
+    } else {
+      return 'Je comprends votre question. Pour une réponse précise et adaptée à votre situation, je vous recommande de consulter votre médecin traitant. Il pourra vous donner des conseils personnalisés. N\'hésitez pas à noter vos questions pour votre prochain rendez-vous.';
+    }
+  }
+
   Future<void> _deconnexion() async {
+    // Confirmation avec alert Flutter
+    bool confirme = false;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Déconnexion'),
+          content: const Text('Voulez-vous vraiment vous déconnecter ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Se déconnecter'),
+            ),
+          ],
+        );
+      },
+    ).then((value) => confirme = value ?? false);
+    
+    if (!confirme) return;
+    
     await _storage.delete(key: 'warms_access');
     await _storage.delete(key: 'warms_refresh');
     _dio.options.headers.remove('Authorization');
     setState(() {
       connecte = false;
       prenomNom = '';
+      message = 'Déconnecté avec succès';
     });
   }
 
@@ -240,7 +815,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
       await _storage.write(key: 'warms_access', value: access);
       _dio.options.headers['Authorization'] = 'Bearer $access';
       return access;
-    } on DioException {
+    } on DioError {
       return null;
     } finally {
       _refreshEnCours = false;
@@ -290,19 +865,13 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
         mainAxisSize: MainAxisSize.min,
         children: [
           FloatingActionButton.extended(
-            onPressed: () async {
-              final rep = await _dio.get('/statistiques/parcours-patient/');
-              final d = rep.data as Map<String, dynamic>;
-              setState(() => message = 'Warms: ${d['avant']} avant vous, ${d['apres']} après vous.');
-            },
+            onPressed: () => _ouvrirWarmsMobile(),
             icon: const Icon(Icons.auto_awesome),
             label: const Text('Warms'),
           ),
           const SizedBox(height: 10),
           FloatingActionButton.extended(
-            onPressed: () => setState(
-              () => message = 'Conversation patient/chirurgien/infirmière disponible dans Messagerie.',
-            ),
+            onPressed: () => _afficherConversations(),
             icon: const Icon(Icons.forum),
             label: const Text('Conversation'),
           ),
@@ -518,7 +1087,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
                   message =
                       'Warms: ${k['rendez_vous_30j'] ?? 0} RDV / ${k['consultations_30j'] ?? 0} consultations.';
                 });
-              } on DioException {
+              } on DioError {
                 setState(() => message = langue == 'fr' ? 'Warms indisponible temporairement.' : 'Warms temporarily unavailable.');
               } finally {
                 setState(() => chargeOcrIa = false);

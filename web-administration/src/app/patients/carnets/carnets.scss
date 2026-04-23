@@ -1,29 +1,521 @@
-.folders {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+/* ========================================
+   STYLES POUR L'ONGLET CARNETS DES PATIENTS
+   ======================================== */
+
+/* En-tête avec contrôles */
+.en-tete-carnets {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8faff 0%, #e8f0ff 100%);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.titre-avec-icone-carnets {
+  display: flex;
+  align-items: center;
   gap: 1rem;
 }
 
-.folder {
+.icone-titre-carnets {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.titre-carnets {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1e4db7;
+}
+
+/* Conteneur des contrôles */
+.controles-carnets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Barre de recherche */
+.controle-recherche {
+  flex: 1;
+  min-width: 300px;
+}
+
+.input-groupe {
   position: relative;
-  padding: 1rem;
-  border-radius: 18px;
-  background: #fff;
+  display: flex;
+  align-items: center;
 }
 
-.folder-tab {
-  width: 44px;
-  height: 44px;
+.input-groupe i {
+  position: absolute;
+  left: 1rem;
+  color: #6b7280;
+  z-index: 1;
+}
+
+.input-recherche {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid #e5e7eb;
   border-radius: 12px;
-  background: #1e4db7;
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  margin-bottom: 0.7rem;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: white;
 }
 
-.folder-body img {
+.input-recherche:focus {
+  outline: none;
+  border-color: #1e4db7;
+  box-shadow: 0 0 0 3px rgba(30, 77, 183, 0.1);
+}
+
+.input-recherche::placeholder {
+  color: #9ca3af;
+}
+
+/* Contrôles de tri */
+.controles-tri {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.bouton-tri {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bouton-tri:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.bouton-tri.actif {
+  background: #1e4db7;
+  color: white;
+}
+
+.bouton-tri i {
+  font-size: 0.85rem;
+}
+
+/* Bouton de rafraîchissement */
+.bouton-rafraichir {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.3);
+}
+
+.bouton-rafraichir:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(30, 77, 183, 0.4);
+}
+
+.bouton-rafraichir:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.bouton-rafraichir i {
+  transition: transform 0.5s ease;
+}
+
+.bouton-rafraichir:disabled i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Grille d'affichage des carnets patients */
+.grille-carnets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+/* Carte individuelle d'un carnet patient */
+.carte-carnet {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid #f0f4ff;
+  cursor: pointer;
+}
+
+.carte-carnet:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(30, 77, 183, 0.15);
+  border-color: #1e4db7;
+}
+
+.carte-carnet:hover .indicateur-clic {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Conteneur pour l'icône du dossier */
+.conteneur-icone-dossier {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Image du dossier - maintenant visible et centrée */
+.image-dossier {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f8faff;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Cercle avec les initiales - positionné en bas à droite de l'image */
+.cercle-initiales {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, #1e4db7, #163a8a);
+  color: #ffffff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(30, 77, 183, 0.3);
+  border: 3px solid #ffffff;
+}
+
+/* Contenu textuel du carnet */
+.contenu-carnet {
+  text-align: center;
+}
+
+.contenu-carnet h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a202c;
+  line-height: 1.3;
+}
+
+.numero-dossier {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #4a5568;
+  line-height: 1.4;
+}
+
+.numero-dossier strong {
+  color: #2d3748;
+}
+
+/* Informations de contact */
+.informations-contact {
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-contact {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.info-contact i {
+  font-size: 0.9rem;
+  color: #1e4db7;
+}
+
+/* Indicateur de clic */
+.indicateur-clic {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(30, 77, 183, 0.1);
+  color: #1e4db7;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.3s ease;
+}
+
+.indicateur-clic i {
+  font-size: 0.7rem;
+}
+
+/* Code QR du patient */
+.code-qr {
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  padding: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Indicateur de chargement */
+.indicateur-chargement {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin: 1rem;
+}
+
+.indicateur-chargement i {
+  font-size: 2rem;
+  color: #1e4db7;
+  margin-bottom: 1rem;
+  display: block;
+  animation: rotation 1s linear infinite;
+}
+
+/* Bouton de rafraîchissement */
+.bouton-rafraichir {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #1e4db7, #163a8a);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(30, 77, 183, 0.2);
+}
+
+.bouton-rafraichir:hover {
+  background: linear-gradient(135deg, #163a8a, #0f2851);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.3);
+}
+
+.bouton-rafraichir:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
+/* Animation de rotation pour l'icône de chargement */
+@keyframes rotation {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* En-tête de section */
+.en-tete-carnets {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+/* Conteneur pour le titre avec icône */
+.titre-avec-icone-carnets {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.icone-titre-carnets {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  animation: flottement-subtil 3s ease-in-out infinite;
+}
+
+.titre-carnets {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #1a2e6b;
+  font-weight: 700;
+}
+
+/* Animation subtile pour l'icône du titre */
+@keyframes flottement-subtil {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Conteneur pour le code QR */
+.conteneur-qr {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.legende-qr {
+  display: block;
   margin-top: 0.5rem;
-  border-radius: 10px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Message lorsque aucun carnet n'est trouvé */
+.message-aucun-carnet {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 2px dashed #cbd5e1;
+  color: #64748b;
+}
+
+.message-aucun-carnet .icone-aucun-carnet {
+  width: 80px;
+  height: 80px;
+  opacity: 0.3;
+  margin-bottom: 1rem;
+  filter: grayscale(50%);
+}
+
+.message-aucun-carnet h3 {
+  margin: 0 0 1rem;
+  color: #475569;
+  font-size: 1.3rem;
+}
+
+.message-aucun-carnet p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Gestion des erreurs d'image */
+.image-erreur {
+  background: #fee2e2;
+  border: 2px dashed #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-erreur::after {
+  content: "📁";
+  font-size: 2rem;
+  color: #ef4444;
+}
+
+/* Section principale */
+.section-carnets {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Styles responsives pour mobile */
+@media (max-width: 768px) {
+  .section-carnets {
+    padding: 1rem 0.5rem;
+  }
+  
+  .en-tete-carnets {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .titre-avec-icone-carnets {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .icone-titre-carnets {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .titre-carnets {
+    font-size: 1.5rem;
+  }
+  
+  .grille-carnets {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+    padding: 0.5rem;
+  }
+  
+  .carte-carnet {
+    padding: 1rem;
+  }
+  
+  .conteneur-icone-dossier {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .cercle-initiales {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    bottom: -6px;
+    right: -6px;
+  }
+  
+  .message-aucun-carnet {
+    padding: 2rem 1rem;
+  }
 }

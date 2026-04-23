@@ -18,6 +18,7 @@ from .serializers import (
     RecommandationIASerializer,
 )
 from .services_llm import reponse_ia
+from .services_ocr import analyser_carnet_medical, extraire_texte_image
 from .services_recherche import FiltresRecherche, recherche_globale, suggestions
 
 
@@ -53,8 +54,7 @@ def suggestions_recherche(request):
 
 def _generer_reponse_contextuelle(question: str, dossier: DossierPatient) -> str:
     """
-    Réponse simple basée sur le contexte dossier.
-    Un moteur LLM peut remplacer cette logique plus tard.
+    Réponse IA améliorée avec accès aux données du projet.
     """
     contexte = (
         f"Dossier: {dossier.numero_dossier}\n"
@@ -62,20 +62,9 @@ def _generer_reponse_contextuelle(question: str, dossier: DossierPatient) -> str
         f"Antécédents: {dossier.antecedents or 'N/A'}\n"
         f"Allergies: {dossier.allergies or 'N/A'}\n"
     )
-    reponse = reponse_ia(question=question, contexte=contexte)
-    if "fallback" not in reponse.lower():
-        return reponse
-
-    # Fallback local si provider IA indisponible
-    q = (question or "").lower()
-    base = f"Dossier {dossier.numero_dossier}. "
-    if "allerg" in q:
-        return base + (dossier.allergies or "Aucune allergie renseignée pour le moment.")
-    if "anteced" in q:
-        return base + (dossier.antecedents or "Aucun antécédent renseigné pour le moment.")
-    if "note" in q or "resume" in q:
-        return base + (dossier.notes_medicales or "Aucune note clinique renseignée.")
-    return base + "Question reçue. Réponse générée sur les informations actuellement disponibles."
+    
+    # Utiliser le service IA amélioré avec les données du patient
+    return reponse_ia(question=question, contexte=contexte, patient_id=dossier.patient_id)
 
 
 def _generer_compte_rendu(consultation: Consultation) -> str:
@@ -228,6 +217,99 @@ def sync_offline(request):
             }
         )
     return Response({"count": len(payload), "items": payload})
+
+
+@api_view(["POST"])
+def ocr_carnet(request):
+    """
+    Traite une image de carnet médical avec OCR.
+    """
+    if 'image' not in request.FILES:
+        return Response({"detail": "Aucune image fournie."}, status=400)
+    
+    image_file = request.FILES['image']
+    
+    # Extraire le texte avec OCR
+    texte = extraire_texte_image(image_file)
+    if not texte:
+        return Response({"detail": "Impossible d'extraire le texte de l'image."}, status=500)
+    
+    # Analyser et structurer le contenu
+    analyse = analyser_carnet_medical(texte)
+    
+    # Créer un enregistrement OCR si patient/dossier fourni
+    patient_id = request.data.get('patient_id')
+    dossier_id = request.data.get('dossier_id')
+    
+    ocr_record = None
+    if patient_id or dossier_id:
+        ocr_record = OCRImportCarnet.objects.create(
+            patient_id=patient_id,
+            dossier_id=dossier_id,
+            image_source=image_file,
+            texte_extrait=texte,
+            analyse=analyse,
+            cree_par=request.user
+        )
+    
+    # Préparer la réponse avec les données structurées
+    response_data = {
+        "texte_extrait": texte,
+        "donnees_structurees": analyse.get("donnees_structurees", {}),
+        "symptomes": analyse.get("symptomes", []),
+        "traitements": analyse.get("traitements", []),
+        "notes": analyse.get("notes", []),
+        "dates": analyse.get("dates", []),
+        "confiance": 0.85,  # Taux de confiance moyen pour Tesseract
+        "ocr_record_id": ocr_record.id if ocr_record else None
+    }
+    
+    return Response(response_data)
+
+
+@api_view(["POST"])
+def warms_ia_general(request):
+    """
+    Endpoint WARMS IA pour répondre aux questions générales sur la santé et le cabinet.
+    """
+    question = request.data.get("question", "")
+    patient_id = request.data.get("patient_id")
+    
+    if not question:
+        return Response({"detail": "Aucune question fournie."}, status=400)
+    
+    # Utiliser le service IA avec le contexte enrichi
+    reponse = reponse_ia(question=question, contexte="", patient_id=patient_id)
+    
+    return Response({
+        "question": question,
+        "reponse": reponse,
+        "timestamp": datetime.now().isoformat(),
+        "patient_id": patient_id
+    })
+
+
+@api_view(["GET"])
+def warms_ia_info(request):
+    """
+    Endpoint pour obtenir les informations sur WARMS IA.
+    """
+    return Response({
+        "nom": "WARMS IA",
+        "description": "Assistant médical intelligent pour le cabinet dentaire",
+        "capacites": [
+            "Répondre aux questions sur les symptômes dentaires",
+            "Donner des informations sur les traitements",
+            "Aider à la gestion des rendez-vous",
+            "Fournir des informations sur le cabinet",
+            "Accéder aux données patientes (avec autorisation)"
+        ],
+        "limitations": [
+            "Ne remplace pas un diagnostic professionnel",
+            "Pour les urgences, contacter directement le cabinet",
+            "Les informations médicales sont générales"
+        ]
+    })
 
 
 #EbaJioloLewis

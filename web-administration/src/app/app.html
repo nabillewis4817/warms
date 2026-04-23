@@ -33,7 +33,28 @@
             <option value="en">EN</option>
           </select>
         </label>
-        <button class="quick-action" (click)="actionRapide()"><i class="bi bi-lightning-charge-fill"></i> Action rapide</button>
+        <div class="quick-actions-dropdown" [class.open]="menuActionsOuvert">
+        <button class="quick-action" (click)="basculerMenuActions()" [style.cursor]="menuActionsOuvert ? 'pointer' : 'pointer'">
+          <i class="bi bi-lightning-charge-fill"></i> Actions rapides <i class="bi bi-chevron-down"></i>
+        </button>
+        <div class="dropdown-menu">
+          <a href="#" (click)="actionRapide('nouveau-patient'); $event.preventDefault()">
+            <i class="bi bi-person-plus"></i> Nouveau patient
+          </a>
+          <a href="#" (click)="actionRapide('nouveau-rdv'); $event.preventDefault()">
+            <i class="bi bi-calendar-plus"></i> Nouveau rendez-vous
+          </a>
+          <a href="#" (click)="actionRapide('statistiques'); $event.preventDefault()">
+            <i class="bi bi-graph-up"></i> Voir statistiques
+          </a>
+          <a href="#" (click)="actionRapide('messagerie'); $event.preventDefault()">
+            <i class="bi bi-chat-dots"></i> Messagerie
+          </a>
+          <a href="#" (click)="actionRapide('carnets'); $event.preventDefault()">
+            <img src="assets/folder.png" alt="Carnets" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;"> Carnets
+          </a>
+        </div>
+      </div>
         <button class="ia-float" (click)="ouvrirWarms()"><i class="bi bi-stars"></i> Warms</button>
         <a routerLink="/ocr" class="ocr-link"><i class="bi bi-camera"></i> OCR</a>
       </header>
@@ -43,4 +64,9 @@
       <router-outlet />
     </main>
   </section>
+  
+  <!-- Modal de dialogue global pour confirmations -->
+  <app-dialogue-modal />
+  <!-- Composant de dialogue personnalisé -->
+  <app-dialogue />
 </div>

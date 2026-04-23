@@ -45,7 +45,47 @@
   margin-top: 1rem;
 }
 
+/* En-tête avec icône du carnet */
+.en-tete-parametres {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.icone-carnet {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.en-tete-parametres h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1a2e6b;
+  font-weight: 700;
+}
+
 .primary {
   background: #1e4db7;
   color: #fff;
+}
+
+/* Styles responsives pour mobile */
+@media (max-width: 768px) {
+  .en-tete-parametres {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .icone-carnet {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .en-tete-parametres h2 {
+    font-size: 1.3rem;
+  }
 }

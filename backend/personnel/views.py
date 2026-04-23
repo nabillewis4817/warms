@@ -3,6 +3,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from journaux.utils import journaliser
 
@@ -155,6 +156,61 @@ def forgot_password(request):
     PasswordResetToken.objects.create(utilisateur=user, token=token)
     # En prod: envoyer par email. En dev, on renvoie le token.
     return Response({"detail": "Token généré.", "token": token})
+
+
+# Vue personnalisée pour l'authentification mobile des patients
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Vue personnalisée pour gérer l'authentification des patients et du personnel"""
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            response = super().post(request, *args, **kwargs)
+
+            # Ajouter des informations supplémentaires pour le mobile
+            if response.status_code == 200:
+                user = request.user
+                
+                # Vérifier que l'utilisateur est authentifié et a les attributs nécessaires
+                if not user or not hasattr(user, 'id'):
+                    return Response({
+                        'detail': 'Erreur lors de la récupération des informations utilisateur',
+                        'error': 'Utilisateur invalide'
+                    }, status=500)
+                
+                response.data.update({
+                    'user_id': user.id,
+                    'username': user.username,
+                    'role': getattr(user, 'role', None),
+                    'first_name': getattr(user, 'first_name', ''),
+                    'last_name': getattr(user, 'last_name', ''),
+                })
+
+                # Si c'est un patient, ajouter les informations du patient
+                role = getattr(user, 'role', None)
+                if role == 'PATIENT':
+                    try:
+                        patient = Patient.objects.get(user=user)
+                        response.data.update({
+                            'patient_id': patient.id,
+                            'numero_dossier': getattr(patient, 'numero_dossier', None),
+                            'qr_token': getattr(patient, 'qr_token', None),
+                        })
+                    except Patient.DoesNotExist:
+                        # Le patient n'existe pas encore, mais l'utilisateur a le rôle PATIENT
+                        response.data.update({
+                            'patient_id': None,
+                            'message': 'Compte patient créé mais profil incomplet. Contactez l\'administration.'
+                        })
+
+            return response
+
+        except Exception as e:
+            # Logger l'erreur pour le débogage
+            print(f"Erreur d'authentification: {str(e)}")
+            return Response({
+                'detail': 'Erreur lors de l\'authentification',
+                'error': str(e)
+            }, status=500)
 
 
 @api_view(["POST"])

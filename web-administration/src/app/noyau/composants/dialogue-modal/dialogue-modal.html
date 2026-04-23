@@ -1,0 +1,35 @@
+<!-- ========================================
+     MODAL DE DIALOGUE POUR CONFIRMATIONS
+     ======================================== -->
+@if (visible && options) {
+  <div class="modal-overlay" (click)="annuler()">
+    <div class="modal-dialogue {{ classeType }}" (click)="$event.stopPropagation()">
+      <!-- En-tête du dialogue -->
+      <div class="dialogue-en-tete">
+        <div class="dialogue-icone">
+          <i class="bi {{ icone }}"></i>
+        </div>
+        <h3 class="dialogue-titre">{{ options.titre }}</h3>
+      </div>
+
+      <!-- Corps du dialogue -->
+      <div class="dialogue-corps">
+        <p class="dialogue-message">{{ options.message }}</p>
+      </div>
+
+      <!-- Pied du dialogue avec boutons -->
+      <div class="dialogue-pied">
+        @if (options.type === 'confirmation') {
+          <button class="btn-dialogue btn-annuler" (click)="annuler()">
+            <i class="bi bi-x-circle"></i>
+            {{ options.boutonAnnuler || 'Annuler' }}
+          </button>
+        }
+        <button class="btn-dialogue btn-confirmer" (click)="confirmer()">
+          <i class="bi bi-check-circle"></i>
+          {{ options.boutonOk || 'OK' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

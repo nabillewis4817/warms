@@ -1,0 +1,98 @@
+<section class="ia-warms">
+  <div class="ia-header">
+    <div class="ia-logo">
+      <div class="logo-circle">
+        <i class="bi bi-robot"></i>
+      </div>
+      <h2>WARMS IA</h2>
+      <p>Votre assistant médical intelligent</p>
+    </div>
+  </div>
+
+  <div class="ia-chat">
+    <div class="messages-container" #messagesContainer>
+      @for (message of messages; track trackMessageId($index)) {
+        <div class="message" [class]="message.role === 'user' ? 'user-message' : 'assistant-message'">
+          <div class="message-avatar">
+            @if (message.role === 'user') {
+              <i class="bi bi-person-circle"></i>
+            } @else {
+              <i class="bi bi-robot"></i>
+            }
+          </div>
+          <div class="message-content">
+            <div class="message-text" [innerHTML]="message.content | nl2br"></div>
+            <div class="message-time">{{ message.timestamp | date:'HH:mm' }}</div>
+          </div>
+        </div>
+      }
+      
+      @if (chargement) {
+        <div class="message assistant-message">
+          <div class="message-avatar">
+            <i class="bi bi-robot"></i>
+          </div>
+          <div class="message-content">
+            <div class="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="message-input">
+      <form [formGroup]="form" (ngSubmit)="envoyerMessage()">
+        <div class="input-group">
+          <input 
+            type="text" 
+            [formControl]="form.get('message')"
+            placeholder="Tapez votre message ici..."
+            [disabled]="chargement"
+            class="message-field"
+            #messageInput
+            (keydown.enter)="envoyerMessage()"
+          />
+          <button 
+            type="submit" 
+            [disabled]="form.invalid || chargement"
+            class="send-button">
+            @if (chargement) {
+              <i class="bi bi-hourglass-split"></i>
+            } @else {
+              <i class="bi bi-send-fill"></i>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="ia-suggestions">
+    <h3>Questions rapides</h3>
+    <div class="suggestions-grid">
+      <button class="suggestion-btn" (click)="suggestionClick('Comment créer un patient ?')">
+        <i class="bi bi-person-plus"></i>
+        <span>Créer un patient</span>
+      </button>
+      <button class="suggestion-btn" (click)="suggestionClick('Comment créer une ordonnance ?')">
+        <i class="bi bi-file-medical"></i>
+        <span>Créer une ordonnance</span>
+      </button>
+      <button class="suggestion-btn" (click)="suggestionClick('Comment planifier un rendez-vous ?')">
+        <i class="bi bi-calendar-plus"></i>
+        <span>Planifier un RDV</span>
+      </button>
+      <button class="suggestion-btn" (click)="suggestionClick('Comment utiliser l\'OCR ?')">
+        <i class="bi bi-camera"></i>
+        <span>Utiliser l'OCR</span>
+      </button>
+      <button class="suggestion-btn" (click)="suggestionClick('Aide générale')">
+        <i class="bi bi-question-circle"></i>
+        <span>Aide générale</span>
+      </button>
+    </div>
+  </div>
+</section>

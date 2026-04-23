@@ -1,9 +1,65 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { interval, Subscription } from 'rxjs';
+
+import { StatistiquesService } from '../../noyau/services/statistiques';
 
 @Component({
   selector: 'app-vue-generale',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './vue-generale.html',
   styleUrl: './vue-generale.scss',
 })
-export class VueGenerale {}
+export class VueGenerale implements OnInit, OnDestroy {
+  stats: any = {};
+  loading = true;
+  error: string | null = null;
+  private refreshSubscription: Subscription | null = null;
+
+  constructor(private statsService: StatistiquesService) {}
+
+  ngOnInit(): void {
+    this.chargerStats();
+    // Auto-refresh toutes les 30 secondes pour les statistiques en temps réel
+    this.refreshSubscription = interval(30000).subscribe(() => {
+      this.chargerStats();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+    }
+  }
+
+  chargerStats(): void {
+    this.loading = true;
+    this.error = null;
+    
+    this.statsService.vueGenerale().subscribe({
+      next: (data: any) => {
+        this.stats = data;
+        this.loading = false;
+      },
+      error: (err: any) => {
+        console.error('Erreur lors du chargement des statistiques:', err);
+        this.error = 'Impossible de charger les statistiques';
+        this.loading = false;
+      }
+    });
+  }
+
+  getPourcentage(value: number, total: number): number {
+    return total > 0 ? Math.round((value / total) * 100) : 0;
+  }
+
+  getTendance(value: number): string {
+    if (value > 0) return 'positive';
+    if (value < 0) return 'negative';
+    return 'stable';
+  }
+
+  rafraichir(): void {
+    this.chargerStats();
+  }
+}

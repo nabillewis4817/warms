@@ -6,9 +6,12 @@ from .views import (
     MessageAssistantIAViewSet,
     OCRImportCarnetViewSet,
     RecommandationIAViewSet,
+    ocr_carnet,
     recherche,
     suggestions_recherche,
     sync_offline,
+    warms_ia_general,
+    warms_ia_info,
 )
 
 router = DefaultRouter()
@@ -18,6 +21,9 @@ router.register(r"ia/recommandations", RecommandationIAViewSet, basename="ia-rec
 router.register(r"ia/comptes-rendus", CompteRenduIAViewSet, basename="ia-compte-rendu")
 
 urlpatterns = [
+    path("ia/ocr-carnet/", ocr_carnet, name="ia-ocr-carnet"),
+    path("ia/warms-general/", warms_ia_general, name="ia-warms-general"),
+    path("ia/warms-info/", warms_ia_info, name="ia-warms-info"),
     path("recherche/globale/", recherche, name="recherche-globale"),
     path("recherche/suggestions/", suggestions_recherche, name="recherche-suggestions"),
     path("offline/sync/", sync_offline, name="offline-sync"),

@@ -13,7 +13,9 @@
       <option value="chirurgien_dentiste">Chirurgien-dentiste</option>
     </select>
     <input placeholder="Mot de passe" type="password" formControlName="password" />
-    <button type="submit">S'inscrire</button>
+    <button type="submit" [disabled]="loading" [class.loading]="loading">
+      @if (loading) { Inscription... } @else { S'inscrire }
+    </button>
   </form>
   <a routerLink="/connexion">Retour connexion</a>
   @if (message) { <p class="msg">{{ message }}</p> }

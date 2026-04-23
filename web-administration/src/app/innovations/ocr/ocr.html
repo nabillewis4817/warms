@@ -1,11 +1,30 @@
 <section>
   <h2>OCR Warm's</h2>
-  <div class="dropzone">
-    <i class="bi bi-plus-lg"></i>
-    <p>Uploader un document</p>
+  
+  <div *ngIf="chargement" class="loading-overlay">
+    <div class="loading-spinner">
+      <i class="bi bi-arrow-clockwise"></i>
+      <p>Traitement OCR en cours...</p>
+    </div>
   </div>
+
+  <div class="dropzone" [style.cursor]="chargement ? 'wait' : 'pointer'" (click)="clickFileInput()">
+    <input #fileInput type="file" accept="image/*" (change)="onFileUpload($event)" [disabled]="chargement" style="display: none;">
+    <i class="bi bi-plus-lg"></i>
+    <p>Glissez un document ici ou cliquez pour uploader</p>
+  </div>
+  
   <div class="actions">
-    <button><i class="bi bi-upload"></i> Upload fichier</button>
-    <button><i class="bi bi-camera-fill"></i> Prendre en photo</button>
+    <button class="upload-btn" (click)="clickFileInput()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
+      <i class="bi bi-upload"></i>
+      <span *ngIf="operationEnCours === 'upload'">...</span>
+      <span *ngIf="operationEnCours !== 'upload'">Upload fichier</span>
+    </button>
+    
+    <button class="photo-btn" (click)="prendrePhoto()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
+      <i class="bi bi-camera-fill"></i>
+      <span *ngIf="operationEnCours === 'photo'">...</span>
+      <span *ngIf="operationEnCours !== 'photo'">Prendre en photo</span>
+    </button>
   </div>
 </section>

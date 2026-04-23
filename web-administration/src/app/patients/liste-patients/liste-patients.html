@@ -23,8 +23,26 @@
             <span class="etat etat-{{ patient.statut_parcours || 'nouveau' }}">{{ patient.statut_parcours || 'nouveau' }}</span>
           </span>
           <span class="actions">
-            <button (click)="archiver(patient)"><i class="bi bi-archive"></i></button>
-            <button (click)="supprimer(patient)"><i class="bi bi-trash"></i></button>
+            <button 
+              (click)="archiver(patient)" 
+              [disabled]="actionEnCours[patient.id] === 'archivage'"
+              [style.cursor]="actionEnCours[patient.id] === 'archivage' ? 'wait' : 'pointer'"
+              title="Archiver le patient">
+              <i class="bi bi-archive"></i>
+              @if (actionEnCours[patient.id] === 'archivage') {
+                <span>...</span>
+              }
+            </button>
+            <button 
+              (click)="supprimer(patient)" 
+              [disabled]="actionEnCours[patient.id] === 'suppression'"
+              [style.cursor]="actionEnCours[patient.id] === 'suppression' ? 'wait' : 'pointer'"
+              title="Supprimer le patient">
+              <i class="bi bi-trash"></i>
+              @if (actionEnCours[patient.id] === 'suppression') {
+                <span>...</span>
+              }
+            </button>
           </span>
         </div>
       }

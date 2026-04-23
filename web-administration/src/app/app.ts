@@ -1,21 +1,24 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { Authentification } from './noyau/services/authentification';
+import { DialogueModal } from './noyau/composants/dialogue-modal/dialogue-modal';
+import { DialogueComponent } from './noyau/components/dialogue/dialogue';
 import { Messagerie } from './noyau/services/messagerie';
 import { ThemeService } from './noyau/services/theme';
 import { TraductionService } from './noyau/services/traduction';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, DialogueModal, DialogueComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
   badges = { rappel: 0, message: 0, critique: 0 };
+  menuActionsOuvert = false;
   constructor(
     readonly themeService: ThemeService,
     readonly traductionService: TraductionService,
@@ -53,12 +56,48 @@ export class App {
     this.themeService.appliquer(cible.checked);
   }
 
-  actionRapide(): void {
-    this.router.navigate(['/patients/nouveau']);
+  basculerMenuActions(): void {
+    this.menuActionsOuvert = !this.menuActionsOuvert;
+  }
+
+  actionRapide(action: string): void {
+    this.menuActionsOuvert = false;
+    
+    switch (action) {
+      case 'nouveau-patient':
+        this.router.navigate(['/patients/nouveau']);
+        break;
+      case 'nouveau-rdv':
+        this.router.navigate(['/rendez-vous/nouveau']);
+        break;
+      case 'statistiques':
+        this.router.navigate(['/statistiques']);
+        break;
+      case 'messagerie':
+        this.router.navigate(['/messagerie']);
+        break;
+      case 'carnets':
+        this.router.navigate(['/carnets']);
+        break;
+      default:
+        this.router.navigate(['/patients/nouveau']);
+    }
   }
 
   ouvrirWarms(): void {
-    this.router.navigate(['/statistiques']);
+    // Rediriger vers la page IA WARMS
+    this.router.navigate(['/ia-warms']).catch(() => {
+      this.router.navigate(['/innovations/ia-warms']);
+    });
+  }
+
+  // Fermer le menu lors d'un clic à l'extérieur
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.quick-actions-dropdown')) {
+      this.menuActionsOuvert = false;
+    }
   }
 }
 

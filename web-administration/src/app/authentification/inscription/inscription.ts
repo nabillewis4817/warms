@@ -16,6 +16,7 @@ export class Inscription {
   private readonly auth = inject(Authentification);
   private readonly router = inject(Router);
   message = '';
+  loading = false;
 
   form = this.fb.group({
     username: ['', Validators.required],
@@ -29,9 +30,17 @@ export class Inscription {
 
   soumettre(): void {
     if (this.form.invalid) return;
+    this.loading = true;
+    this.message = '';
     this.auth.register(this.form.getRawValue() as any).subscribe({
-      next: () => this.router.navigate(['/connexion']),
-      error: () => (this.message = "Impossible d'inscrire cet utilisateur."),
+      next: () => {
+        this.loading = false;
+        this.router.navigate(['/connexion']);
+      },
+      error: (err) => {
+        this.loading = false;
+        this.message = "Impossible d'inscrire cet utilisateur.";
+      },
     });
   }
 }

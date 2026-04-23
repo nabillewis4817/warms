@@ -1,0 +1,182 @@
+/* ========================================
+   STYLES POUR LE MODAL DE DIALOGUE
+   ======================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-dialogue {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* En-tête du dialogue */
+.dialogue-en-tete {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dialogue-icone {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.dialogue-titre {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Corps du dialogue */
+.dialogue-corps {
+  padding: 1.5rem;
+}
+
+.dialogue-message {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+/* Pied du dialogue */
+.dialogue-pied {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  justify-content: flex-end;
+}
+
+.btn-dialogue {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.btn-dialogue i {
+  font-size: 1rem;
+}
+
+.btn-confirmer {
+  background: #1e4db7;
+  color: white;
+}
+
+.btn-confirmer:hover {
+  background: #163a8a;
+  transform: translateY(-1px);
+}
+
+.btn-annuler {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.btn-annuler:hover {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+/* Types de dialogue */
+.dialogue-confirmation .dialogue-icone {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.dialogue-information .dialogue-icone {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.dialogue-erreur .dialogue-icone {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.dialogue-succes .dialogue-icone {
+  background: #d1fae5;
+  color: #059669;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .modal-dialogue {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .dialogue-en-tete {
+    padding: 1rem;
+  }
+  
+  .dialogue-corps {
+    padding: 1rem;
+  }
+  
+  .dialogue-pied {
+    padding: 1rem;
+    flex-direction: column;
+  }
+  
+  .btn-dialogue {
+    width: 100%;
+    justify-content: center;
+  }
+}

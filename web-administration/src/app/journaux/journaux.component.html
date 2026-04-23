@@ -1,0 +1,57 @@
+<div class="journaux">
+  <div class="header">
+    <h2>📋 Journaux d'activité</h2>
+    <p class="description">Historique complet de toutes les actions effectuées dans le système</p>
+  </div>
+
+  <div class="controls">
+    <form [formGroup]="form" class="search-form">
+      <div class="search-input">
+        <input 
+          type="text" 
+          placeholder="🔍 Rechercher dans les journaux..." 
+          formControlName="recherche"
+          (input)="filtrerJournaux()"
+        >
+      </div>
+      <button type="button" class="btn-refresh" (click)="rafraichir()">
+        🔄 Rafraîchir
+      </button>
+    </form>
+
+    <div class="actions">
+      <button type="button" class="btn-export" (click)="exporterJournaux()">
+        📥 Exporter
+      </button>
+    </div>
+  </div>
+
+  <div class="journaux-list" *ngIf="!chargement && journauxFiltres.length > 0">
+    <div class="journal-item" *ngFor="let journal of journauxFiltres" (click)="voirDetails(journal)">
+      <div class="journal-header">
+        <div class="journal-icon">
+          <span class="icone-{{journal.type}}">{{getIcone(journal.type)}}</span>
+        </div>
+        <div class="journal-info">
+          <div class="journal-date">{{journal.date}}</div>
+          <div class="journal-utilisateur">{{journal.utilisateur}}</div>
+        </div>
+      </div>
+      <div class="journal-content">
+        <div class="journal-action">{{journal.action}}</div>
+        <div class="journal-details">{{journal.details}}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="chargement">
+    <div class="spinner"></div>
+    <p>Chargement des journaux...</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!chargement && journauxFiltres.length === 0">
+    <div class="empty-icon">📋</div>
+    <h3>Aucun journal trouvé</h3>
+    <p>Aucune entrée de journal ne correspond à vos critères de recherche.</p>
+  </div>
+</div>

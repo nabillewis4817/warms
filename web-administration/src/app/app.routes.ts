@@ -7,13 +7,14 @@ import { ListePatients } from './patients/liste-patients/liste-patients';
 import { NouveauPatient } from './patients/nouveau-patient/nouveau-patient';
 import { ListeConversations } from './messagerie/liste-conversations/liste-conversations';
 import { FilMessages } from './messagerie/fil-messages/fil-messages';
-import { JournalGlobal } from './journaux/journal-global/journal-global';
+import { JournauxComponent } from './journaux/journaux.component';
 import { Inscription } from './authentification/inscription/inscription';
 import { MotDePasseOublie } from './authentification/mot-de-passe-oublie/mot-de-passe-oublie';
-import { GestionPersonnel } from './personnel/gestion-personnel/gestion-personnel';
+import { PersonnelComponent } from './personnel/personnel.component';
 import { Carnets } from './patients/carnets/carnets';
 import { ParametresCarnet } from './patients/parametres-carnet/parametres-carnet';
 import { Ocr } from './innovations/ocr/ocr';
+import { IaWarms } from './innovations/ia-warms/ia-warms';
 import { Avis } from './avis/avis';
 import { authentificationGuard } from './noyau/gardes/authentification-guard';
 import { roleGuard } from './noyau/gardes/role-guard';
@@ -27,18 +28,20 @@ export const routes: Routes = [
   {
     path: 'statistiques',
     component: VueGenerale,
-    canActivate: [authentificationGuard, roleGuard],
-    data: { roles: ['chirurgien_dentiste', 'secretaire'] },
+    canActivate: [authentificationGuard],
   },
   { path: 'patients', component: ListePatients, canActivate: [authentificationGuard] },
   { path: 'patients/nouveau', component: NouveauPatient, canActivate: [authentificationGuard] },
   { path: 'patients/:id/parametres-carnet', component: ParametresCarnet, canActivate: [authentificationGuard] },
   { path: 'carnets', component: Carnets, canActivate: [authentificationGuard] },
   { path: 'ocr', component: Ocr, canActivate: [authentificationGuard] },
+  { path: 'ia-warms', component: IaWarms, canActivate: [authentificationGuard] },
+  { path: 'innovations/ia-warms', component: IaWarms, canActivate: [authentificationGuard] },
   { path: 'avis', component: Avis, canActivate: [authentificationGuard, roleGuard], data: { roles: ['chirurgien_dentiste', 'secretaire'] } },
   { path: 'messagerie', component: ListeConversations, canActivate: [authentificationGuard] },
   { path: 'messagerie/conversation/:id', component: FilMessages, canActivate: [authentificationGuard] },
-  { path: 'journaux', component: JournalGlobal, canActivate: [authentificationGuard, roleGuard], data: { roles: ['chirurgien_dentiste', 'secretaire'] } },
-  { path: 'personnel', component: GestionPersonnel, canActivate: [authentificationGuard, roleGuard], data: { roles: ['chirurgien_dentiste', 'secretaire'] } },
+  { path: 'journaux', component: JournauxComponent, canActivate: [authentificationGuard, roleGuard], data: { roles: ['chirurgien_dentiste', 'secretaire'] } },
+  { path: 'avis', component: Avis, canActivate: [authentificationGuard, roleGuard], data: { roles: ['chirurgien_dentiste', 'secretaire'] } },
+  { path: 'personnel', component: PersonnelComponent, canActivate: [authentificationGuard, roleGuard], data: { roles: ['chirurgien_dentiste', 'secretaire'] } },
   { path: 'parametres/profil', component: ProfilUtilisateur, canActivate: [authentificationGuard] },
 ];

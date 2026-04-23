@@ -1,16 +1,55 @@
-<section>
-  <h2>Fil de messages</h2>
-  <div class="messages">
-    @for (message of messages; track message.id) {
-      <article>
-        <strong>{{ message.auteur_username || 'Utilisateur' }}</strong>
-        <p>{{ message.contenu }}</p>
+<section class="chat-container">
+  <header class="chat-header">
+    <h2>Conversation</h2>
+    <div class="chat-status">
+      <span *ngIf="chargement" class="status-indicator loading"><i class="bi bi-arrow-clockwise"></i> Chargement...</span>
+      <span *ngIf="!chargement" class="status-indicator online"><i class="bi bi-circle-fill"></i> En ligne</span>
+    </div>
+  </header>
+
+  <div class="messages-container">
+    <div *ngIf="messages.length === 0 && !chargement" class="empty-state">
+        <i class="bi bi-chat-dots"></i>
+        <p>Aucun message pour le moment</p>
+        <p>Soyez le premier à démarrer la conversation!</p>
+      </div>
+    
+    <ng-container *ngIf="messages.length > 0 || chargement">
+      <article *ngFor="let message of messages; trackBy: trackMessageId" class="message" [class.own]="message.auteur_username === 'current_user'">
+        <div class="message-avatar">
+          <div class="avatar-circle">
+            {{ (message.auteur_username || 'U').charAt(0).toUpperCase() }}
+          </div>
+        </div>
+        <div class="message-content">
+          <div class="message-header">
+            <strong class="author">{{ message.auteur_username || 'Utilisateur' }}</strong>
+            <span class="timestamp">{{ message.cree_le | date:'HH:mm' }}</span>
+          </div>
+          <p class="message-text">{{ message.contenu }}</p>
+        </div>
       </article>
-    }
+    </ng-container>
   </div>
 
-  <form [formGroup]="form" (ngSubmit)="envoyer()">
-    <input type="text" formControlName="contenu" placeholder="Écrire un message..." />
-    <button type="submit">Envoyer</button>
+  <form class="message-form" [formGroup]="form" (ngSubmit)="envoyer()">
+    <div class="input-group">
+      <input 
+        type="text" 
+        formControlName="contenu" 
+        placeholder="Écrire un message..." 
+        class="message-input"
+        [disabled]="chargement"
+        autocomplete="off"
+      />
+      <button 
+        type="submit" 
+        class="send-button"
+        [disabled]="form.invalid || chargement"
+        [style.cursor]="form.invalid || chargement ? 'not-allowed' : 'pointer'"
+      >
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </div>
   </form>
 </section>

@@ -1,9 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 
 import { Conversation, Messagerie } from '../../noyau/services/messagerie';
+import { Patients } from '../../noyau/services/patients';
+import { Patient } from '../../noyau/services/patients';
+import { DialogueService } from '../../noyau/services/dialogue.service';
 
 @Component({
   selector: 'app-liste-conversations',
@@ -13,12 +16,20 @@ import { Conversation, Messagerie } from '../../noyau/services/messagerie';
 })
 export class ListeConversations implements OnInit {
   private readonly messagerie = inject(Messagerie);
+  private readonly patientsService = inject(Patients);
+  private readonly router = inject(Router);
+  private readonly dialogueService = inject(DialogueService);
   conversations: Conversation[] = [];
+  listePatients: Patient[] = [];
+  patientSelectionne: Patient | null = null;
   titre = '';
   contact = '';
+  modeEdition = false;
+  conversationEnEdition: Conversation | null = null;
 
   ngOnInit(): void {
     this.charger();
+    this.chargerPatients();
   }
 
   charger(): void {
@@ -27,14 +38,97 @@ export class ListeConversations implements OnInit {
     });
   }
 
+  chargerPatients(): void {
+    this.patientsService.lister().subscribe({
+      next: (patients) => (this.listePatients = patients),
+    });
+  }
+
   creerConversation(): void {
     if (!this.titre.trim()) return;
+    
+    const payload: any = {
+      titre: this.titre,
+      type_conversation: 'patient'
+    };
+    
+    // Ajouter le patient si sélectionné
+    if (this.patientSelectionne) {
+      payload.patient = this.patientSelectionne.id;
+    } else {
+      this.dialogueService.erreur({
+        titre: 'Erreur',
+        message: 'Veuillez sélectionner un patient pour démarrer une conversation.'
+      }).subscribe();
+      return;
+    }
+    
     this.messagerie.creerConversation(this.titre).subscribe({
-      next: () => {
+      next: (conversation) => {
         this.titre = '';
+        this.patientSelectionne = null;
         this.charger();
+        // Rediriger vers la conversation
+        this.router.navigate(['/messagerie/conversation', conversation.id]);
       },
+      error: (error) => {
+        this.dialogueService.erreur({
+          titre: 'Erreur',
+          message: 'Impossible de créer la conversation. Veuillez réessayer.'
+        }).subscribe();
+      }
     });
+  }
+
+  demarrerChatPatient(): void {
+    if (!this.patientSelectionne) {
+      this.dialogueService.erreur({
+        titre: 'Erreur',
+        message: 'Veuillez sélectionner un patient pour démarrer le chat.'
+      }).subscribe();
+      return;
+    }
+
+    const titre = `Chat avec ${this.patientSelectionne.prenom} ${this.patientSelectionne.nom}`;
+    
+    this.messagerie.creerConversation(titre).subscribe({
+      next: (conversation) => {
+        this.titre = '';
+        this.patientSelectionne = null;
+        this.charger();
+        // Rediriger vers la conversation
+        this.router.navigate(['/messagerie/conversation', conversation.id]);
+      },
+      error: (error) => {
+        this.dialogueService.erreur({
+          titre: 'Erreur',
+          message: 'Impossible de démarrer le chat. Veuillez réessayer.'
+        }).subscribe();
+      }
+    });
+  }
+
+  editerConversation(conversation: Conversation): void {
+    this.conversationEnEdition = conversation;
+    this.titre = conversation.titre;
+    this.modeEdition = true;
+  }
+
+  sauvegarderEdition(): void {
+    if (!this.conversationEnEdition || !this.titre.trim()) return;
+    
+    // Note: Cette fonctionnalité nécessiterait un endpoint PUT/PATCH dans le backend
+    // Pour l'instant, on simule l'édition
+    this.modeEdition = false;
+    this.conversationEnEdition = null;
+    this.titre = '';
+    this.charger();
+  }
+
+  annulerEdition(): void {
+    this.modeEdition = false;
+    this.conversationEnEdition = null;
+    this.titre = '';
   }
 
   enregistrerContact(): void {

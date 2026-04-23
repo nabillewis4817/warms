@@ -22,6 +22,8 @@ export interface CreerPatientPayload {
   date_naissance?: string;
   sexe?: string;
   adresse?: string;
+  username_patient?: string;
+  password_patient?: string;
 }
 
 @Injectable({

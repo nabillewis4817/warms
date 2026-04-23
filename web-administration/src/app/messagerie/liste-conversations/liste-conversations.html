@@ -1,18 +1,68 @@
 <section>
   <h2>Conversations</h2>
+  
+  <!-- Formulaire de création/édition de conversation -->
   <div class="actions">
-    <input [(ngModel)]="titre" placeholder="Titre conversation" />
-    <button (click)="creerConversation()"><i class="bi bi-send-fill"></i> Envoyer un message</button>
+    @if (!modeEdition) {
+      <select [(ngModel)]="patientSelectionne" class="patient-select">
+        <option value="">Sélectionner un patient</option>
+        @for (patient of listePatients; track patient.id) {
+          <option [value]="patient">{{ patient.prenom }} {{ patient.nom }}</option>
+        }
+      </select>
+    }
+    
+    @if (!modeEdition) {
+      <button (click)="demarrerChatPatient()" [disabled]="!patientSelectionne" class="btn-chat">
+        <i class="bi bi-chat-dots-fill"></i> Démarrer le chat
+      </button>
+    }
+    
+    <input [(ngModel)]="titre" placeholder="Titre de la conversation (optionnel)" />
+    
+    @if (!modeEdition) {
+      <button (click)="creerConversation()" [disabled]="!patientSelectionne || !titre.trim()">
+        <i class="bi bi-send-fill"></i> Créer conversation
+      </button>
+    } @else {
+      <button (click)="sauvegarderEdition()" [disabled]="!titre.trim()">
+        <i class="bi bi-check-lg"></i> Sauvegarder
+      </button>
+      <button (click)="annulerEdition()" class="btn-annuler">
+        <i class="bi bi-x-lg"></i> Annuler
+      </button>
+    }
   </div>
+  
+  <!-- Enregistrement de contact -->
   <div class="actions">
     <input [(ngModel)]="contact" placeholder="Contact à enregistrer" />
-    <button (click)="enregistrerContact()"><i class="bi bi-person-plus-fill"></i> Enregistrer contact</button>
+    <button (click)="enregistrerContact()">
+      <i class="bi bi-person-plus-fill"></i> Enregistrer contact
+    </button>
   </div>
+  
+  <!-- Liste des conversations -->
   <div class="list">
     @for (conversation of conversations; track conversation.id) {
-      <a [routerLink]="['/messagerie/conversation', conversation.id]">
-        {{ conversation.titre || ('Conversation #' + conversation.id) }}
-      </a>
+      <div class="conversation-item">
+        <a [routerLink]="['/messagerie/conversation', conversation.id]" class="conversation-link">
+          {{ conversation.titre || ('Conversation #' + conversation.id) }}
+        </a>
+        <div class="conversation-actions">
+          <button (click)="editerConversation(conversation)" class="btn-edit">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </div>
+      </div>
+    }
+    
+    @if (conversations.length === 0) {
+      <div class="no-conversations">
+        <i class="bi bi-chat-dots"></i>
+        <p>Aucune conversation pour le moment</p>
+        <p>Créez votre première conversation en utilisant le formulaire ci-dessus</p>
+      </div>
     }
   </div>
 </section>

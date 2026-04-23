@@ -1,0 +1,168 @@
+/* ========================================
+   STYLES POUR LE COMPOSANT DOSSIER PATIENT
+   ======================================== */
+
+/* Section principale du dossier patient */
+.section-dossier-patient {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* En-tête avec icône et titre */
+.en-tete-dossier {
+  margin-bottom: 2rem;
+}
+
+.titre-avec-icone {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.icone-dossier {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.titre-dossier {
+  margin: 0;
+  font-size: 2rem;
+  color: #1a2e6b;
+  font-weight: 700;
+}
+
+/* Contenu principal du dossier */
+.contenu-dossier {
+  display: flex;
+  justify-content: center;
+}
+
+.carte-dossier {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 2px solid #f0f4ff;
+  overflow: hidden;
+  max-width: 800px;
+  width: 100%;
+}
+
+.en-tete-carte {
+  background: linear-gradient(135deg, #1e4db7, #163a8a);
+  color: white;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.icone-dossier-carte {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.en-tete-carte h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.contenu-carte {
+  padding: 2rem;
+}
+
+.contenu-carte p {
+  color: #64748b;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Grille d'actions du dossier */
+.actions-dossier {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.action-dossier {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  color: #1a2e6b;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.action-dossier:hover {
+  background: #1e4db7;
+  color: white;
+  border-color: #1e4db7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.2);
+}
+
+.action-dossier i {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Styles responsives pour mobile */
+@media (max-width: 768px) {
+  .section-dossier-patient {
+    padding: 1rem 0.5rem;
+  }
+  
+  .titre-avec-icone {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .icone-dossier {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .titre-dossier {
+    font-size: 1.5rem;
+  }
+  
+  .en-tete-carte {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+  
+  .icone-dossier-carte {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .contenu-carte {
+    padding: 1.5rem;
+  }
+  
+  .actions-dossier {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-dossier {
+    justify-content: center;
+  }
+}

@@ -1,6 +1,6 @@
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Count
 
@@ -33,6 +33,28 @@ class ConversationViewSet(viewsets.ModelViewSet):
             objet_id=conversation.id,
             message=f"Conversation créée: {conversation.titre or conversation.id}",
         )
+
+    @action(detail=True, methods=["post"])
+    def marquer_lus(self, request, pk=None):
+        """
+        Marquer tous les messages de la conversation comme lus pour l'utilisateur actuel
+        """
+        conversation = self.get_object()
+        
+        # Marquer tous les messages non lus comme lus
+        messages_non_lus = Message.objects.filter(
+            conversation=conversation
+        ).exclude(
+            lus_par=request.user
+        )
+        
+        for message in messages_non_lus:
+            message.lus_par.add(request.user)
+        
+        return Response({
+            "detail": f"{messages_non_lus.count()} message(s) marqué(s) comme lu(s)",
+            "messages_count": messages_non_lus.count()
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"])
     def ajouter_participant(self, request, pk=None):

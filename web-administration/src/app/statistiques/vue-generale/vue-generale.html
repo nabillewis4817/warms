@@ -1,4 +1,149 @@
-<section>
-  <h2>Statistiques</h2>
-  <p>Vue dédiée aux analyses détaillées du cabinet (en cours de branchement).</p>
+<section class="statistiques">
+  <div class="header">
+    <h2>Statistiques du cabinet</h2>
+    <div class="actions">
+      <button class="btn-refresh" (click)="rafraichir()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise" [class.spinning]="loading"></i>
+        Rafraîchir
+      </button>
+      <div class="last-update">
+        @if (!loading && stats) {
+          <small>Dernière mise à jour: {{ stats.derniere_mise_a_jour || 'Maintenant' }}</small>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Chargement des statistiques...</p>
+    </div>
+  } @else if (error) {
+    <div class="error">
+      <i class="bi bi-exclamation-triangle"></i>
+      <p>{{ error }}</p>
+      <button (click)="rafraichir()">Réessayer</button>
+    </div>
+  } @else if (stats) {
+    <!-- KPIs principaux -->
+    <div class="kpis-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="kpi-content">
+          <h3>{{ stats.patients_total || 0 }}</h3>
+          <p>Patients totaux</p>
+          <span class="tendance {{ getTendance(stats.patients_tendance || 0) }}">
+            {{ stats.patients_tendance > 0 ? '+' : '' }}{{ stats.patients_tendance || 0 }}%
+          </span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon">
+          <i class="bi bi-calendar-check-fill"></i>
+        </div>
+        <div class="kpi-content">
+          <h3>{{ stats.rendez_vous_30j || 0 }}</h3>
+          <p>Rendez-vous (30j)</p>
+          <span class="tendance {{ getTendance(stats.rendez_vous_tendance || 0) }}">
+            {{ stats.rendez_vous_tendance > 0 ? '+' : '' }}{{ stats.rendez_vous_tendance || 0 }}%
+          </span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon">
+          <i class="bi bi-file-medical-fill"></i>
+        </div>
+        <div class="kpi-content">
+          <h3>{{ stats.ordonnances_30j || 0 }}</h3>
+          <p>Ordonnances (30j)</p>
+          <span class="tendance {{ getTendance(stats.ordonnances_tendance || 0) }}">
+            {{ stats.ordonnances_tendance > 0 ? '+' : '' }}{{ stats.ordonnances_tendance || 0 }}%
+          </span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon">
+          <i class="bi bi-currency-dollar"></i>
+        </div>
+        <div class="kpi-content">
+          <h3>{{ stats.chiffre_affaires_mois || 0 }}€</h3>
+          <p>Chiffre d'affaires</p>
+          <span class="tendance {{ getTendance(stats.ca_tendance || 0) }}">
+            {{ stats.ca_tendance > 0 ? '+' : '' }}{{ stats.ca_tendance || 0 }}%
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="charts-grid">
+      <!-- Graphique des rendez-vous -->
+      <div class="chart-card">
+        <h3>Évolution des rendez-vous</h3>
+        <div class="chart-container">
+          <div class="bar-chart">
+            @for (mois of stats.rendez_vois_mois || []; track mois.mois) {
+              <div class="bar-item">
+                <div class="bar" [style.height.%]="getPourcentage(mois.nombre, stats.max_rendez_vois || 1)"></div>
+                <span class="label">{{ mois.mois }}</span>
+                <span class="value">{{ mois.nombre }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Répartition des patients -->
+      <div class="chart-card">
+        <h3>Répartition des patients</h3>
+        <div class="chart-container">
+          <div class="pie-chart">
+            <div class="pie-legend">
+              @for (categorie of stats.patient_categories || []; track categorie.nom) {
+                <div class="legend-item">
+                  <div class="legend-color" [style.background-color]="categorie.couleur"></div>
+                  <span>{{ categorie.nom }}: {{ categorie.nombre }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tableau détaillé -->
+    <div class="stats-table">
+      <h3>Statistiques détaillées</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Métrique</th>
+            <th>Valeur</th>
+            <th>Période</th>
+            <th>Tendance</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (metrique of stats.metriques_detaillees || []; track metrique.nom) {
+            <tr>
+              <td>{{ metrique.nom }}</td>
+              <td>{{ metrique.valeur }}</td>
+              <td>{{ metrique.periode }}</td>
+              <td>
+                <span class="tendance {{ getTendance(metrique.tendance || 0) }}">
+                  {{ metrique.tendance > 0 ? '+' : '' }}{{ metrique.tendance || 0 }}%
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </section>

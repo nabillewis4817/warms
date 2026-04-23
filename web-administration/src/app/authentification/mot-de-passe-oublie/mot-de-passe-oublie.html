@@ -2,13 +2,17 @@
   <h2>Mot de passe oublié</h2>
   <form [formGroup]="formEmail" (ngSubmit)="demanderToken()">
     <input placeholder="Email du compte" formControlName="email" />
-    <button type="submit">Générer un token</button>
+    <button type="submit" [disabled]="loading" [class.loading]="loading">
+      @if (loading) { Génération... } @else { Générer un token }
+    </button>
   </form>
 
   <form [formGroup]="formReset" (ngSubmit)="reset()">
     <input placeholder="Token de réinitialisation" formControlName="token" />
     <input placeholder="Nouveau mot de passe" type="password" formControlName="nouveau_mot_de_passe" />
-    <button type="submit">Réinitialiser</button>
+    <button type="submit" [disabled]="loading" [class.loading]="loading">
+      @if (loading) { Réinitialisation... } @else { Réinitialiser }
+    </button>
   </form>
 
   <a routerLink="/connexion">Retour connexion</a>

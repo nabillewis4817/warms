@@ -1,21 +1,150 @@
-<section>
-  <div class="head-title">
-    <h2>Onglet Carnets</h2>
-    <button class="refresh-btn" (click)="charger()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+<!-- ========================================
+     SECTION PRINCIPALE DES CARNETS PATIENTS
+     ======================================== -->
+<section class="section-carnets">
+  <!-- En-tête avec titre, recherche et boutons -->
+  <header class="en-tete-carnets">
+    <div class="titre-avec-icone-carnets">
+      <img src="assets/folder.png" alt="Carnets" class="icone-titre-carnets">
+      <h2 class="titre-carnets">Mes Carnets Patients</h2>
+    </div>
+    <div class="controles-carnets">
+      <!-- Barre de recherche -->
+      <div class="controle-recherche">
+        <div class="input-groupe">
+          <i class="bi bi-search"></i>
+          <input 
+            type="text" 
+            placeholder="Rechercher par nom, prénom, dossier, téléphone, email..."
+            [(ngModel)]="termeRecherche"
+            (input)="onRechercheChange()"
+            class="input-recherche"
+            [attr.aria-label]="termeRecherche ? 'Recherche: ' + termeRecherche : 'Rechercher un patient'">
+        </div>
+      </div>
+      
+      <!-- Boutons de tri -->
+      <div class="controles-tri">
+        <button 
+          class="bouton-tri"
+          (click)="changerCritereTri('nom')"
+          [class.actif]="critereTri === 'nom'"
+          [attr.aria-label]="critereTri === 'nom' ? 'Tri par nom ' + (ordreTri === 'asc' ? 'croissant' : 'décroissant') : 'Trier par nom'">
+          <i [class]="getIconeTri('nom')"></i>
+          <span>Nom</span>
+        </button>
+        <button 
+          class="bouton-tri"
+          (click)="changerCritereTri('prenom')"
+          [class.actif]="critereTri === 'prenom'"
+          [attr.aria-label]="critereTri === 'prenom' ? 'Tri par prénom ' + (ordreTri === 'asc' ? 'croissant' : 'décroissant') : 'Trier par prénom'">
+          <i [class]="getIconeTri('prenom')"></i>
+          <span>Prénom</span>
+        </button>
+        <button 
+          class="bouton-tri"
+          (click)="changerCritereTri('dossier')"
+          [class.actif]="critereTri === 'dossier'"
+          [attr.aria-label]="critereTri === 'dossier' ? 'Tri par dossier ' + (ordreTri === 'asc' ? 'croissant' : 'décroissant') : 'Trier par dossier'">
+          <i [class]="getIconeTri('dossier')"></i>
+          <span>Dossier</span>
+        </button>
+      </div>
+      
+      <!-- Bouton de rafraîchissement -->
+      <button 
+        class="bouton-rafraichir" 
+        (click)="chargerLesCarnets()" 
+        [disabled]="enChargement"
+        [attr.aria-label]="enChargement ? 'Chargement en cours' : 'Rafraîchir la liste'">
+        <i class="bi bi-arrow-clockwise"></i> 
+        <span>{{ enChargement ? 'Chargement...' : 'Actualiser' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Indicateur de chargement animé -->
+  <div *ngIf="enChargement" class="indicateur-chargement">
+    <i class="bi bi-arrow-clockwise"></i>
+    <p>Récupération de vos carnets patients...</p>
   </div>
 
-  <div class="folders">
-    @for (patient of patients; track patient.id) {
-      <article class="folder card">
-        <div class="folder-tab">{{ initiale(patient) }}</div>
-        <div class="folder-body">
-          <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
-          <p>{{ patient.numero_dossier }}</p>
-          @if (patient.qr_token) {
-            <img [src]="'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + patient.qr_token" alt="QR" />
-          }
+  <!-- Grille des carnets patients -->
+  <main class="grille-carnets">
+    <article 
+      *ngFor="let patient of patientsFiltres; trackBy: suivreParIdPatient" 
+      class="carte-carnet"
+      (click)="ouvrirDossierPatient(patient)"
+      [attr.aria-label]="'Carnet du patient ' + patient.prenom + ' ' + patient.nom + ', cliquer pour ouvrir'">
+      
+      <!-- Icône du dossier avec image et initiales -->
+      <div class="conteneur-icone-dossier">
+        <!-- Image du dossier (folder.png) -->
+        <img 
+          [src]="cheminImageDossierPourTemplate" 
+          [alt]="'Icône dossier pour ' + patient.prenom + ' ' + patient.nom"
+          class="image-dossier" 
+          (error)="gererErreurImage($event)"
+          loading="lazy" />
+        
+        <!-- Initiales du patient en badge -->
+        <div class="cercle-initiales" 
+             [attr.aria-label]="obtenirInitialePatient(patient) + ' initiales de ' + patient.prenom + ' ' + patient.nom">
+          {{ obtenirInitialePatient(patient) }}
         </div>
-      </article>
-    }
-  </div>
+      </div>
+      
+      <!-- Informations du patient -->
+      <div class="contenu-carnet">
+        <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
+        <p class="numero-dossier">
+          <strong>N° Dossier:</strong> {{ patient.numero_dossier || 'Non assigné' }}
+        </p>
+        
+        <!-- Informations de contact -->
+        <div class="informations-contact">
+          <p *ngIf="patient.telephone" class="info-contact">
+            <i class="bi bi-telephone"></i>
+            {{ patient.telephone }}
+          </p>
+          <p *ngIf="patient.email" class="info-contact">
+            <i class="bi bi-envelope"></i>
+            {{ patient.email }}
+          </p>
+        </div>
+        
+        <!-- Code QR du patient si disponible -->
+        <div *ngIf="patient.qr_token" class="conteneur-qr">
+          <img 
+            [src]="'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' + patient.qr_token" 
+            [alt]="'Code QR pour ' + patient.prenom + ' ' + patient.nom"
+            class="code-qr"
+            loading="lazy" />
+          <small class="legende-qr">Code QR d'accès</small>
+        </div>
+      </div>
+      
+      <!-- Indicateur de clic -->
+      <div class="indicateur-clic">
+        <i class="bi bi-box-arrow-up-right"></i>
+        <span>Ouvrir le dossier</span>
+      </div>
+    </article>
+    
+    <!-- Message si aucun carnet trouvé -->
+    <div *ngIf="!enChargement && patientsFiltres.length === 0" class="message-aucun-carnet">
+      <img src="assets/folder.png" alt="Aucun carnet" class="icone-aucun-carnet">
+      <h3 *ngIf="termeRecherche">Aucun résultat pour "{{ termeRecherche }}"</h3>
+      <h3 *ngIf="!termeRecherche">Aucun carnet trouvé</h3>
+      <p *ngIf="termeRecherche">Essayez avec d'autres termes de recherche.</p>
+      <p *ngIf="!termeRecherche">Commencez par créer des patients pour voir leurs carnets ici.</p>
+    </div>
+    
+    <!-- Message si la recherche ne retourne rien -->
+    <div *ngIf="!enChargement && patients.length > 0 && patientsFiltres.length === 0" class="message-aucun-carnet">
+      <i class="bi bi-search"></i>
+      <h3>Aucun résultat pour "{{ termeRecherche }}"</h3>
+      <p>Essayez avec d'autres termes de recherche ou vérifiez l'orthographe.</p>
+    </div>
+  </main>
 </section>

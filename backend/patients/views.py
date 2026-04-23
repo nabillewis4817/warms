@@ -1,6 +1,7 @@
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from journaux.utils import journaliser
@@ -21,8 +22,22 @@ from .serializers import (
 
 
 class PatientViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
+
+    def get_permissions(self):
+        """
+        Définir les permissions en fonction de l'action
+        """
+        if self.action == 'destroy':
+            self.permission_classes = [IsAuthenticated, EstPersonnelCabinet]
+        elif self.action in ['create', 'update', 'partial_update']:
+            self.permission_classes = [IsAuthenticated, EstPersonnelCabinet]
+        elif self.action == 'me':
+            # L'action 'me' est accessible par tout utilisateur authentifié (patients)
+            self.permission_classes = [IsAuthenticated]
+        return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -52,11 +67,12 @@ class PatientViewSet(viewsets.ModelViewSet):
 
         username = (request.data.get("username_patient") or "").strip()
         password = (request.data.get("password_patient") or "").strip()
-        if not username:
-            username = f"patient{patient.id:06d}"
-        if not password:
-            password = Utilisateur.objects.make_random_password(
-                length=8, allowed_chars="abcdefghjkmnpqrstuvwxyz23456789"
+        
+        # Rendre username et password obligatoires
+        if not username or not password:
+            return Response(
+                {"detail": "Le nom d'utilisateur et le mot de passe du patient sont obligatoires."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         if not Utilisateur.objects.filter(username=username).exists():
             compte_patient = Utilisateur.objects.create_user(
@@ -120,7 +136,7 @@ class PatientViewSet(viewsets.ModelViewSet):
                     niveau=NotificationInterne.Niveau.MESSAGE,
                 )
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], permission_classes=[EstPersonnelCabinet])
     def archiver(self, request, pk=None):
         patient = self.get_object()
         patient.actif = False
@@ -133,6 +149,45 @@ class PatientViewSet(viewsets.ModelViewSet):
             message=f"Archivage du patient {patient.prenom} {patient.nom}.",
         )
         return Response({"id": patient.id, "actif": patient.actif})
+
+    def destroy(self, request, pk=None):
+        """
+        Supprime définitivement un patient avec ses données associées.
+        """
+        print(f"Tentative de suppression patient {pk} par utilisateur {request.user}")
+        print(f"Utilisateur authentifié: {request.user.is_authenticated}")
+        print(f"Rôle utilisateur: {getattr(request.user, 'role', 'Non défini')}")
+        
+        try:
+            patient = self.get_object()
+            print(f"Patient trouvé: {patient.prenom} {patient.nom}")
+        except Exception as e:
+            print(f"Erreur lors de la récupération du patient: {e}")
+            return Response(
+                {"detail": f"Patient introuvable: {str(e)}"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Journaliser la suppression
+        journaliser(
+            acteur=request.user,
+            action="patient.deleted",
+            objet_type="Patient",
+            objet_id=patient.id,
+            message=f"Suppression définitive du patient {patient.prenom} {patient.nom}.",
+        )
+        
+        try:
+            # Supprimer le patient (cascade automatique grâce aux related_name)
+            patient.delete()
+            print(f"Patient {patient.id} supprimé avec succès")
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            print(f"Erreur lors de la suppression du patient: {e}")
+            return Response(
+                {"detail": f"Erreur lors de la suppression: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @action(detail=True, methods=["post"], permission_classes=[EstPersonnelCabinet])
     def affecter_infirmiere(self, request, pk=None):
@@ -163,10 +218,41 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="me")
     def me(self, request):
-        patient = Patient.objects.filter(user=request.user).first()
-        if not patient:
-            return Response({"detail": "Profil patient introuvable."}, status=404)
-        return Response(self.get_serializer(patient).data)
+        try:
+            # Vérifier l'authentification
+            if not request.user.is_authenticated:
+                return Response({"detail": "Utilisateur non authentifié."}, status=401)
+            
+            # Vérifier si l'utilisateur est un patient (vérification plus flexible)
+            user_role = getattr(request.user, 'role', None)
+            if user_role and user_role != 'PATIENT':
+                return Response({"detail": "L'utilisateur n'est pas un patient."}, status=403)
+            
+            # Rechercher le patient lié à cet utilisateur
+            patient = Patient.objects.filter(user=request.user).first()
+            if not patient:
+                return Response({
+                    "detail": "Profil patient introuvable.",
+                    "user_id": request.user.id,
+                    "username": request.user.username,
+                    "debug_role": user_role
+                }, status=404)
+            
+            # Retourner les données du patient
+            serializer = self.get_serializer(patient)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            return Response({
+                "detail": "Erreur lors de la récupération du profil patient.",
+                "error": str(e),
+                "debug_info": {
+                    "user_id": getattr(request.user, 'id', None),
+                    "username": getattr(request.user, 'username', None),
+                    "is_authenticated": getattr(request.user, 'is_authenticated', False),
+                    "role": getattr(request.user, 'role', None)
+                }
+            }, status=500)
 
 
 class AvisPatientViewSet(viewsets.ModelViewSet):
