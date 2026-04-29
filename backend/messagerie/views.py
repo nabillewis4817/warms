@@ -18,6 +18,7 @@ from .serializers import (
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.prefetch_related("participants").all()
     serializer_class = ConversationSerializer
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         conversation = serializer.save(cree_par=self.request.user)
@@ -39,22 +40,63 @@ class ConversationViewSet(viewsets.ModelViewSet):
         """
         Marquer tous les messages de la conversation comme lus pour l'utilisateur actuel
         """
-        conversation = self.get_object()
-        
-        # Marquer tous les messages non lus comme lus
-        messages_non_lus = Message.objects.filter(
-            conversation=conversation
-        ).exclude(
-            lus_par=request.user
-        )
-        
-        for message in messages_non_lus:
-            message.lus_par.add(request.user)
-        
-        return Response({
-            "detail": f"{messages_non_lus.count()} message(s) marqué(s) comme lu(s)",
-            "messages_count": messages_non_lus.count()
-        }, status=status.HTTP_200_OK)
+        try:
+            conversation = self.get_object()
+            
+            # Vérifier que la conversation existe
+            if not conversation:
+                return Response({
+                    "detail": "Conversation introuvable",
+                    "conversation_id": pk
+                }, status=404)
+            
+            # Marquer tous les messages non lus comme lus
+            # Note: Le modèle Message a un champ 'lu' booléen, pas une relation ManyToMany
+            
+            # Vérifier d'abord que le champ 'lu' existe dans le modèle
+            try:
+                messages_non_lus = Message.objects.filter(
+                    conversation=conversation,
+                    lu=False
+                )
+            except Exception as field_error:
+                # Si le champ 'lu' n'existe pas, retourner une erreur claire
+                return Response({
+                    "detail": "Erreur de configuration du modèle de message",
+                    "error": str(field_error),
+                    "conversation_id": pk,
+                    "debug_info": "Le champ 'lu' n'existe peut-être pas dans le modèle Message"
+                }, status=500)
+            
+            # Marquer les messages comme lus (un par un pour éviter les problèmes de bulk update)
+            messages_count = 0
+            for message in messages_non_lus:
+                try:
+                    message.lu = True
+                    message.save(update_fields=['lu'])
+                    messages_count += 1
+                except Exception as save_error:
+                    # Continuer même si un message ne peut pas être sauvegardé
+                    print(f"Erreur lors de la sauvegarde du message {message.id}: {save_error}")
+                    continue
+            
+            return Response({
+                "detail": f"{messages_count} message(s) marqué(s) comme lu(s)",
+                "messages_count": messages_count,
+                "conversation_id": pk
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            # Gérer toutes les autres erreurs
+            return Response({
+                "detail": "Erreur lors du marquage des messages comme lus",
+                "error": str(e),
+                "conversation_id": pk,
+                "debug_info": {
+                    "error_type": type(e).__name__,
+                    "user_authenticated": request.user.is_authenticated if hasattr(request, 'user') else False
+                }
+            }, status=500)
 
     @action(detail=True, methods=["post"])
     def ajouter_participant(self, request, pk=None):
@@ -75,9 +117,59 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def messages(self, request, pk=None):
-        conversation = self.get_object()
-        qs = Message.objects.filter(conversation=conversation).select_related("auteur")
-        return Response(MessageSerializer(qs, many=True).data)
+        try:
+            conversation = self.get_object()
+            
+            # Vérifier que l'utilisateur a le droit d'accéder à cette conversation
+            # Soit il est participant, soit c'est une conversation de patient où il est le patient
+            is_participant = ParticipantConversation.objects.filter(
+                conversation=conversation,
+                utilisateur=request.user
+            ).exists()
+            
+            is_patient_conversation = (conversation.type_conversation == 'patient' and 
+                                     hasattr(request.user, 'role') and 
+                                     request.user.role.lower() in ['patient'] and
+                                     conversation.patient and
+                                     Patient.objects.filter(user=request.user, id=conversation.patient.id).exists())
+            
+            # Autoriser aussi le personnel du cabinet (dentistes, assistants)
+            is_staff = (hasattr(request.user, 'role') and 
+                       request.user.role.lower() in ['dentiste', 'assistant', 'admin', 'personnel'])
+            
+            if not (is_participant or is_patient_conversation or is_staff or request.user.is_superuser):
+                return Response({
+                    "detail": "Vous n'êtes pas autorisé à accéder aux messages de cette conversation.",
+                    "conversation_id": pk,
+                    "user_id": request.user.id,
+                    "debug_info": {
+                        "is_participant": is_participant,
+                        "is_patient_conversation": is_patient_conversation,
+                        "is_staff": is_staff,
+                        "conversation_type": conversation.type_conversation
+                    }
+                }, status=403)
+            
+            # Récupérer les messages
+            qs = Message.objects.filter(conversation=conversation).select_related("auteur")
+            messages_data = MessageSerializer(qs, many=True).data
+            
+            # Marquer automatiquement les messages comme lus pour cet utilisateur
+            # (uniquement s'il est participant de la conversation)
+            if is_participant:
+                messages_non_lus = qs.filter(lu=False)
+                for message in messages_non_lus:
+                    message.lu = True
+                    message.save(update_fields=['lu'])
+            
+            return Response(messages_data)
+            
+        except Exception as e:
+            return Response({
+                "detail": "Erreur lors de la récupération des messages",
+                "error": str(e),
+                "conversation_id": pk
+            }, status=500)
 
     @action(detail=True, methods=["post"])
     def envoyer_message(self, request, pk=None):

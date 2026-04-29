@@ -7,6 +7,7 @@ from .views import (
     PageCarnetViewSet,
     PatientViewSet,
     PieceJointeDossierViewSet,
+    supprimer_patient_ameliore,
 )
 
 router = DefaultRouter()
@@ -17,5 +18,6 @@ router.register(r"pieces-jointes", PieceJointeDossierViewSet, basename="piece-jo
 router.register(r"avis", AvisPatientViewSet, basename="avis-patient")
 
 urlpatterns = [
+    path("patients/<int:pk>/supprimer-ameliore/", supprimer_patient_ameliore, name="supprimer-patient-ameliore"),
     path("", include(router.urls)),
 ]

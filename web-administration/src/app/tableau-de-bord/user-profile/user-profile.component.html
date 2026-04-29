@@ -1,0 +1,72 @@
+<div class="user-profile">
+  @if (!estConnecte()) {
+    <!-- Bouton de connexion -->
+    <button class="btn-connexion" (click)="naviguerVersConnexion()">
+      <i class="bi bi-person-circle"></i>
+      <span>Se connecter</span>
+    </button>
+  } @else {
+    <!-- Profil utilisateur connecté -->
+    <div class="profile-container" [class.menu-open]="menuOuvert()">
+      <button class="profile-button" (click)="basculerMenu()">
+        <div class="profile-avatar">
+          <img [src]="photoUrl()" [alt]="nomAffiche()" (error)="photoUrl.set('/assets/images/default-avatar.png')" />
+          <div class="status-indicator online"></div>
+        </div>
+        <div class="profile-info">
+          <div class="profile-name">{{ nomAffiche() }}</div>
+          <div class="profile-role">{{ roleAffiche() }}</div>
+          @if (specialiteAffiche()) {
+            <div class="profile-specialty">{{ specialiteAffiche() }}</div>
+          }
+        </div>
+        <i class="bi bi-chevron-down profile-arrow" [class.rotate]="menuOuvert()"></i>
+      </button>
+
+      <!-- Menu déroulant -->
+      @if (menuOuvert()) {
+        <div class="profile-dropdown" @click.stop>
+          <div class="dropdown-header">
+            <div class="header-avatar">
+              <img [src]="photoUrl()" [alt]="nomAffiche()" />
+            </div>
+            <div class="header-info">
+              <div class="header-name">{{ nomAffiche() }}</div>
+              <div class="header-email">{{ utilisateur()?.email }}</div>
+              <div class="header-role">{{ roleAffiche() }}</div>
+            </div>
+          </div>
+
+          <div class="dropdown-divider"></div>
+
+          <div class="dropdown-menu">
+            <button class="dropdown-item" (click)="naviguerVersProfil()">
+              <i class="bi bi-person"></i>
+              <span>Mon profil</span>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+
+            <button class="dropdown-item" (click)="naviguerVersParametres()">
+              <i class="bi bi-gear"></i>
+              <span>Paramètres</span>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+
+            <button class="dropdown-item" (click)="naviguerVersProfil()">
+              <i class="bi bi-camera"></i>
+              <span>Changer la photo</span>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+
+            <div class="dropdown-divider"></div>
+
+            <button class="dropdown-item logout" (click)="seDeconnecter()">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Se déconnecter</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

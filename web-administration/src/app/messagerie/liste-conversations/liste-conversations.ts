@@ -34,8 +34,37 @@ export class ListeConversations implements OnInit {
 
   charger(): void {
     this.messagerie.listerConversations().subscribe({
-      next: (items) => (this.conversations = items),
+      next: (items) => {
+        // Filtrer les conversations selon le rôle de l'utilisateur
+        this.conversations = this.filtrerConversationsParPatient(items);
+      },
     });
+  }
+
+  private filtrerConversationsParPatient(conversations: Conversation[]): Conversation[] {
+    // Si l'utilisateur est un patient, ne montrer que ses conversations
+    const utilisateur = this.obtenirUtilisateurConnecte();
+    
+    if (utilisateur?.role?.toLowerCase() === 'patient') {
+      // Filtrer pour ne montrer que les conversations de ce patient
+      return conversations.filter(conv => 
+        conv.type_conversation === 'patient' && 
+        conv.patient === utilisateur.id
+      );
+    }
+    
+    // Pour le personnel médical, montrer toutes les conversations de type patient
+    // mais avec indication du patient concerné
+    return conversations.filter(conv => 
+      conv.type_conversation === 'patient' || 
+      conv.participants?.includes(utilisateur?.id)
+    );
+  }
+
+  private obtenirUtilisateurConnecte(): any {
+    // Récupérer les informations de l'utilisateur connecté
+    const userData = localStorage.getItem('utilisateur');
+    return userData ? JSON.parse(userData) : null;
   }
 
   chargerPatients(): void {
@@ -136,6 +165,13 @@ export class ListeConversations implements OnInit {
     const deja = JSON.parse(localStorage.getItem('warms_contacts') || '[]') as string[];
     localStorage.setItem('warms_contacts', JSON.stringify([...deja, this.contact]));
     this.contact = '';
+  }
+
+  voirHistoriquePatient(conversation: Conversation): void {
+    if (!conversation.patient) return;
+    
+    // Rediriger vers la page du patient avec l'historique médical
+    this.router.navigate(['/patients', conversation.patient]);
   }
 }
 

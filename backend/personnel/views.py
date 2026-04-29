@@ -1,13 +1,19 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from journaux.utils import journaliser
 
 from .models import PasswordResetToken, Utilisateur
+
+# Import pour la gestion des patients dans l'authentification
+try:
+    from patients.models import Patient
+except ImportError:
+    Patient = None
 from .permissions import EstChirurgienDentiste, PeutGererComptes
 from .serializers import (
     ChangerMotDePasseSerializer,
@@ -26,6 +32,7 @@ def ping(_request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
     return Response(
@@ -115,6 +122,7 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
 
 
 @api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
 def me_preferences(request):
     user = request.user
     serializer = PreferencesUtilisateurSerializer(user, data=request.data, partial=True)
@@ -168,7 +176,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
             # Ajouter des informations supplémentaires pour le mobile
             if response.status_code == 200:
-                user = request.user
+                # Récupérer l'utilisateur manuellement depuis les identifiants
+                from django.contrib.auth import authenticate
+                username = request.data.get('username')
+                password = request.data.get('password')
+                
+                user = authenticate(username=username, password=password)
                 
                 # Vérifier que l'utilisateur est authentifié et a les attributs nécessaires
                 if not user or not hasattr(user, 'id'):
@@ -187,7 +200,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
                 # Si c'est un patient, ajouter les informations du patient
                 role = getattr(user, 'role', None)
-                if role == 'PATIENT':
+                if role == 'patient' and Patient is not None:
                     try:
                         patient = Patient.objects.get(user=user)
                         response.data.update({
@@ -196,11 +209,17 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                             'qr_token': getattr(patient, 'qr_token', None),
                         })
                     except Patient.DoesNotExist:
-                        # Le patient n'existe pas encore, mais l'utilisateur a le rôle PATIENT
+                        # Le patient n'existe pas encore, mais l'utilisateur a le rôle patient
                         response.data.update({
                             'patient_id': None,
                             'message': 'Compte patient créé mais profil incomplet. Contactez l\'administration.'
                         })
+                elif role == 'patient' and Patient is None:
+                    # Le modèle Patient n'est pas disponible
+                    response.data.update({
+                        'patient_id': None,
+                        'message': 'Module patient non disponible. Contactez l\'administration.'
+                    })
 
             return response
 

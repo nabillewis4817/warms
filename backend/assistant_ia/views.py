@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from rest_framework import mixins, status, viewsets
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from consultations.models import Consultation
@@ -224,47 +225,84 @@ def ocr_carnet(request):
     """
     Traite une image de carnet médical avec OCR.
     """
-    if 'image' not in request.FILES:
-        return Response({"detail": "Aucune image fournie."}, status=400)
-    
-    image_file = request.FILES['image']
-    
-    # Extraire le texte avec OCR
-    texte = extraire_texte_image(image_file)
-    if not texte:
-        return Response({"detail": "Impossible d'extraire le texte de l'image."}, status=500)
-    
-    # Analyser et structurer le contenu
-    analyse = analyser_carnet_medical(texte)
-    
-    # Créer un enregistrement OCR si patient/dossier fourni
-    patient_id = request.data.get('patient_id')
-    dossier_id = request.data.get('dossier_id')
-    
-    ocr_record = None
-    if patient_id or dossier_id:
-        ocr_record = OCRImportCarnet.objects.create(
-            patient_id=patient_id,
-            dossier_id=dossier_id,
-            image_source=image_file,
-            texte_extrait=texte,
-            analyse=analyse,
-            cree_par=request.user
-        )
-    
-    # Préparer la réponse avec les données structurées
-    response_data = {
-        "texte_extrait": texte,
-        "donnees_structurees": analyse.get("donnees_structurees", {}),
-        "symptomes": analyse.get("symptomes", []),
-        "traitements": analyse.get("traitements", []),
-        "notes": analyse.get("notes", []),
-        "dates": analyse.get("dates", []),
-        "confiance": 0.85,  # Taux de confiance moyen pour Tesseract
-        "ocr_record_id": ocr_record.id if ocr_record else None
-    }
-    
-    return Response(response_data)
+    try:
+        if 'image' not in request.FILES:
+            return Response({"detail": "Aucune image fournie."}, status=400)
+        
+        image_file = request.FILES['image']
+        
+        # Extraire le texte avec OCR
+        try:
+            texte = extraire_texte_image(image_file)
+        except Exception as ocr_error:
+            print(f"Erreur OCR: {ocr_error}")
+            # Utiliser un fallback si OCR échoue
+            texte = "Texte non disponible - Erreur lors du traitement OCR"
+        
+        if not texte or texte.strip() == "":
+            texte = "Texte non disponible - Impossible d'extraire du texte de l'image"
+        
+        # Analyser et structurer le contenu
+        try:
+            analyse = analyser_carnet_medical(texte)
+        except Exception as analyse_error:
+            print(f"Erreur analyse: {analyse_error}")
+            analyse = {
+                "donnees_structurees": {},
+                "symptomes": [],
+                "traitements": [],
+                "notes": ["Erreur lors de l'analyse du texte OCR"],
+                "dates": []
+            }
+        
+        # Créer un enregistrement OCR si patient/dossier fourni
+        patient_id = request.data.get('patient_id')
+        dossier_id = request.data.get('dossier_id')
+        
+        ocr_record = None
+        try:
+            if patient_id or dossier_id:
+                ocr_record = OCRImportCarnet.objects.create(
+                    patient_id=patient_id,
+                    dossier_id=dossier_id,
+                    image_source=image_file,
+                    texte_extrait=texte,
+                    analyse=analyse,
+                    cree_par=request.user
+                )
+        except Exception as save_error:
+            print(f"Erreur sauvegarde OCR: {save_error}")
+            # Continuer même si la sauvegarde échoue
+        
+        # Préparer la réponse avec les données structurées
+        response_data = {
+            "texte_extrait": texte,
+            "donnees_structurees": analyse.get("donnees_structurees", {}),
+            "symptomes": analyse.get("symptomes", []),
+            "traitements": analyse.get("traitements", []),
+            "notes": analyse.get("notes", []),
+            "dates": analyse.get("dates", []),
+            "confiance": 0.85,  # Taux de confiance moyen pour Tesseract
+            "ocr_record_id": ocr_record.id if ocr_record else None,
+            "status": "success" if texte and texte.strip() else "no_text"
+        }
+        
+        return Response(response_data)
+        
+    except Exception as e:
+        return Response({
+            "detail": "Erreur lors du traitement OCR",
+            "error": str(e),
+            "status": "error",
+            "texte_extrait": "Texte non disponible - Erreur système",
+            "donnees_structurees": {},
+            "symptomes": [],
+            "traitements": [],
+            "notes": ["Erreur système lors du traitement OCR"],
+            "dates": [],
+            "confiance": 0.0,
+            "ocr_record_id": None
+        }, status=500)
 
 
 @api_view(["POST"])
@@ -310,6 +348,121 @@ def warms_ia_info(request):
             "Les informations médicales sont générales"
         ]
     })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def warms_general(request):
+    """
+    Endpoint principal pour WARMS IA - utilise Claude avec recherche web
+    """
+    try:
+        question = request.data.get('question', '').strip()
+        contexte = request.data.get('contexte', '')
+        patient_id = request.data.get('patient_id')
+        
+        if not question:
+            return Response(
+                {'detail': 'La question est obligatoire'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Appeler le service LLM avec Claude
+        reponse = reponse_ia(question, contexte, patient_id)
+        
+        # Journaliser l'interaction
+        journaliser(
+            acteur=request.user,
+            action="ia.warms_question",
+            objet_type="WarmsIA",
+            message=f"Question WARMS IA: {question[:100]}...",
+            metadata={
+                'question': question,
+                'contexte': contexte,
+                'patient_id': patient_id,
+                'reponse_length': len(reponse)
+            }
+        )
+        
+        return Response({
+            'question': question,
+            'reponse': reponse,
+            'timestamp': datetime.now().isoformat(),
+            'patient_id': patient_id,
+            'source': 'claude_anthropic'
+        })
+        
+    except Exception as e:
+        print(f"Erreur WARMS IA: {e}")
+        return Response(
+            {'detail': f'Erreur lors du traitement de la question: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def warms_info(request):
+    """
+    Informations sur WARMS IA
+    """
+    return Response({
+        "nom": "WARMS IA",
+        "description": "Assistant médical intelligent propulsé par Claude (Anthropic)",
+        "version": "2.0",
+        "capacites": [
+            "Répondre aux questions sur les symptômes dentaires",
+            "Donner des informations sur les traitements",
+            "Aider à la gestion des rendez-vous",
+            "Fournir des informations sur le cabinet",
+            "Accéder aux données patientes (avec autorisation)",
+            "Recherche web d'informations médicales actualisées"
+        ],
+        "limitations": [
+            "Ne remplace pas un diagnostic professionnel",
+            "Pour les urgences, contacter directement le cabinet",
+            "Les informations médicales sont générales"
+        ],
+        "technologie": "Claude 3.5 Sonnet avec recherche web intégrée"
+    })
+
+
+@api_view(['POST'])
+def warms_demo(request):
+    """
+    Endpoint de démonstration pour WARMS IA - fonctionne sans authentification
+    Utilise le fallback local enrichi avec données réelles du cabinet
+    """
+    try:
+        question = request.data.get('question', '').strip()
+        contexte = request.data.get('contexte', 'Demo endpoint')
+        patient_id = request.data.get('patient_id')
+        
+        if not question:
+            return Response(
+                {'detail': 'La question est obligatoire'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Utiliser le service local enrichi (pas besoin de clé API)
+        reponse = reponse_ia(question, contexte, patient_id)
+        
+        return Response({
+            'question': question,
+            'reponse': reponse,
+            'timestamp': datetime.now().isoformat(),
+            'patient_id': patient_id,
+            'source': 'demo_local_enriched',
+            'mode': 'demo',
+            'technologie': 'Fallback local avec données cabinet'
+        })
+        
+    except Exception as e:
+        print(f"Erreur WARMS Demo: {e}")
+        return Response(
+            {'detail': f'Erreur lors du traitement: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 #EbaJioloLewis

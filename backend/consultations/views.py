@@ -1,13 +1,21 @@
 from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+from datetime import datetime, timedelta
 
-from .models import ActeRealise, Consultation, PhotoClinique, SchemaDentaire
+from .models import ActeRealise, Appel, Consultation, PhotoClinique, SchemaDentaire, TauxAbsenteisme
 from .serializers import (
     ActeRealiseSerializer,
+    AppelSerializer,
+    AppelCreateSerializer,
     ConsultationSerializer,
     PhotoCliniqueSerializer,
     SchemaDentaireSerializer,
+    TauxAbsenteismeSerializer,
+    TauxAbsenteismeCreateSerializer,
 )
 
 
@@ -49,6 +57,210 @@ class PhotoCliniqueViewSet(
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED)
+
+
+class AppelViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour la gestion des appels et absences
+    """
+    queryset = Appel.objects.select_related(
+        "patient", "praticien", "rendez_vous", "cree_par"
+    ).all()
+    serializer_class = AppelSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_serializer_class(self):
+        """Utiliser différents serializers selon l'action"""
+        if self.action in ['create', 'update', 'partial_update']:
+            return AppelCreateSerializer
+        return AppelSerializer
+    
+    def perform_create(self, serializer):
+        """Ajouter l'utilisateur qui crée l'appel"""
+        serializer.save(cree_par=self.request.user, cree_le=timezone.now())
+    
+    @action(detail=False, methods=['get'])
+    def aujourd_hui(self, request):
+        """Récupérer les appels du jour"""
+        aujourd_hui = timezone.now().date()
+        appels = self.queryset.filter(date_appel=aujourd_hui)
+        serializer = self.get_serializer(appels, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def par_date(self, request):
+        """Récupérer les appels pour une date spécifique"""
+        date_str = request.query_params.get('date')
+        if not date_str:
+            return Response(
+                {"error": "Le paramètre 'date' est requis (format: YYYY-MM-DD)"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response(
+                {"error": "Format de date invalide. Utilisez YYYY-MM-DD"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        appels = self.queryset.filter(date_appel=date)
+        serializer = self.get_serializer(appels, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def statistiques(self, request):
+        """Statistiques sur les appels pour la période actuelle"""
+        aujourd_hui = timezone.now().date()
+        debut_mois = aujourd_hui.replace(day=1)
+        
+        # Statistiques du mois
+        appels_mois = self.queryset.filter(date_appel__gte=debut_mois)
+        
+        stats = {
+            'total_appels': appels_mois.count(),
+            'presents': appels_mois.filter(statut='present').count(),
+            'absents': appels_mois.filter(statut__in=['absent_justifie', 'absent_non_justifie']).count(),
+            'absents_justifies': appels_mois.filter(statut='absent_justifie').count(),
+            'absents_non_justifies': appels_mois.filter(statut='absent_non_justifie').count(),
+            'en_retard': appels_mois.filter(statut='en_retard').count(),
+            'annules': appels_mois.filter(statut='annule').count(),
+            'en_attente': appels_mois.filter(statut='en_attente').count(),
+        }
+        
+        # Calculer les taux
+        total = stats['total_appels']
+        if total > 0:
+            stats.update({
+                'taux_presence': round((stats['presents'] / total) * 100, 2),
+                'taux_absenteisme': round((stats['absents'] / total) * 100, 2),
+                'taux_absenteisme_justifie': round((stats['absents_justifies'] / total) * 100, 2),
+                'taux_retard': round((stats['en_retard'] / total) * 100, 2),
+            })
+        else:
+            stats.update({
+                'taux_presence': 0.0,
+                'taux_absenteisme': 0.0,
+                'taux_absenteisme_justifie': 0.0,
+                'taux_retard': 0.0,
+            })
+        
+        return Response(stats)
+    
+    @action(detail=False, methods=['post'])
+    def appel_rapide(self, request):
+        """Faire un appel rapide pour un patient"""
+        patient_id = request.data.get('patient_id')
+        statut = request.data.get('statut', 'en_attente')
+        
+        if not patient_id:
+            return Response(
+                {"error": "L'ID du patient est requis"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Créer l'appel avec les informations minimales
+        appel_data = {
+            'patient_id': patient_id,
+            'date_appel': timezone.now().date(),
+            'statut': statut,
+        }
+        
+        serializer = AppelCreateSerializer(data=appel_data)
+        if serializer.is_valid():
+            appel = serializer.save(cree_par=request.user)
+            return Response(AppelSerializer(appel).data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TauxAbsenteismeViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour la gestion des taux d'absentéisme
+    """
+    queryset = TauxAbsenteisme.objects.select_related("praticien").all()
+    serializer_class = TauxAbsenteismeSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_serializer_class(self):
+        """Utiliser différents serializers selon l'action"""
+        if self.action in ['create', 'update', 'partial_update']:
+            return TauxAbsenteismeCreateSerializer
+        return TauxAbsenteismeSerializer
+    
+    @action(detail=False, methods=['post'])
+    def calculer(self, request):
+        """Calculer automatiquement les taux pour une période donnée"""
+        periode_debut = request.data.get('periode_debut')
+        periode_fin = request.data.get('periode_fin')
+        praticien_id = request.data.get('praticien_id')
+        type_periode = request.data.get('type_periode', 'mois')
+        
+        if not periode_debut or not periode_fin:
+            return Response(
+                {"error": "Les dates de début et fin sont requises"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            debut = datetime.strptime(periode_debut, '%Y-%m-%d').date()
+            fin = datetime.strptime(periode_fin, '%Y-%m-%d').date()
+        except ValueError:
+            return Response(
+                {"error": "Format de date invalide. Utilisez YYYY-MM-DD"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Créer ou mettre à jour les taux
+        taux_data = {
+            'periode_debut': debut,
+            'periode_fin': fin,
+            'type_periode': type_periode,
+        }
+        
+        if praticien_id:
+            taux_data['praticien_id'] = praticien_id
+        
+        serializer = TauxAbsenteismeCreateSerializer(data=taux_data)
+        if serializer.is_valid():
+            taux = serializer.save()
+            taux.calculer_taux()
+            return Response(TauxAbsenteismeSerializer(taux).data)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def actuels(self, request):
+        """Récupérer les taux les plus récents"""
+        type_periode = request.query_params.get('type_periode', 'mois')
+        praticien_id = request.query_params.get('praticien_id')
+        
+        queryset = self.queryset.filter(type_periode=type_periode)
+        if praticien_id:
+            queryset = queryset.filter(praticien_id=praticien_id)
+        
+        # Récupérer le plus récent pour chaque praticien/période
+        taux = queryset.order_by('-periode_debut').first()
+        if taux:
+            return Response(TauxAbsenteismeSerializer(taux).data)
+        
+        return Response({"message": "Aucun taux trouvé"}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=False, methods=['get'])
+    def historique(self, request):
+        """Récupérer l'historique des taux"""
+        type_periode = request.query_params.get('type_periode', 'mois')
+        praticien_id = request.query_params.get('praticien_id')
+        limit = int(request.query_params.get('limit', 12))
+        
+        queryset = self.queryset.filter(type_periode=type_periode)
+        if praticien_id:
+            queryset = queryset.filter(praticien_id=praticien_id)
+        
+        taux = queryset.order_by('-periode_debut')[:limit]
+        serializer = self.get_serializer(taux, many=True)
+        return Response(serializer.data)
 
 
 #EbaJioloLewis

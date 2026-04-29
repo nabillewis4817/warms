@@ -7,6 +7,10 @@ export interface Conversation {
   titre: string;
   type_conversation: string;
   patient: number | null;
+  participants: number[];
+  cree_par: number;
+  cree_le: string;
+  modifie_le: string;
 }
 
 export interface MessageConversation {

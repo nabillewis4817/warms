@@ -1,14 +1,16 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { Observable, filter } from 'rxjs';
 
 import { Authentification } from './noyau/services/authentification';
 import { DialogueModal } from './noyau/composants/dialogue-modal/dialogue-modal';
 import { DialogueComponent } from './noyau/components/dialogue/dialogue';
 import { Messagerie } from './noyau/services/messagerie';
+import { NotificationsService } from './noyau/services/notifications.service';
 import { ThemeService } from './noyau/services/theme';
 import { TraductionService } from './noyau/services/traduction';
+import { DateTimeService } from './noyau/services/datetime.service';
 
 @Component({
   selector: 'app-root',
@@ -17,15 +19,31 @@ import { TraductionService } from './noyau/services/traduction';
   styleUrl: './app.scss',
 })
 export class App {
-  badges = { rappel: 0, message: 0, critique: 0 };
+  badges = { rappel: 0, message: 0, critique: 0, total: 0 };
   menuActionsOuvert = false;
+  showNotificationPanel = false;
+  notificationsEnabled = true;
+  showLogoutModal = false;
+  
+  // Propriétés pour la date/heure
+  showExtendedDateTime = false;
+  formattedDateTime$?: Observable<string>;
+  formattedDateExtended$?: Observable<string>;
+  timeBasedGreeting = '';
+  
   constructor(
     readonly themeService: ThemeService,
     readonly traductionService: TraductionService,
     readonly authService: Authentification,
     private readonly messagerie: Messagerie,
-    private readonly router: Router
+    private readonly notificationsService: NotificationsService,
+    private readonly router: Router,
+    readonly dateTimeService: DateTimeService
   ) {
+    // Initialiser les propriétés DateTime après l'injection
+    this.formattedDateTime$ = this.dateTimeService.formattedDateTime$;
+    this.formattedDateExtended$ = this.dateTimeService.formattedDateExtended$;
+    this.timeBasedGreeting = this.dateTimeService.getTimeBasedGreeting();
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
@@ -38,7 +56,10 @@ export class App {
           });
         }
         if (this.authService.estConnecte()) {
-          this.messagerie.badges().subscribe({ next: (b) => (this.badges = b) });
+          this.messagerie.badges().subscribe({ 
+            next: (b) => (this.badges = { ...b, total: b.message + b.critique + b.rappel }) 
+          });
+          this.notificationsService.badges$.subscribe({ next: (b) => (this.badges = b) });
         }
       });
   }
@@ -51,9 +72,8 @@ export class App {
     this.traductionService.definirLangue(langue);
   }
 
-  basculerTheme(event: Event): void {
-    const cible = event.target as HTMLInputElement;
-    this.themeService.appliquer(cible.checked);
+  basculerTheme(event: any): void {
+    this.themeService.appliquer(event.target.checked);
   }
 
   basculerMenuActions(): void {
@@ -91,12 +111,47 @@ export class App {
     });
   }
 
+  toggleNotifications(): void {
+    this.showNotificationPanel = !this.showNotificationPanel;
+    this.notificationsEnabled = !this.notificationsEnabled;
+  }
+
+  clearAllNotifications(): void {
+    this.notificationsService.resetBadges();
+    this.showNotificationPanel = false;
+  }
+
+  testNotificationSound(): void {
+    this.notificationsService.testNotificationSound();
+  }
+
+  seDeconnecter(): void {
+    // Afficher la fenêtre de confirmation stylisée
+    this.showLogoutModal = true;
+  }
+
+  closeLogoutModal(): void {
+    this.showLogoutModal = false;
+  }
+
+  confirmLogout(): void {
+    // Effacer les données d'authentification
+    this.authService.deconnexion();
+    
+    // Fermer la fenêtre modale
+    this.showLogoutModal = false;
+    
+    // Rediriger vers la page de connexion
+    this.router.navigate(['/connexion']);
+  }
+
   // Fermer le menu lors d'un clic à l'extérieur
   @HostListener('document:click', ['$event'])
   onClickOutside(event: Event): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.quick-actions-dropdown')) {
+    if (!target.closest('.quick-actions-dropdown') && !target.closest('.notification-controls')) {
       this.menuActionsOuvert = false;
+      this.showNotificationPanel = false;
     }
   }
 }

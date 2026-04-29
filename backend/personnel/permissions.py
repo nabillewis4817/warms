@@ -12,6 +12,9 @@ class EstPersonnelCabinet(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
+        # Les superutilisateurs ont tous les droits
+        if user.is_superuser:
+            return True
         return getattr(user, "role", None) in {
             Utilisateur.Role.CHIRURGIEN_DENTISTE,
             Utilisateur.Role.SECRETAIRE,
@@ -28,6 +31,9 @@ class PeutGererComptes(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
+        # Les superutilisateurs ont tous les droits
+        if user.is_superuser:
+            return True
         return getattr(user, "role", None) in {
             Utilisateur.Role.CHIRURGIEN_DENTISTE,
             Utilisateur.Role.SECRETAIRE,
@@ -40,8 +46,33 @@ class EstChirurgienDentiste(BasePermission):
         return bool(
             user
             and user.is_authenticated
-            and getattr(user, "role", None) == Utilisateur.Role.CHIRURGIEN_DENTISTE
+            and (user.is_superuser or getattr(user, "role", None) == Utilisateur.Role.CHIRURGIEN_DENTISTE)
         )
+
+
+class EstPatient(BasePermission):
+    """
+    Autorise uniquement les patients (et superutilisateurs pour le debug).
+    """
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        # Les superutilisateurs ont tous les droits
+        if user.is_superuser:
+            return True
+        return getattr(user, "role", None) == Utilisateur.Role.PATIENT
+
+
+class EstUtilisateurAuthentifie(BasePermission):
+    """
+    Autorise tous les utilisateurs authentifiés (personnel et patients).
+    """
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)
 
 
 #EbaJioloLewis

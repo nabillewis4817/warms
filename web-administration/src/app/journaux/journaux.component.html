@@ -1,27 +1,28 @@
 <div class="journaux">
   <div class="header">
-    <h2>📋 Journaux d'activité</h2>
+    <h2><i class="bi bi-journal-text"></i> Journaux d'activité</h2>
     <p class="description">Historique complet de toutes les actions effectuées dans le système</p>
   </div>
 
   <div class="controls">
     <form [formGroup]="form" class="search-form">
       <div class="search-input">
+        <i class="bi bi-search"></i>
         <input 
           type="text" 
-          placeholder="🔍 Rechercher dans les journaux..." 
+          placeholder="Rechercher dans les journaux..." 
           formControlName="recherche"
           (input)="filtrerJournaux()"
         >
       </div>
       <button type="button" class="btn-refresh" (click)="rafraichir()">
-        🔄 Rafraîchir
+        <i class="bi bi-arrow-clockwise"></i> Rafraîchir
       </button>
     </form>
 
     <div class="actions">
       <button type="button" class="btn-export" (click)="exporterJournaux()">
-        📥 Exporter
+        <i class="bi bi-download"></i> Exporter
       </button>
     </div>
   </div>
@@ -50,7 +51,7 @@
   </div>
 
   <div class="empty-state" *ngIf="!chargement && journauxFiltres.length === 0">
-    <div class="empty-icon">📋</div>
+    <div class="empty-icon"><i class="bi bi-journal-text"></i></div>
     <h3>Aucun journal trouvé</h3>
     <p>Aucune entrée de journal ne correspond à vos critères de recherche.</p>
   </div>

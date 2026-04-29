@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from patients.models import Patient
 from .models import LignePrescription, Prescription
 from .serializers import (
     LignePrescriptionSerializer,
@@ -53,9 +54,9 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             if not request.user.is_authenticated:
                 return Response({"detail": "Utilisateur non authentifié."}, status=401)
             
-            # Vérifier si l'utilisateur est un patient (vérification plus flexible)
+            # Vérifier si l'utilisateur est un patient ou superutilisateur
             user_role = getattr(request.user, 'role', None)
-            if user_role and user_role != 'PATIENT':
+            if not request.user.is_superuser and (not user_role or user_role.lower() not in ['patient', 'PATIENT']):
                 return Response({"detail": "L'utilisateur n'est pas un patient."}, status=403)
             
             # Rechercher le patient lié à cet utilisateur

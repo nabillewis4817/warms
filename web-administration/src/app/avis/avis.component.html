@@ -1,34 +1,35 @@
 <div class="avis">
   <div class="header">
-    <h2>⭐ Avis des patients</h2>
+    <h2><i class="bi bi-star-fill"></i> Avis des patients</h2>
     <p class="description">Retour d'expérience et satisfaction des patients</p>
   </div>
 
   <div class="controls">
     <form [formGroup]="form" class="search-form">
       <div class="search-input">
+        <i class="bi bi-search"></i>
         <input 
           type="text" 
-          placeholder="🔍 Rechercher un avis..." 
+          placeholder="Rechercher un avis..." 
           formControlName="recherche"
           (input)="filtrerAvis()"
         >
       </div>
       <button type="button" class="btn-refresh" (click)="rafraichir()">
-        🔄 Rafraîchir
+        <i class="bi bi-arrow-clockwise"></i> Rafraîchir
       </button>
     </form>
 
     <div class="actions">
       <button type="button" class="btn-export" (click)="exporterAvis()">
-        📥 Exporter
+        <i class="bi bi-download"></i> Exporter
       </button>
     </div>
   </div>
 
   <div class="stats-container" *ngIf="!chargement && avis.length > 0">
     <div class="stat-card">
-      <h3>📊 Statistiques</h3>
+      <h3><i class="bi bi-graph-up"></i> Statistiques</h3>
       <div class="stat-item">
         <span class="stat-label">Note moyenne:</span>
         <span class="stat-value">{{statistiques.moyenne}}/5</span>
@@ -43,10 +44,10 @@
     </div>
 
     <div class="distribution">
-      <h4>📈 Distribution des notes</h4>
+      <h4><i class="bi bi-bar-chart"></i> Distribution des notes</h4>
       <div class="bar-chart">
         <div class="bar" *ngFor="let note of [5,4,3,2,1]">
-          <div class="bar-label">{{note}}⭐</div>
+          <div class="bar-label">{{note}} <i class="bi bi-star-fill"></i></div>
           <div class="bar-container">
             <div class="bar-fill" [style.width.%]="getStatistiquesNote(note).percentage"></div>
           </div>
@@ -77,7 +78,7 @@
   </div>
 
   <div class="empty-state" *ngIf="!chargement && avisFiltres.length === 0">
-    <div class="empty-icon">⭐</div>
+    <div class="empty-icon"><i class="bi bi-star"></i></div>
     <h3>Aucun avis trouvé</h3>
     <p>Aucun avis ne correspond à vos critères de recherche.</p>
   </div>

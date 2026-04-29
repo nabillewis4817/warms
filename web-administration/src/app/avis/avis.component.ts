@@ -143,7 +143,7 @@ export class AvisComponent implements OnInit {
   getEtoiles(note: number): string {
     let etoiles = '';
     for (let i = 1; i <= 5; i++) {
-      etoiles += i <= note ? '⭐' : '☆';
+      etoiles += i <= note ? '★' : '☆';
     }
     return etoiles;
   }

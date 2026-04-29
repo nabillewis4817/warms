@@ -40,7 +40,7 @@
   margin-top: 1rem;
 }
 
-.upload-btn, .photo-btn {
+.upload-btn, .photo-btn, .scan-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -74,7 +74,17 @@
   transform: translateY(-1px);
 }
 
-.upload-btn:disabled, .photo-btn:disabled {
+.scan-btn {
+  background: #8b5cf6;
+  color: white;
+}
+
+.scan-btn:hover:not(:disabled) {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.upload-btn:disabled, .photo-btn:disabled, .scan-btn:disabled {
   opacity: 0.6;
   cursor: wait;
   transform: none;

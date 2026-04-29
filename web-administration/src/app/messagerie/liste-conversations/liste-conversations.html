@@ -1,58 +1,67 @@
 <section>
-  <h2>Conversations</h2>
+  <div class="header">
+    <h2><i class="bi bi-chat-dots-fill"></i> Messagerie</h2>
+    <p class="description">Sélectionnez un patient pour démarrer une conversation</p>
+  </div>
   
-  <!-- Formulaire de création/édition de conversation -->
-  <div class="actions">
-    @if (!modeEdition) {
-      <select [(ngModel)]="patientSelectionne" class="patient-select">
-        <option value="">Sélectionner un patient</option>
+  <!-- Sélection du patient et démarrage du chat -->
+  <div class="chat-actions">
+    <div class="patient-selector">
+      <label for="patient-select" class="selector-label">
+        <i class="bi bi-person-fill"></i> Choisir un patient:
+      </label>
+      <select [(ngModel)]="patientSelectionne" id="patient-select" class="patient-select">
+        <option value="">Sélectionner un patient...</option>
         @for (patient of listePatients; track patient.id) {
           <option [value]="patient">{{ patient.prenom }} {{ patient.nom }}</option>
         }
       </select>
-    }
+    </div>
     
-    @if (!modeEdition) {
-      <button (click)="demarrerChatPatient()" [disabled]="!patientSelectionne" class="btn-chat">
-        <i class="bi bi-chat-dots-fill"></i> Démarrer le chat
-      </button>
-    }
-    
-    <input [(ngModel)]="titre" placeholder="Titre de la conversation (optionnel)" />
-    
-    @if (!modeEdition) {
-      <button (click)="creerConversation()" [disabled]="!patientSelectionne || !titre.trim()">
-        <i class="bi bi-send-fill"></i> Créer conversation
-      </button>
-    } @else {
-      <button (click)="sauvegarderEdition()" [disabled]="!titre.trim()">
-        <i class="bi bi-check-lg"></i> Sauvegarder
-      </button>
-      <button (click)="annulerEdition()" class="btn-annuler">
-        <i class="bi bi-x-lg"></i> Annuler
-      </button>
-    }
-  </div>
-  
-  <!-- Enregistrement de contact -->
-  <div class="actions">
-    <input [(ngModel)]="contact" placeholder="Contact à enregistrer" />
-    <button (click)="enregistrerContact()">
-      <i class="bi bi-person-plus-fill"></i> Enregistrer contact
+    <button (click)="demarrerChatPatient()" [disabled]="!patientSelectionne" class="btn-start-chat">
+      <i class="bi bi-chat-dots-fill"></i> Démarrer le chat
     </button>
   </div>
   
   <!-- Liste des conversations -->
   <div class="list">
     @for (conversation of conversations; track conversation.id) {
-      <div class="conversation-item">
-        <a [routerLink]="['/messagerie/conversation', conversation.id]" class="conversation-link">
-          {{ conversation.titre || ('Conversation #' + conversation.id) }}
-        </a>
+      <div class="conversation-item" [class.patient-conversation]="conversation.type_conversation === 'patient'">
+        <div class="conversation-header">
+          <a [routerLink]="['/messagerie/conversation', conversation.id]" class="conversation-link">
+            <div class="conversation-title">
+              {{ conversation.titre || ('Conversation #' + conversation.id) }}
+            </div>
+            <div class="conversation-meta">
+              @if (conversation.type_conversation === 'patient' && conversation.patient) {
+                <span class="patient-tag">
+                  <i class="bi bi-person-fill"></i>
+                  Patient: {{ conversation.patient }}
+                </span>
+              }
+              <span class="conversation-type">
+                @if (conversation.type_conversation === 'patient') {
+                  <i class="bi bi-chat-heart"></i> Patient
+                } @else {
+                  <i class="bi bi-chat-dots"></i> Interne
+                }
+              </span>
+              <span class="conversation-date">
+                <i class="bi bi-clock"></i>
+                {{ conversation.modifie_le | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+          </a>
+        </div>
         <div class="conversation-actions">
-          <button (click)="editerConversation(conversation)" class="btn-edit">
+          <button (click)="editerConversation(conversation)" class="btn-edit" title="Modifier">
             <i class="bi bi-pencil"></i>
           </button>
+          @if (conversation.type_conversation === 'patient') {
+            <button (click)="voirHistoriquePatient(conversation)" class="btn-history" title="Voir l'historique patient">
+              <i class="bi bi-clock-history"></i>
+            </button>
+          }
         </div>
       </div>
     }

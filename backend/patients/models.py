@@ -10,6 +10,17 @@ class Patient(models.Model):
         EN_COURS = "en_cours", "En cours"
         OPERE = "opere", "Opéré"
         TERMINE = "termine", "Terminé"
+    
+    class GroupeSanguin(models.TextChoices):
+        A_POS = "A+", "A+"
+        A_NEG = "A-", "A-"
+        B_POS = "B+", "B+"
+        B_NEG = "B-", "B-"
+        AB_POS = "AB+", "AB+"
+        AB_NEG = "AB-", "AB-"
+        O_POS = "O+", "O+"
+        O_NEG = "O-", "O-"
+        INCONNU = "inconnu", "Inconnu"
 
     """
     Profil patient (données biographiques + lien éventuel vers un compte).
@@ -40,6 +51,17 @@ class Patient(models.Model):
     statut_parcours = models.CharField(
         max_length=16, choices=StatutParcours.choices, default=StatutParcours.NOUVEAU
     )
+    
+    # Nouveaux champs
+    groupe_sanguin = models.CharField(
+        max_length=8, 
+        choices=GroupeSanguin.choices, 
+        default=GroupeSanguin.INCONNU,
+        help_text="Groupe sanguin du patient"
+    )
+    derniere_consultation_date = models.DateField(null=True, blank=True, help_text="Date de la dernière consultation")
+    derniere_consultation_lieu = models.CharField(max_length=255, blank=True, help_text="Lieu de la dernière consultation")
+    derniere_consultation_details = models.TextField(blank=True, help_text="Détails de la dernière consultation")
 
     infirmiere_referente = models.ForeignKey(
         settings.AUTH_USER_MODEL,

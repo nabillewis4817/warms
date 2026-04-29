@@ -53,8 +53,12 @@ INSTALLED_APPS = [
     "messagerie",
     "qr_codes",
     "journaux",
+    "avis",
     "statistiques",
     "assistant_ia",
+    "ocr",
+    "ia_avancee",
+    "ia_shared",
 ]
 
 MIDDLEWARE = [

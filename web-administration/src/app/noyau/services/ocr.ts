@@ -29,7 +29,7 @@ export class OcrService {
     const formData = new FormData();
     formData.append('image', image);
 
-    return this.http.post<OCRResult>(`${this.baseUrl}/assistant_ia/ocr-carnet/`, formData);
+    return this.http.post<OCRResult>(`${this.baseUrl}/ia/ocr-carnet/`, formData);
   }
 
   // Méthode de secours si le backend n'est pas disponible

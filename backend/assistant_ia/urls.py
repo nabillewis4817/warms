@@ -12,6 +12,9 @@ from .views import (
     sync_offline,
     warms_ia_general,
     warms_ia_info,
+    warms_general,
+    warms_info,
+    warms_demo,
 )
 
 router = DefaultRouter()
@@ -24,6 +27,9 @@ urlpatterns = [
     path("ia/ocr-carnet/", ocr_carnet, name="ia-ocr-carnet"),
     path("ia/warms-general/", warms_ia_general, name="ia-warms-general"),
     path("ia/warms-info/", warms_ia_info, name="ia-warms-info"),
+    path("warms-general/", warms_general, name="warms-general"),
+    path("warms-info/", warms_info, name="warms-info"),
+    path("warms-demo/", warms_demo, name="warms-demo"),
     path("recherche/globale/", recherche, name="recherche-globale"),
     path("recherche/suggestions/", suggestions_recherche, name="recherche-suggestions"),
     path("offline/sync/", sync_offline, name="offline-sync"),

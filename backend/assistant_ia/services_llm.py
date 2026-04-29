@@ -130,7 +130,8 @@ def rechercher_information_medicale_web(question: str) -> str:
     for terme, info in info_medicales.items():
         if terme in question_lower:
             resultat = f"INFORMATIONS MÉDICALES - {terme.upper()}:\n"
-            resultat += f"Causes possibles: {', '.join(info['causes'])}\n"
+            if 'causes' in info:
+                resultat += f"Causes possibles: {', '.join(info['causes'])}\n"
             if 'conseils' in info:
                 resultat += f"Conseils immédiats: {info['conseils']}\n"
             if 'traitement' in info:
@@ -141,6 +142,14 @@ def rechercher_information_medicale_web(question: str) -> str:
                 resultat += f"Complications: {info['complications']}\n"
             if 'urgence' in info:
                 resultat += f"URGENCE: {info['urgence']}\n"
+            if 'symptomes' in info:
+                resultat += f"Symptômes: {', '.join(info['symptomes'])}\n"
+            if 'indications' in info:
+                resultat += f"Indications: {', '.join(info['indications'])}\n"
+            if 'soins' in info:
+                resultat += f"Soins post-opératoires: {info['soins']}\n"
+            if 'cicatrisation' in info:
+                resultat += f"Cicatrisation: {info['cicatrisation']}\n"
             return resultat
     
     return "Aucune information médicale spécifique trouvée. Consultez un professionnel pour des conseils personnalisés."

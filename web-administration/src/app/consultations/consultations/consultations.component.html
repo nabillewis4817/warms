@@ -1,0 +1,539 @@
+<div class="consultations-container">
+  <!-- Header avec actions -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-title">
+        <h1>
+          <i class="bi bi-stethoscope"></i>
+          Consultations
+        </h1>
+        <p class="header-subtitle">Gestion des consultations médicales</p>
+      </div>
+      
+      <div class="header-actions">
+        <div class="search-container">
+          <div class="search-input">
+            <i class="bi bi-search"></i>
+            <input 
+              type="text" 
+              placeholder="Rechercher une consultation..."
+              (input)="termeRecherche$.next($any($event.target).value)"
+            />
+          </div>
+        </div>
+        
+        <div class="action-buttons">
+          <button class="btn btn-secondary" (click)="chargerConsultationsSurDemande()" title="Rafraîchir">
+            <i class="bi bi-arrow-clockwise"></i>
+            Rafraîchir
+          </button>
+          <button class="btn btn-primary" (click)="creerConsultation()">
+            <i class="bi bi-plus-lg"></i>
+            Nouvelle consultation
+          </button>
+          
+          <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle">
+              <i class="bi bi-download"></i>
+              Exporter
+            </button>
+            <div class="dropdown-menu">
+              <button (click)="exporterConsultations('csv')">
+                <i class="bi bi-file-earmark-excel"></i> CSV
+              </button>
+              <button (click)="exporterConsultations('excel')">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+              </button>
+              <button (click)="exporterConsultations('pdf')">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <label>Patient:</label>
+        <select [(ngModel)]="filtrePatient" (change)="chargerConsultations()">
+          <option value="">Tous les patients</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>Praticien:</label>
+        <select [(ngModel)]="filtrePraticien" (change)="chargerConsultations()">
+          <option value="">Tous les praticiens</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>Date début:</label>
+        <input 
+          type="date" 
+          [(ngModel)]="filtreDateDebut" 
+          (change)="chargerConsultations()"
+        />
+      </div>
+      
+      <div class="filter-group">
+        <label>Date fin:</label>
+        <input 
+          type="date" 
+          [(ngModel)]="filtreDateFin" 
+          (change)="chargerConsultations()"
+        />
+      </div>
+    </div>
+  </header>
+
+  <!-- Bouton pour charger les consultations -->
+  @if (!chargement && consultations.length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="bi bi-clipboard-plus"></i>
+      </div>
+      <h2>Aucune consultation chargée</h2>
+      <p>Cliquez sur le bouton ci-dessous pour charger les consultations</p>
+      <button class="btn btn-primary" (click)="chargerConsultationsSurDemande()">
+        <i class="bi bi-download"></i>
+        Charger les consultations
+      </button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (chargement) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <i class="bi bi-arrow-clockwise"></i>
+        <p>Chargement des consultations...</p>
+      </div>
+    </div>
+  }
+
+  <!-- Liste des consultations -->
+  @else if (consultations.length > 0) {
+    <div class="consultations-grid" #cardContainer>
+      @for (consultation of consultations; track consultation.id) {
+        <article class="consultation-card">
+          <div class="card-header">
+            <div class="patient-info">
+              <div class="patient-avatar">
+                <i class="bi bi-person-circle"></i>
+              </div>
+              <div class="patient-details">
+                <h3>{{ consultation.patient_prenom }} {{ consultation.patient_nom }}</h3>
+                <p class="consultation-date">
+                  <i class="bi bi-calendar"></i>
+                  {{ formatDate(consultation.date) }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="card-actions">
+              <button 
+                class="btn-icon btn-view" 
+                (click)="voirDetailsConsultation(consultation)"
+                title="Voir détails"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+              <button 
+                class="btn-icon btn-edit" 
+                (click)="modifierConsultation(consultation)"
+                title="Modifier"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button 
+                class="btn-icon btn-delete" 
+                (click)="confirmerSuppressionConsultation(consultation)"
+                title="Supprimer"
+                [disabled]="suppressionEnCours"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="card-body">
+            <div class="consultation-motif">
+              <span class="label">Motif:</span>
+              <span class="value">{{ consultation.motif }}</span>
+            </div>
+            
+            <div class="consultation-diagnostic">
+              <span class="label">Diagnostic:</span>
+              <span class="value">{{ consultation.diagnostic }}</span>
+            </div>
+            
+            @if (consultation.observations) {
+              <div class="consultation-observations">
+                <span class="label">Observations:</span>
+                <span class="value">{{ consultation.observations }}</span>
+              </div>
+            }
+            
+            <div class="card-footer">
+              <div class="stats">
+                <div class="stat-item">
+                  <i class="bi bi-clipboard-check"></i>
+                  <span>{{ consultation.actes.length || 0 }} actes</span>
+                </div>
+                <div class="stat-item">
+                  <i class="bi bi-camera"></i>
+                  <span>{{ consultation.photos.length || 0 }} photos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+    
+    <!-- Pagination -->
+    <div class="pagination">
+      <button 
+        class="pagination-btn" 
+        (click)="changerPage(pageActuelle - 1)"
+        [disabled]="pageActuelle === 1"
+      >
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      
+      <span class="pagination-info">
+        Page {{ pageActuelle }} - {{ Math.ceil(totalElements / taillePage) }}
+      </span>
+      
+      <button 
+        class="pagination-btn" 
+        (click)="changerPage(pageActuelle + 1)"
+        [disabled]="pageActuelle >= Math.ceil(totalElements / taillePage)"
+      >
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  }
+
+  <!-- État vide -->
+  @else {
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="bi bi-clipboard-x"></i>
+      </div>
+      <h2>Aucune consultation trouvée</h2>
+      <p>Commencez par créer votre première consultation</p>
+      <button class="btn btn-primary" (click)="creerConsultation()">
+        <i class="bi bi-plus-lg"></i>
+        Créer une consultation
+      </button>
+    </div>
+  }
+</div>
+
+<!-- Modal Formulaire -->
+@if (afficherFormulaire) {
+  <div class="modal-overlay" (click)="fermerFormulaire()">
+    <div class="modal-content" #modalContent (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <i class="bi bi-stethoscope"></i>
+          {{ modeEdition ? 'Modifier' : 'Créer' }} une consultation
+        </h2>
+        <button class="btn-close" (click)="fermerFormulaire()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form [formGroup]="formulaireConsultation" class="consultation-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="patient">Patient *</label>
+              <select id="patient" formControlName="patient" class="form-control">
+                <option value="">Sélectionner un patient</option>
+              </select>
+              @if (f['patient']?.invalid && f['patient']?.touched) {
+                <small class="error-text">Le patient est requis</small>
+              }
+            </div>
+            
+            <div class="form-group">
+              <label for="dossier">Dossier *</label>
+              <select id="dossier" formControlName="dossier" class="form-control">
+                <option value="">Sélectionner un dossier</option>
+              </select>
+              @if (f['dossier']?.invalid && f['dossier']?.touched) {
+                <small class="error-text">Le dossier est requis</small>
+              }
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="rendez_vous">Rendez-vous</label>
+              <select id="rendez_vous" formControlName="rendez_vous" class="form-control">
+                <option value="">Aucun rendez-vous associé</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="praticien">Praticien</label>
+              <select id="praticien" formControlName="praticien" class="form-control">
+                <option value="">Sélectionner un praticien</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="date">Date et heure *</label>
+            <input 
+              id="date" 
+              type="datetime-local" 
+              formControlName="date" 
+              class="form-control"
+            />
+            @if (f['date']?.invalid && f['date']?.touched) {
+              <small class="error-text">La date est requise</small>
+            }
+          </div>
+          
+          <div class="form-group">
+            <label for="motif">Motif *</label>
+            <input 
+              id="motif" 
+              type="text" 
+              formControlName="motif" 
+              class="form-control"
+              placeholder="Motif de la consultation"
+            />
+            @if (f['motif']?.invalid && f['motif']?.touched) {
+              <small class="error-text">Le motif est requis</small>
+            }
+          </div>
+          
+          <div class="form-group">
+            <label for="diagnostic">Diagnostic *</label>
+            <textarea 
+              id="diagnostic" 
+              formControlName="diagnostic" 
+              class="form-control"
+              rows="3"
+              placeholder="Diagnostic de la consultation"
+            ></textarea>
+            @if (f['diagnostic']?.invalid && f['diagnostic']?.touched) {
+              <small class="error-text">Le diagnostic est requis</small>
+            }
+          </div>
+          
+          <div class="form-group">
+            <label for="observations">Observations</label>
+            <textarea 
+              id="observations" 
+              formControlName="observations" 
+              class="form-control"
+              rows="3"
+              placeholder="Observations cliniques"
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea 
+              id="notes" 
+              formControlName="notes" 
+              class="form-control"
+              rows="2"
+              placeholder="Notes supplémentaires"
+            ></textarea>
+          </div>
+        </form>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="fermerFormulaire()">
+          Annuler
+        </button>
+        <button 
+          class="btn btn-primary" 
+          (click)="enregistrerConsultation()"
+          [disabled]="formulaireConsultation.invalid"
+        >
+          <i class="bi bi-check-lg"></i>
+          {{ modeEdition ? 'Modifier' : 'Créer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal Détails -->
+@if (afficherDetails && consultationSelectionnee) {
+  <div class="modal-overlay" (click)="fermerDetails()">
+    <div class="modal-content modal-large" #modalContent (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <i class="bi bi-stethoscope"></i>
+          Détails de la consultation
+        </h2>
+        <button class="btn-close" (click)="fermerDetails()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="consultation-details">
+          <div class="detail-header">
+            <div class="patient-info">
+              <div class="patient-avatar">
+                <i class="bi bi-person-circle"></i>
+              </div>
+              <div class="patient-details">
+                <h3>{{ consultationSelectionnee.patient_prenom }} {{ consultationSelectionnee.patient_nom }}</h3>
+                <p class="consultation-date">
+                  <i class="bi bi-calendar"></i>
+                  {{ formatDate(consultationSelectionnee.date) }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="detail-actions">
+              <button class="btn btn-primary" (click)="modifierConsultation(consultationSelectionnee)">
+                <i class="bi bi-pencil"></i>
+                Modifier
+              </button>
+              <button 
+                class="btn btn-danger" 
+                (click)="confirmerSuppressionConsultation(consultationSelectionnee)"
+                [disabled]="suppressionEnCours"
+              >
+                <i class="bi bi-trash"></i>
+                Supprimer
+              </button>
+            </div>
+          </div>
+          
+          <div class="detail-content">
+            <div class="detail-section">
+              <h4>Informations générales</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="label">Motif:</span>
+                  <span class="value">{{ consultationSelectionnee.motif }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Diagnostic:</span>
+                  <span class="value">{{ consultationSelectionnee.diagnostic }}</span>
+                </div>
+                <div class="detail-item full-width">
+                  <span class="label">Observations:</span>
+                  <span class="value">{{ consultationSelectionnee.observations || 'Aucune observation' }}</span>
+                </div>
+                <div class="detail-item full-width">
+                  <span class="label">Notes:</span>
+                  <span class="value">{{ consultationSelectionnee.notes || 'Aucune note' }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="detail-section">
+              <div class="section-header">
+                <h4>Actes réalisés</h4>
+                <button class="btn btn-sm btn-primary" (click)="formulaireActe.reset()">
+                  <i class="bi bi-plus"></i>
+                  Ajouter un acte
+                </button>
+              </div>
+              
+              <div class="actes-form" *ngIf="formulaireActe.dirty">
+                <form [formGroup]="formulaireActe" class="acte-form-inline">
+                  <input 
+                    type="text" 
+                    formControlName="libelle" 
+                    placeholder="Libellé de l'acte"
+                    class="form-control"
+                  />
+                  <input 
+                    type="text" 
+                    formControlName="description" 
+                    placeholder="Description"
+                    class="form-control"
+                  />
+                  <input 
+                    type="text" 
+                    formControlName="dent" 
+                    placeholder="Dent"
+                    class="form-control"
+                  />
+                  <button 
+                    type="button" 
+                    class="btn btn-primary btn-sm"
+                    (click)="ajouterActe()"
+                    [disabled]="formulaireActe.invalid"
+                  >
+                    <i class="bi bi-check"></i>
+                    Ajouter
+                  </button>
+                </form>
+              </div>
+              
+              <div class="actes-list">
+                @for (acte of actesConsultation; track acte.id) {
+                  <div class="acte-item">
+                    <div class="acte-info">
+                      <h5>{{ acte.libelle }}</h5>
+                      <p>{{ acte.description }}</p>
+                      @if (acte.dent) {
+                        <span class="dent-indicator">Dent: {{ acte.dent }}</span>
+                      }
+                    </div>
+                    <button 
+                      class="btn btn-sm btn-danger"
+                      (click)="supprimerActe(acte)"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                }
+                
+                @if (actesConsultation.length === 0) {
+                  <p class="empty-text">Aucun acte réalisé pour cette consultation</p>
+                }
+              </div>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Photos cliniques</h4>
+              <div class="photos-grid">
+                @for (photo of photosConsultation; track photo.id) {
+                  <div class="photo-item">
+                    <div class="photo-preview">
+                      <i class="bi bi-image"></i>
+                    </div>
+                    <div class="photo-info">
+                      <span class="photo-type">{{ photo.type_photo }}</span>
+                      <span class="photo-comment">{{ photo.commentaire || 'Aucun commentaire' }}</span>
+                    </div>
+                  </div>
+                }
+                
+                @if (photosConsultation.length === 0) {
+                  <p class="empty-text">Aucune photo pour cette consultation</p>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="fermerDetails()">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+}

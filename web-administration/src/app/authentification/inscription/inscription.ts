@@ -29,17 +29,41 @@ export class Inscription {
   });
 
   soumettre(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      // Marquer tous les champs comme touchés pour afficher les erreurs
+      Object.values(this.form.controls).forEach(control => {
+        control.markAsTouched();
+      });
+      return;
+    }
+    
     this.loading = true;
     this.message = '';
+    
     this.auth.register(this.form.getRawValue() as any).subscribe({
-      next: () => {
+      next: (response) => {
         this.loading = false;
-        this.router.navigate(['/connexion']);
+        this.message = `Inscription réussie ! Bienvenue ${response.username}. Redirection vers la connexion...`;
+        
+        // Rediriger après 2 secondes pour permettre à l'utilisateur de voir le message
+        setTimeout(() => {
+          this.router.navigate(['/connexion']);
+        }, 2000);
       },
       error: (err) => {
         this.loading = false;
-        this.message = "Impossible d'inscrire cet utilisateur.";
+        console.error('Erreur d\'inscription:', err);
+        
+        // Gérer différents types d'erreurs
+        if (err.status === 400) {
+          this.message = "Les informations fournies sont invalides. Veuillez vérifier vos données.";
+        } else if (err.status === 409) {
+          this.message = "Ce nom d'utilisateur ou cet email existe déjà.";
+        } else if (err.status === 500) {
+          this.message = "Erreur serveur. Veuillez réessayer plus tard.";
+        } else {
+          this.message = "Impossible d'inscrire cet utilisateur. Veuillez réessayer.";
+        }
       },
     });
   }

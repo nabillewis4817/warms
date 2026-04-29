@@ -67,7 +67,7 @@ export class ListePatients implements OnInit {
   supprimer(patient: Patient): void {
     this.dialogueService.confirmer({
       titre: 'Supprimer le patient',
-      message: `Êtes-vous sûr de vouloir supprimer définitivement le patient ${patient.prenom} ${patient.nom} ?\n\n⚠️ Cette action est irréversible ! Toutes les données du patient seront perdues.`,
+      message: `Êtes-vous sûr de vouloir supprimer définitivement le patient ${patient.prenom} ${patient.nom} ?\n\nCette action est irréversible ! Toutes les données du patient seront perdues.`,
       boutonOk: 'Supprimer',
       boutonAnnuler: 'Annuler'
     }).subscribe(confirme => {

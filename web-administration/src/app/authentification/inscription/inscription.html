@@ -1,22 +1,81 @@
 <section class="auth-card">
   <h2>Créer un compte</h2>
   <form [formGroup]="form" (ngSubmit)="soumettre()">
-    <input placeholder="Username" formControlName="username" />
-    <input placeholder="Email" formControlName="email" />
-    <input placeholder="Prénom" formControlName="first_name" />
-    <input placeholder="Nom" formControlName="last_name" />
-    <input placeholder="Téléphone" formControlName="telephone" />
-    <select formControlName="role">
-      <option value="patient">Patient</option>
-      <option value="infirmiere">Infirmière</option>
-      <option value="secretaire">Secrétaire</option>
-      <option value="chirurgien_dentiste">Chirurgien-dentiste</option>
-    </select>
-    <input placeholder="Mot de passe" type="password" formControlName="password" />
+    <div class="form-group">
+      <input placeholder="Username" formControlName="username" 
+             [class.error]="form.get('username')?.invalid && form.get('username')?.touched" />
+      @if (form.get('username')?.invalid && form.get('username')?.touched) {
+        <small class="error-text">Le nom d'utilisateur est requis</small>
+      }
+    </div>
+    
+    <div class="form-group">
+      <input placeholder="Email" formControlName="email" 
+             [class.error]="form.get('email')?.invalid && form.get('email')?.touched" />
+      @if (form.get('email')?.invalid && form.get('email')?.touched) {
+        <small class="error-text">Un email valide est requis</small>
+      }
+    </div>
+    
+    <div class="form-group">
+      <input placeholder="Prénom" formControlName="first_name" 
+             [class.error]="form.get('first_name')?.invalid && form.get('first_name')?.touched" />
+      @if (form.get('first_name')?.invalid && form.get('first_name')?.touched) {
+        <small class="error-text">Le prénom est requis</small>
+      }
+    </div>
+    
+    <div class="form-group">
+      <input placeholder="Nom" formControlName="last_name" 
+             [class.error]="form.get('last_name')?.invalid && form.get('last_name')?.touched" />
+      @if (form.get('last_name')?.invalid && form.get('last_name')?.touched) {
+        <small class="error-text">Le nom est requis</small>
+      }
+    </div>
+    
+    <div class="form-group">
+      <input placeholder="Téléphone" formControlName="telephone" />
+    </div>
+    
+    <div class="form-group">
+      <select formControlName="role" 
+              [class.error]="form.get('role')?.invalid && form.get('role')?.touched">
+        <option value="">Sélectionner un rôle</option>
+        <option value="patient">Patient</option>
+        <option value="infirmiere">Infirmière</option>
+        <option value="secretaire">Secrétaire</option>
+        <option value="chirurgien_dentiste">Chirurgien-dentiste</option>
+      </select>
+      @if (form.get('role')?.invalid && form.get('role')?.touched) {
+        <small class="error-text">Le rôle est requis</small>
+      }
+    </div>
+    
+    <div class="form-group">
+      <input placeholder="Mot de passe (min 8 caractères)" type="password" formControlName="password" 
+             [class.error]="form.get('password')?.invalid && form.get('password')?.touched" />
+      @if (form.get('password')?.invalid && form.get('password')?.touched) {
+        <small class="error-text">Le mot de passe doit contenir au moins 8 caractères</small>
+      }
+    </div>
+    
     <button type="submit" [disabled]="loading" [class.loading]="loading">
-      @if (loading) { Inscription... } @else { S'inscrire }
+      @if (loading) { 
+        <i class="bi bi-arrow-clockwise rotating"></i> Inscription... 
+      } @else { 
+        <i class="bi bi-person-plus"></i> S'inscrire 
+      }
     </button>
   </form>
-  <a routerLink="/connexion">Retour connexion</a>
-  @if (message) { <p class="msg">{{ message }}</p> }
+  
+  <a routerLink="/connexion" class="back-link">
+    <i class="bi bi-arrow-left"></i> Retour à la connexion
+  </a>
+  
+  @if (message) { 
+    <div [class]="message.includes('réussie') ? 'success-message' : 'error-message'">
+      <i [class]="message.includes('réussie') ? 'bi bi-check-circle' : 'bi bi-exclamation-triangle'"></i>
+      <span>{{ message }}</span>
+    </div>
+  }
 </section>

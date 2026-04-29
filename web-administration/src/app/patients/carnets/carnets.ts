@@ -240,9 +240,9 @@ export class Carnets implements OnInit, OnDestroy {
    * Démarre l'auto-rafraîchissement toutes les 30 secondes
    */
   private demarrerAutoRafraichissement(): void {
-    console.log('⏰ Démarrage de l\'auto-rafraîchissement (30 secondes)');
+    console.log('Démarrage de l\'auto-rafraîchissement (30 secondes)');
     this.abonnementRafraichissement = interval(30000).subscribe(() => {
-      console.log('🔄 Auto-rafraîchissement des carnets...');
+      console.log('Auto-rafraîchissement des carnets...');
       this.chargerLesCarnets();
     });
   }
@@ -254,7 +254,7 @@ export class Carnets implements OnInit, OnDestroy {
     if (this.abonnementRafraichissement) {
       this.abonnementRafraichissement.unsubscribe();
       this.abonnementRafraichissement = null;
-      console.log('⏹️ Auto-rafraîchissement arrêté');
+      console.log('Auto-rafraîchissement arrêté');
     }
   }
 

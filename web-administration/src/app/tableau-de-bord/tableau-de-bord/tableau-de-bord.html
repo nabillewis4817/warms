@@ -1,39 +1,184 @@
 <section>
   <div class="head">
     <h2>Tableau de bord Warm's</h2>
-    <button class="refresh-btn" (click)="charger()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+    <button class="refresh-btn" (click)="charger()">
+      <i class="bi bi-arrow-clockwise"></i> 
+      <span>Actualiser</span>
+    </button>
   </div>
+  
   @if (chargement) {
-    <p>Chargement des statistiques...</p>
-  } @else if (stats) {
-    <div class="kpi-grid">
-      <article class="kpi">
-        <h3>Consultations (30j)</h3>
-        <strong>{{ stats.kpis.consultations_30j }}</strong>
-      </article>
-      <article class="kpi">
-        <h3>Rendez-vous (30j)</h3>
-        <strong>{{ stats.kpis.rendez_vous_30j }}</strong>
-      </article>
-      <article class="kpi">
-        <h3>Absences (30j)</h3>
-        <strong>{{ stats.kpis.absents_30j }}</strong>
-      </article>
-      <article class="kpi">
-        <h3>Taux absentéisme</h3>
-        <strong>{{ stats.kpis.taux_absenteisme_30j }}%</strong>
-      </article>
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <i class="bi bi-arrow-clockwise"></i>
+        <p>Chargement des statistiques...</p>
+      </div>
     </div>
+  } @else {
+    <div class="kpi-grid">
+      <!-- Card Consultations -->
+      <article class="kpi-card consultations-card" (click)="naviguerVersConsultations()">
+        <div class="kpi-header">
+          <div class="kpi-icon">
+            <i class="bi bi-stethoscope"></i>
+          </div>
+          <div class="kpi-trend">
+            <i class="bi bi-arrow-up-short"></i>
+            <span>+12%</span>
+          </div>
+        </div>
+        <div class="kpi-content">
+          <h3>Consultations</h3>
+          <div class="kpi-value">
+            <strong>{{ stats?.kpis?.consultations_30j || '0' }}</strong>
+            <span class="kpi-period">30 jours</span>
+          </div>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-action">Voir détails</span>
+          <i class="bi bi-arrow-right"></i>
+        </div>
+      </article>
 
-    <div class="charts-grid">
-      <div class="chart-card">
-        <h3>Évolution des consultations</h3>
-        <canvas baseChart [data]="consultationsChartData" [type]="'line'"></canvas>
+      <!-- Card Rendez-vous -->
+      <article class="kpi-card rdv-card" (click)="naviguerVersRendezVous()">
+        <div class="kpi-header">
+          <div class="kpi-icon">
+            <i class="bi bi-calendar-check"></i>
+          </div>
+          <div class="kpi-trend">
+            <i class="bi bi-arrow-up-short"></i>
+            <span>+8%</span>
+          </div>
+        </div>
+        <div class="kpi-content">
+          <h3>Rendez-vous</h3>
+          <div class="kpi-value">
+            <strong>{{ stats?.kpis?.rendez_vous_30j || '0' }}</strong>
+            <span class="kpi-period">30 jours</span>
+          </div>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-action">Gérer planning</span>
+          <i class="bi bi-arrow-right"></i>
+        </div>
+      </article>
+
+      <!-- Card Absences -->
+      <article class="kpi-card absences-card" (click)="naviguerVersAppels()">
+        <div class="kpi-header">
+          <div class="kpi-icon">
+            <i class="bi bi-person-x"></i>
+          </div>
+          <div class="kpi-trend negative">
+            <i class="bi bi-arrow-down-short"></i>
+            <span>-5%</span>
+          </div>
+        </div>
+        <div class="kpi-content">
+          <h3>Absences</h3>
+          <div class="kpi-value">
+            <strong>{{ stats?.kpis?.absents_30j || '0' }}</strong>
+            <span class="kpi-period">30 jours</span>
+          </div>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-action">Faire l'appel</span>
+          <i class="bi bi-arrow-right"></i>
+        </div>
+      </article>
+
+      <!-- Card Taux d'absentéisme -->
+      <article class="kpi-card taux-card" (click)="naviguerVersTauxAbsenteisme()">
+        <div class="kpi-header">
+          <div class="kpi-icon">
+            <i class="bi bi-graph-down"></i>
+          </div>
+          <div class="kpi-trend positive">
+            <i class="bi bi-arrow-down-short"></i>
+            <span>-2%</span>
+          </div>
+        </div>
+        <div class="kpi-content">
+          <h3>Taux absentéisme</h3>
+          <div class="kpi-value">
+            <strong>{{ stats?.kpis?.taux_absenteisme_30j || '0' }}%</strong>
+            <span class="kpi-period">30 jours</span>
+          </div>
+        </div>
+        <div class="kpi-footer">
+          <span class="kpi-action">Voir statistiques</span>
+          <i class="bi bi-arrow-right"></i>
+        </div>
+      </article>
+
+          </div>
+
+    @if (stats) {
+      <header class="dashboard-header">
+        <div class="header-content">
+          <div class="header-title">
+            <h1>Tableau de bord</h1>
+            <p class="header-subtitle">Bienvenue dans votre espace de gestion</p>
+          </div>
+          <div class="header-actions">
+            <div class="search-container">
+              <div class="search-input">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Rechercher..." />
+              </div>
+            </div>
+            <app-user-profile></app-user-profile>
+          </div>
+        </div>
+      </header>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Évolution des consultations</h3>
+            <div class="chart-actions">
+              <button class="chart-action-btn">
+                <i class="bi bi-download"></i>
+              </button>
+              <button class="chart-action-btn">
+                <i class="bi bi-fullscreen"></i>
+              </button>
+            </div>
+          </div>
+          <div class="chart-content">
+            <canvas baseChart [data]="consultationsChartData" [type]="'line'"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Pathologies fréquentes</h3>
+            <div class="chart-actions">
+              <button class="chart-action-btn">
+                <i class="bi bi-download"></i>
+              </button>
+              <button class="chart-action-btn">
+                <i class="bi bi-fullscreen"></i>
+              </button>
+            </div>
+          </div>
+          <div class="chart-content">
+            <canvas baseChart [data]="pathologiesChartData" [type]="'bar'"></canvas>
+          </div>
+        </div>
       </div>
-      <div class="chart-card">
-        <h3>Pathologies fréquentes</h3>
-        <canvas baseChart [data]="pathologiesChartData" [type]="'bar'"></canvas>
+    }
+
+    <!-- Section de test pour navigation -->
+    <div class="test-navigation" style="margin: 20px; padding: 20px; background: #f0f0f0; border-radius: 8px;">
+      <h3>Test Navigation</h3>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="btn btn-primary" (click)="naviguerVersRendezVous()">Test Rendez-vous</button>
+        <button class="btn btn-secondary" (click)="naviguerVersAppels()">Test Appels</button>
+        <button class="btn btn-info" (click)="naviguerVersTauxAbsenteisme()">Test Taux</button>
       </div>
+      <p style="font-size: 12px; color: #666;">
+        Cliquez sur ces boutons pour tester si la navigation fonctionne. Regardez la console pour les logs DEBUG.
+      </p>
     </div>
   }
 </section>

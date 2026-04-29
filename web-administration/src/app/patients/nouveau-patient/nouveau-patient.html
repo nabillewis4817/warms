@@ -1,34 +1,295 @@
-<section>
-  <h2>Nouveau patient</h2>
-  <form [formGroup]="form" (ngSubmit)="creer()">
-    <label>Prénom <input type="text" formControlName="prenom" /></label>
-    <label>Nom <input type="text" formControlName="nom" /></label>
-    <label>Téléphone (+237XXXXXXXXX) <input type="text" formControlName="telephone" placeholder="+2376XXXXXXXX" /></label>
-    <label>Email <input type="email" formControlName="email" /></label>
-    <label>Username patient * <input type="text" formControlName="username_patient" /></label>
-    <label>Password patient * <input type="password" formControlName="password_patient" /></label>
-    <label>Sexe</label>
-    <div class="sexe-radio">
-      <label><input type="radio" formControlName="sexe" [value]="'M'" /> Homme</label>
-      <label><input type="radio" formControlName="sexe" [value]="'F'" /> Femme</label>
+<section class="patient-creation">
+  <div class="header-section">
+    <div class="header-content">
+      <img src="../../assets/patient.png" alt="Patient" class="header-icon" />
+      <div class="header-text">
+        <h2>Création d'un nouveau patient</h2>
+        <p class="subtitle">Remplissez les informations ci-dessous pour créer le dossier patient</p>
+      </div>
     </div>
-    <button type="submit" [disabled]="enCreation" [style.cursor]="enCreation ? 'wait' : 'pointer'">
-      {{ enCreation ? 'Création...' : 'Créer' }}
-    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="creer()" class="patient-form">
+    <!-- Informations principales -->
+    <div class="form-section">
+      <div class="section-header">
+        <img src="../../assets/folder.png" alt="Dossier" class="section-icon" />
+        <h3>Informations principales</h3>
+      </div>
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Prénom *</span>
+          <input type="text" formControlName="prenom" placeholder="Ex: Jean" required />
+        </label>
+        <label class="form-field">
+          <span>Nom *</span>
+          <input type="text" formControlName="nom" placeholder="Ex: Dupont" required />
+        </label>
+        <label class="form-field">
+          <span>Date de naissance</span>
+          <input type="date" formControlName="date_naissance" />
+        </label>
+        <label class="form-field">
+          <span>Âge</span>
+          <input type="number" formControlName="age" placeholder="Ex: 35" min="0" max="150" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="form-section">
+      <div class="section-header">
+        <img src="../../assets/contact.png" alt="Contact" class="section-icon" />
+        <h3>Contact</h3>
+      </div>
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Téléphone (+237XXXXXXXXX)</span>
+          <input type="text" formControlName="telephone" placeholder="+2376XXXXXXXX" />
+        </label>
+        <label class="form-field">
+          <span>Email</span>
+          <input type="email" formControlName="email" placeholder="exemple@email.com" />
+        </label>
+        <label class="form-field full-width">
+          <span>Adresse</span>
+          <input type="text" formControlName="adresse" placeholder="Ex: Rue de la Santé 123, 75001 Paris" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Informations médicales -->
+    <div class="form-section">
+      <div class="section-header">
+        <img src="../../assets/medical.png" alt="Médical" class="section-icon" />
+        <h3>Informations médicales</h3>
+      </div>
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Sexe</span>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" formControlName="sexe" [value]="'M'" />
+              <span class="radio-label"><i class="bi bi-person"></i> Homme</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" formControlName="sexe" [value]="'F'" />
+              <span class="radio-label"><i class="bi bi-person-fill"></i> Femme</span>
+            </label>
+          </div>
+        </label>
+        <label class="form-field">
+          <span>Groupe sanguin</span>
+          <div class="radio-group">
+            <label class="radio-option" *ngFor="let groupe of groupesSanguins">
+              <input type="radio" formControlName="groupe_sanguin" [value]="groupe.value" />
+              <span class="radio-label">{{ groupe.label }}</span>
+            </label>
+          </div>
+        </label>
+        <label class="form-field">
+          <span>Taille (cm)</span>
+          <input type="number" formControlName="taille_cm" placeholder="Ex: 175" min="50" max="250" step="0.1" />
+        </label>
+        <label class="form-field">
+          <span>Poids (kg)</span>
+          <input type="number" formControlName="poids_kg" placeholder="Ex: 70" min="10" max="300" step="0.1" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Dernière consultation -->
+    <div class="form-section">
+      <div class="section-header">
+        <i class="bi bi-calendar-date section-icon"></i>
+        <h3>Dernière consultation</h3>
+      </div>
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Date</span>
+          <input type="date" formControlName="derniere_consultation_date" />
+        </label>
+        <label class="form-field">
+          <span>Lieu</span>
+          <input type="text" formControlName="derniere_consultation_lieu" placeholder="Ex: Cabinet dentaire du Centre" />
+        </label>
+        <label class="form-field full-width">
+          <span>Détails</span>
+          <textarea formControlName="derniere_consultation_details" placeholder="Décrivez les détails de la dernière consultation..." rows="3"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <!-- Informations médicales détaillées -->
+    <div class="form-section">
+      <div class="section-header">
+        <i class="bi bi-clipboard-data section-icon"></i>
+        <h3>Historique médical</h3>
+      </div>
+      <div class="form-grid">
+        <label class="form-field full-width">
+          <span>Symptômes actuels</span>
+          <textarea formControlName="symptomes" placeholder="Décrivez les symptômes actuels du patient..." rows="3"></textarea>
+        </label>
+        <label class="form-field full-width">
+          <span>Consultations précédentes</span>
+          <textarea formControlName="consultations_precedentes" placeholder="Historique des consultations précédentes..." rows="3"></textarea>
+        </label>
+        <label class="form-field full-width">
+          <span>Allergies</span>
+          <textarea formControlName="allergies" placeholder="Allergies connues du patient..." rows="2"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <!-- Compte patient -->
+    <div class="form-section">
+      <div class="section-header">
+        <i class="bi bi-shield-lock section-icon"></i>
+        <h3>Compte patient</h3>
+      </div>
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Username patient *</span>
+          <input type="text" formControlName="username_patient" placeholder="Ex: Lewis Eba" required />
+        </label>
+        <label class="form-field">
+          <span>Password patient *</span>
+          <div class="password-input-wrapper">
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="password_patient" placeholder="Mot de passe" required />
+            <button type="button" class="password-toggle" (click)="togglePassword()" [title]="showPassword ? 'Masquer' : 'Afficher'">
+              <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="enCreation || form.invalid">
+        <i class="bi bi-person-plus"></i>
+        {{ enCreation ? 'Création en cours...' : 'Créer le patient' }}
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="resetForm()">
+        <i class="bi bi-arrow-clockwise"></i>
+        Réinitialiser
+      </button>
+    </div>
   </form>
+
+  <!-- Messages -->
   @if (message) {
-    <p>{{ message }}</p>
+    <div class="alert" [class]="message.includes('succès') ? 'alert-success' : 'alert-error'">
+      <i class="bi" [class]="message.includes('succès') ? 'bi-check-circle' : 'bi-exclamation-triangle'"></i>
+      {{ message }}
+    </div>
   }
-  @if (patientCree) {
-    <div class="qr-card">
-      <p><strong>Dossier:</strong> {{ patientCree.numero_dossier || '-' }}</p>
-      <p><strong>QR token:</strong> {{ patientCree.qr_token || '-' }}</p>
-      @if (qrImageData) {
-        <div class="qr-box">
-          <img [src]="qrImageData" alt="QR Code Patient" />
+
+  <!-- Modal de succès après création -->
+  @if (showSuccessModal) {
+    <div class="success-modal-overlay" (click)="closeSuccessModal()">
+      <div class="success-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="success-icon-wrapper">
+            <i class="bi bi-check-circle-fill success-icon"></i>
+          </div>
+          <h3>Patient créé avec succès !</h3>
+          <button class="modal-close" (click)="closeSuccessModal()">
+            <i class="bi bi-x"></i>
+          </button>
         </div>
-      }
-      <button (click)="allerListe()">Voir la liste des patients</button>
+        
+        <div class="modal-content">
+          <!-- QR Code Section -->
+          @if (qrImageData) {
+            <div class="qr-section">
+              <div class="qr-header">
+                <i class="bi bi-qr-code"></i>
+                <h4>QR Code d'accès</h4>
+              </div>
+              <div class="qr-box">
+                <img [src]="qrImageData" alt="QR Code Patient" />
+              </div>
+              <p class="qr-help">Scannez ce QR code pour accéder rapidement au dossier patient</p>
+            </div>
+          }
+
+          <!-- Informations du patient -->
+          <div class="patient-details">
+            <div class="detail-section">
+              <h5><i class="bi bi-person-circle"></i> Informations principales</h5>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="label">Nom complet:</span>
+                  <span class="value">{{ patientCree?.prenom }} {{ patientCree?.nom }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Numéro dossier:</span>
+                  <span class="value">{{ patientCree?.numero_dossier || 'Non généré' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Date de naissance:</span>
+                  <span class="value">{{ patientCree?.date_naissance || 'Non renseigné' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Sexe:</span>
+                  <span class="value">{{ patientCree?.sexe === 'M' ? 'Masculin' : 'Féminin' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h5><i class="bi bi-telephone"></i> Contact</h5>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="label">Téléphone:</span>
+                  <span class="value">{{ patientCree?.telephone || 'Non renseigné' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Email:</span>
+                  <span class="value">{{ patientCree?.email || 'Non renseigné' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h5><i class="bi bi-shield-lock"></i> Compte patient</h5>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="label">Username:</span>
+                  <span class="value username">{{ patientCredentials?.username || 'Non généré' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Password:</span>
+                  <span class="value password">{{ patientCredentials?.password || 'Non généré' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h5><i class="bi bi-heart-pulse"></i> Informations médicales</h5>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="label">Groupe sanguin:</span>
+                  <span class="value">{{ patientCree?.groupe_sanguin || 'Inconnu' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Allergies:</span>
+                  <span class="value">{{ patientCree?.allergies || 'Aucune' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary btn-ok" (click)="goToListeCarnets()">
+            <i class="bi bi-check-circle"></i>
+            OK
+          </button>
+        </div>
+      </div>
     </div>
   }
 </section>

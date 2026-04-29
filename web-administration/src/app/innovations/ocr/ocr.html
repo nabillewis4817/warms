@@ -21,10 +21,10 @@
       <span *ngIf="operationEnCours !== 'upload'">Upload fichier</span>
     </button>
     
-    <button class="photo-btn" (click)="prendrePhoto()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
-      <i class="bi bi-camera-fill"></i>
-      <span *ngIf="operationEnCours === 'photo'">...</span>
-      <span *ngIf="operationEnCours !== 'photo'">Prendre en photo</span>
+    <button class="scan-btn" (click)="scannerDocument()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
+      <i class="bi bi-scanner"></i>
+      <span *ngIf="operationEnCours === 'scan'">...</span>
+      <span *ngIf="operationEnCours !== 'scan'">Scanner document</span>
     </button>
   </div>
 </section>

@@ -1,5 +1,5 @@
 from rest_framework import mixins, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -223,9 +223,9 @@ class PatientViewSet(viewsets.ModelViewSet):
             if not request.user.is_authenticated:
                 return Response({"detail": "Utilisateur non authentifié."}, status=401)
             
-            # Vérifier si l'utilisateur est un patient (vérification plus flexible)
+            # Vérifier si l'utilisateur est un patient ou superutilisateur
             user_role = getattr(request.user, 'role', None)
-            if user_role and user_role != 'PATIENT':
+            if not request.user.is_superuser and (not user_role or user_role.lower() not in ['patient', 'PATIENT']):
                 return Response({"detail": "L'utilisateur n'est pas un patient."}, status=403)
             
             # Rechercher le patient lié à cet utilisateur
@@ -297,4 +297,74 @@ class PieceJointeDossierViewSet(
         return Response(
             self.get_serializer(instance).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def supprimer_patient_ameliore(request, pk):
+    """
+    Endpoint de suppression patient amélioré avec vérifications détaillées
+    """
+    try:
+        # Vérifier l'authentification
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication requise'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        # Vérifier les permissions
+        permission = EstPersonnelCabinet()
+        if not permission.has_permission(request, None):
+            return Response(
+                {
+                    'detail': 'Permission refusée', 
+                    'user_role': getattr(request.user, 'role', 'None'),
+                    'is_superuser': request.user.is_superuser,
+                    'required_roles': ['CHIRURGIEN_DENTISTE', 'SECRETAIRE', 'INFIRMIERE']
+                }, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Récupérer le patient
+        try:
+            patient = Patient.objects.get(pk=pk)
+        except Patient.DoesNotExist:
+            return Response(
+                {'detail': 'Patient non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Journaliser la suppression
+        journaliser(
+            acteur=request.user,
+            action="patient.suppression",
+            objet_type="Patient",
+            objet_id=patient.id,
+            message=f"Suppression du patient {patient.prenom} {patient.nom}",
+            metadata={
+                'patient_nom': f"{patient.prenom} {patient.nom}",
+                'patient_email': patient.email,
+                'supprime_par': request.user.username
+            }
+        )
+        
+        # Supprimer le patient
+        patient.delete()
+        
+        return Response(
+            {
+                'detail': 'Patient supprimé avec succès',
+                'patient_nom': f"{patient.prenom} {patient.nom}",
+                'supprime_par': request.user.username
+            }, 
+            status=status.HTTP_200_OK
+        )
+        
+    except Exception as e:
+        print(f"Erreur suppression patient: {e}")
+        return Response(
+            {'detail': f'Erreur lors de la suppression: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

@@ -21,6 +21,63 @@
   <section class="content">
     @if (!estPageConnexion) {
       <header class="topbar card">
+        <!-- Contrôle des notifications -->
+        <div class="notification-controls">
+          <button class="notification-toggle" (click)="toggleNotifications()" [class.active]="notificationsEnabled">
+            <i class="bi bi-bell-fill"></i>
+            @if (badges.total > 0) {
+              <span class="notification-count">{{ badges.total }}</span>
+            }
+          </button>
+          
+          <!-- Date/Heure en temps réel stylisée -->
+          <div class="datetime-widget">
+            <div class="datetime-display">
+              <i class="bi bi-clock-fill datetime-icon"></i>
+              <span class="datetime-text">{{ formattedDateTime$ | async }}</span>
+            </div>
+            <div class="datetime-extended" *ngIf="showExtendedDateTime">
+              <span class="datetime-greeting">{{ timeBasedGreeting }}</span>
+              <span class="datetime-full">{{ formattedDateExtended$ | async }}</span>
+            </div>
+          </div>
+          
+          @if (showNotificationPanel) {
+            <div class="notification-panel">
+              <div class="panel-header">
+                <h4><i class="bi bi-bell"></i> Notifications</h4>
+                <button class="close-panel" (click)="showNotificationPanel = false">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+              
+              <div class="panel-content">
+                <div class="notification-item">
+                  <i class="bi bi-chat-dots"></i>
+                  <span>Messages: {{ badges.message }}</span>
+                </div>
+                <div class="notification-item">
+                  <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                  <span>Critiques: {{ badges.critique }}</span>
+                </div>
+                <div class="notification-item">
+                  <i class="bi bi-clock-fill text-warning"></i>
+                  <span>Rappels: {{ badges.rappel }}</span>
+                </div>
+              </div>
+              
+              <div class="panel-footer">
+                <button class="btn-clear" (click)="clearAllNotifications()">
+                  <i class="bi bi-trash"></i> Tout effacer
+                </button>
+                <button class="btn-test" (click)="testNotificationSound()">
+                  <i class="bi bi-volume-up"></i> Tester son
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
         <label>
           {{ traductionService.t('darkMode') }}
           <input type="checkbox" [checked]="themeService.modeSombre()" (change)="basculerTheme($event)" />
@@ -57,6 +114,9 @@
       </div>
         <button class="ia-float" (click)="ouvrirWarms()"><i class="bi bi-stars"></i> Warms</button>
         <a routerLink="/ocr" class="ocr-link"><i class="bi bi-camera"></i> OCR</a>
+        <button class="logout-btn" (click)="seDeconnecter()" title="Se déconnecter">
+          <i class="bi bi-box-arrow-right"></i> Déconnexion
+        </button>
       </header>
     }
 
@@ -69,4 +129,36 @@
   <app-dialogue-modal />
   <!-- Composant de dialogue personnalisé -->
   <app-dialogue />
+  
+  <!-- Fenêtre de confirmation de déconnexion -->
+  @if (showLogoutModal) {
+    <div class="logout-modal-overlay" (click)="closeLogoutModal()">
+      <div class="logout-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <i class="bi bi-box-arrow-right modal-icon"></i>
+          <h3>Confirmation de déconnexion</h3>
+          <button class="close-btn" (click)="closeLogoutModal()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir vous déconnecter ?</p>
+          <div class="logout-info">
+            <i class="bi bi-info-circle"></i>
+            <span>Toutes vos données non sauvegardées seront perdues.</span>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeLogoutModal()">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button class="btn-logout" (click)="confirmLogout()">
+            <i class="bi bi-box-arrow-right"></i> Se déconnecter
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

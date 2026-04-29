@@ -20,15 +20,43 @@ export class NouveauPatient {
   private readonly dialogueService = inject(DialogueService);
   message = '';
   patientCree: Patient | null = null;
+  patientCredentials: { username: string; password: string } | null = null;
   enCreation = false;
   qrImageData = '';
+  showPassword = false;
+  showSuccessModal = false;
+  
+  // Options pour le groupe sanguin
+  groupesSanguins = [
+    { value: 'A+', label: 'A+' },
+    { value: 'A-', label: 'A-' },
+    { value: 'B+', label: 'B+' },
+    { value: 'B-', label: 'B-' },
+    { value: 'AB+', label: 'AB+' },
+    { value: 'AB-', label: 'AB-' },
+    { value: 'O+', label: 'O+' },
+    { value: 'O-', label: 'O-' },
+    { value: 'inconnu', label: 'Inconnu' }
+  ];
 
   form = this.fb.group({
     prenom: ['', Validators.required],
     nom: ['', Validators.required],
+    date_naissance: [''],
+    age: [''],
     telephone: ['', [Validators.pattern(/^\+237\d{9}$/)]],
     email: [''],
-    sexe: ['M', Validators.required],
+    adresse: [''],
+    sexe: ['M'],
+    taille_cm: [''],
+    poids_kg: [''],
+    symptomes: [''],
+    consultations_precedentes: [''],
+    allergies: [''],
+    groupe_sanguin: ['inconnu'],
+    derniere_consultation_date: [''],
+    derniere_consultation_lieu: [''],
+    derniere_consultation_details: [''],
     username_patient: ['', Validators.required],
     password_patient: ['', [Validators.required, Validators.minLength(6)]],
   });
@@ -69,17 +97,14 @@ export class NouveauPatient {
           : '';
         const creds = (patient as any).identifiants_patient;
         if (creds?.username && creds?.password) {
-          this.dialogueService.informer({
-            titre: 'Identifiants patient créés',
-            message: `Username: ${creds.username}\nPassword: ${creds.password}\n\nTransmettez ces identifiants au patient pour sa connexion mobile.`,
-            boutonOk: 'OK'
-          }).subscribe();
+          this.patientCredentials = {
+            username: creds.username,
+            password: creds.password
+          };
         }
         
-        // Navigation différée pour éviter les conflits avec les intercepteurs
-        setTimeout(() => {
-          this.router.navigate(['/patients', patient.id, 'parametres-carnet']);
-        }, 500);
+        // Afficher la modale de succès
+        this.showSuccessModal = true;
       },
       error: (err) => {
         console.error('Erreur création patient:', err);
@@ -118,6 +143,53 @@ export class NouveauPatient {
   }
 
   allerListe(): void {
+    this.router.navigate(['/patients']);
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  resetForm(): void {
+    this.form.reset({
+      prenom: '',
+      nom: '',
+      date_naissance: '',
+      age: '',
+      telephone: '',
+      email: '',
+      adresse: '',
+      sexe: 'M',
+      taille_cm: '',
+      poids_kg: '',
+      symptomes: '',
+      consultations_precedentes: '',
+      allergies: '',
+      groupe_sanguin: 'inconnu',
+      derniere_consultation_date: '',
+      derniere_consultation_lieu: '',
+      derniere_consultation_details: '',
+      username_patient: '',
+      password_patient: ''
+    });
+    this.message = '';
+    this.patientCree = null;
+    this.qrImageData = '';
+  }
+
+  creerAutrePatient(): void {
+    this.resetForm();
+    // Scroll vers le haut du formulaire
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  closeSuccessModal(): void {
+    this.showSuccessModal = false;
+  }
+
+  goToListeCarnets(): void {
+    this.showSuccessModal = false;
+    // Redirection vers la liste des carnets
     this.router.navigate(['/patients']);
   }
 }

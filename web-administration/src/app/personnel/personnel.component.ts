@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { PersonnelService, Personnel, PersonnelFilters } from '../noyau/services/personnel.service';
 
 @Component({
   selector: 'app-personnel',
@@ -11,14 +12,18 @@ import { Router } from '@angular/router';
 })
 export class PersonnelComponent implements OnInit {
   form: any;
-  personnel: any[] = [];
+  personnel: Personnel[] = [];
+  personnelFiltre: Personnel[] = [];
   chargement = false;
   filtre = '';
-  roles = ['chirurgien_dentiste', 'secretaire', 'infirmiere', 'patient'];
+  roles: string[] = [];
+  services: string[] = [];
+  specialites: string[] = [];
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private personnelService: PersonnelService
   ) {
     this.form = this.fb.group({
       recherche: [''],
@@ -30,111 +35,175 @@ export class PersonnelComponent implements OnInit {
 
   ngOnInit(): void {
     this.chargerPersonnel();
+    this.chargerOptions();
   }
 
   chargerPersonnel(): void {
     this.chargement = true;
-    // Simulation de données - à remplacer avec appel API réel
-    setTimeout(() => {
-      this.personnel = [
-        {
-          id: 1,
-          nom: 'Dr. Martin',
-          prenom: 'Jean',
-          email: 'jean.martin@warms.com',
-          telephone: '+237123456789',
-          role: 'chirurgien_dentiste',
-          statut: 'actif',
-          dateEmbauche: '2020-01-15',
-          service: 'Chirurgie générale',
-          specialite: 'Implantologie',
-          photo: null
-        },
-        {
-          id: 2,
-          nom: 'Durand',
-          prenom: 'Sophie',
-          email: 'sophie.durand@warms.com',
-          telephone: '+237987654321',
-          role: 'secretaire',
-          statut: 'actif',
-          dateEmbauche: '2021-03-10',
-          service: 'Accueil et gestion',
-          specialite: null,
-          photo: null
-        },
-        {
-          id: 3,
-          nom: 'Petit',
-          prenom: 'Marie',
-          email: 'marie.petit@warms.com',
-          telephone: '+237654321987',
-          role: 'infirmiere',
-          statut: 'actif',
-          dateEmbauche: '2022-06-01',
-          service: 'Assistance chirurgicale',
-          specialite: 'Stérilisation',
-          photo: null
-        },
-        {
-          id: 4,
-          nom: 'Bernard',
-          prenom: 'Pierre',
-          email: 'pierre.bernard@warms.com',
-          telephone: '+237456789012',
-          role: 'chirurgien_dentiste',
-          statut: 'en_conge',
-          dateEmbauche: '2019-09-20',
-          service: 'Orthodontie',
-          specialite: 'Appareillage orthodontique',
-          photo: null
-        }
-      ];
-      this.chargement = false;
-    }, 1000);
+    const filters: PersonnelFilters = this.form.value;
+    
+    this.personnelService.getPersonnel(filters).subscribe({
+      next: (data) => {
+        this.personnel = data;
+        this.personnelFiltre = data;
+        this.chargement = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement du personnel:', error);
+        this.chargement = false;
+        // En cas d'erreur, utiliser des données de démonstration
+        this.personnel = this.getDonneesDemonstration();
+        this.personnelFiltre = this.personnel;
+      }
+    });
+  }
+
+  chargerOptions(): void {
+    // Charger les rôles, services et spécialités disponibles
+    this.personnelService.getRoles().subscribe({
+      next: (data) => {
+        this.roles = data;
+      },
+      error: () => {
+        this.roles = ['chirurgien_dentiste', 'secretaire', 'infirmiere', 'patient'];
+      }
+    });
+
+    this.personnelService.getServices().subscribe({
+      next: (data) => {
+        this.services = data;
+      },
+      error: () => {
+        this.services = ['Chirurgie générale', 'Orthodontie', 'Pédiatrie', 'Administration'];
+      }
+    });
+
+    this.personnelService.getSpecialites().subscribe({
+      next: (data) => {
+        this.specialites = data;
+      },
+      error: () => {
+        this.specialites = ['Implantologie', 'Orthodontie', 'Pédiatrie', 'Parodontologie'];
+      }
+    });
+  }
+
+  getDonneesDemonstration(): Personnel[] {
+    return [
+      {
+        id: 1,
+        nom: 'Martin',
+        prenom: 'Jean',
+        email: 'jean.martin@warms.com',
+        telephone: '+237123456789',
+        role: 'chirurgien_dentiste',
+        statut: 'actif',
+        date_embauche: '2020-01-15',
+        service: 'Chirurgie générale',
+        specialite: 'Implantologie',
+        photo: undefined
+      },
+      {
+        id: 2,
+        nom: 'Durand',
+        prenom: 'Sophie',
+        email: 'sophie.durand@warms.com',
+        telephone: '+237987654321',
+        role: 'secretaire',
+        statut: 'actif',
+        date_embauche: '2019-03-20',
+        service: 'Administration',
+        specialite: undefined,
+        photo: undefined
+      },
+      {
+        id: 3,
+        nom: 'Lefebvre',
+        prenom: 'Marie',
+        email: 'marie.lefebvre@warms.com',
+        telephone: '+237654321987',
+        role: 'infirmiere',
+        statut: 'actif',
+        date_embauche: '2021-06-10',
+        service: 'Chirurgie générale',
+        specialite: 'Assistance chirurgicale',
+        photo: undefined
+      }
+    ];
   }
 
   filtrerPersonnel(): void {
-    this.filtre = this.form.value.recherche?.toLowerCase() || '';
-  }
-
-  get personnelFiltre(): any[] {
-    if (!this.filtre) return this.personnel;
+    const filtreTexte = this.form.value.recherche?.toLowerCase() || '';
+    const filtreRole = this.form.value.role || '';
+    const filtreStatut = this.form.value.statut || '';
+    const filtreService = this.form.value.service || '';
     
-    return this.personnel.filter(person => 
-      person.nom.toLowerCase().includes(this.filtre) ||
-      person.prenom.toLowerCase().includes(this.filtre) ||
-      person.email.toLowerCase().includes(this.filtre) ||
-      person.role.toLowerCase().includes(this.filtre)
-    );
-  }
-
-  voirDetails(person: any): void {
-    // Navigation vers les détails du personnel
-    console.log('Voir détails:', person);
+    this.personnelFiltre = this.personnel.filter(person => {
+      const matchTexte = !filtreTexte || 
+        person.nom.toLowerCase().includes(filtreTexte) ||
+        person.prenom.toLowerCase().includes(filtreTexte) ||
+        person.email.toLowerCase().includes(filtreTexte);
+      
+      const matchRole = !filtreRole || person.role === filtreRole;
+      const matchStatut = !filtreStatut || person.statut === filtreStatut;
+      const matchService = !filtreService || person.service === filtreService;
+      
+      return matchTexte && matchRole && matchStatut && matchService;
+    });
   }
 
   ajouterPersonnel(): void {
     // Navigation vers le formulaire d'ajout
-    this.router.navigate(['/personnel', 'ajouter']);
+    this.router.navigate(['/personnel/nouveau']);
   }
 
-  modifierPersonnel(person: any): void {
+  modifierPersonnel(person: Personnel): void {
     // Navigation vers le formulaire de modification
-    this.router.navigate(['/personnel', person.id, 'modifier']);
+    this.router.navigate(['/personnel/modifier', person.id]);
   }
 
-  supprimerPersonnel(person: any): void {
-    // Confirmation et suppression
+  supprimerPersonnel(person: Personnel): void {
     if (confirm(`Êtes-vous sûr de vouloir supprimer ${person.prenom} ${person.nom} ?`)) {
-      console.log('Supprimer:', person);
-      // Ici, appeler l'API pour supprimer
+      this.personnelService.supprimerPersonnel(person.id).subscribe({
+        next: () => {
+          this.chargerPersonnel();
+        },
+        error: (error) => {
+          console.error('Erreur lors de la suppression:', error);
+          alert('Erreur lors de la suppression du personnel');
+        }
+      });
     }
+  }
+
+  voirDetails(person: Personnel): void {
+    console.log('Détails du personnel:', person);
+  }
+
+  exporterPersonnel(): void {
+    const filters: PersonnelFilters = this.form.value;
+    
+    this.personnelService.exporterPersonnel(filters).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `personnel_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error('Erreur lors de l\'exportation du personnel:', error);
+        alert('Erreur lors de l\'exportation du personnel');
+      }
+    });
   }
 
   getRoleLabel(role: string): string {
     const labels: { [key: string]: string } = {
-      'chirurgien_dentiste': 'Chirurgien-Dentiste',
+      'chirurgien_dentiste': 'Chirurgien Dentiste',
       'secretaire': 'Secrétaire',
       'infirmiere': 'Infirmière',
       'patient': 'Patient'
@@ -145,20 +214,20 @@ export class PersonnelComponent implements OnInit {
   getStatutBadge(statut: string): string {
     const badges: { [key: string]: string } = {
       'actif': 'Actif',
+      'inactif': 'Inactif',
       'en_conge': 'En congé',
-      'en_maladie': 'En maladie',
-      'en_formation': 'En formation'
+      'suspendu': 'Suspendu'
     };
     return badges[statut] || statut;
   }
 
   getStatutColor(statut: string): string {
     const colors: { [key: string]: string } = {
-      'actif': '#10b981',
-      'en_conge': '#f59e0b',
-      'en_maladie': '#ef4444',
-      'en_formation': '#3b82f6'
+      'actif': '#28a745',
+      'inactif': '#6c757d',
+      'en_conge': '#ffc107',
+      'suspendu': '#dc3545'
     };
-    return colors[statut] || '#64748b';
+    return colors[statut] || '#6c757d';
   }
 }

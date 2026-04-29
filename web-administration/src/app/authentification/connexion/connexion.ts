@@ -18,6 +18,7 @@ export class Connexion {
 
   erreur = '';
   enCours = false;
+  showPassword = false;
 
   form = this.fb.group({
     username: ['', [Validators.required]],
@@ -46,6 +47,10 @@ export class Connexion {
         this.enCours = false;
       },
     });
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
   }
 }
 

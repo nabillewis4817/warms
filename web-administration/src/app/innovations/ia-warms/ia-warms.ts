@@ -71,40 +71,34 @@ export class IaWarms implements OnInit {
       },
       error: (error) => {
         console.error('Erreur WARMS IA:', error);
-        // Fallback avec réponse locale si le service n'est pas disponible
-        this.simulerReponseIA(message);
+        
+        // Afficher un message d'erreur clair sans fallback statique
+        let errorMessage = '❌ Une erreur est survenue. ';
+        
+        if (error.status === 401) {
+          errorMessage += 'Veuillez vous reconnecter et réessayer.';
+        } else if (error.status === 403) {
+          errorMessage += 'Vous n\'avez pas les permissions nécessaires pour utiliser cette fonctionnalité.';
+        } else if (error.status === 500) {
+          errorMessage += 'Le serveur rencontre des difficultés. Veuillez réessayer plus tard.';
+        } else if (error.status === 0) {
+          errorMessage += 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+        } else {
+          errorMessage += `Erreur ${error.status}: ${error.message || 'Erreur inconnue'}`;
+        }
+        
+        this.messages.push({
+          role: 'assistant',
+          content: errorMessage,
+          timestamp: new Date()
+        });
+        
         this.chargement = false;
       }
     });
   }
 
-  private simulerReponseIA(message: string): void {
-    let reponse = '';
-
-    // Réponses basiques basées sur les mots-clés (fallback)
-    if (message.toLowerCase().includes('bonjour') || message.toLowerCase().includes('salut')) {
-      reponse = 'Bonjour ! Comment puis-je vous aider aujourd\'hui ? 😊';
-    } else if (message.toLowerCase().includes('patient')) {
-      reponse = 'Pour gérer les patients, vous pouvez utiliser l\'onglet "Patients" dans le menu. Vous pourrez créer, modifier, archiver ou supprimer des patients. Chaque patient a un dossier médical et un code QR d\'accès.';
-    } else if (message.toLowerCase().includes('ordonnance')) {
-      reponse = 'Les ordonnances sont accessibles depuis l\'onglet "Prescriptions". Vous pouvez créer de nouvelles ordonnances, les modifier et les consulter. Les patients peuvent également voir leurs ordonnances depuis leur application mobile.';
-    } else if (message.toLowerCase().includes('rendez-vous')) {
-      reponse = 'Les rendez-vous peuvent être gérés depuis l\'onglet "Agenda". Vous pouvez planifier des consultations, modifier les horaires et envoyer des rappels aux patients.';
-    } else if (message.toLowerCase().includes('aide')) {
-      reponse = 'Voici les principales fonctionnalités de WARMS :\n\n📋 **Gestion des patients** : Création, modification, archivage\n💊 **Prescriptions** : Gestion des ordonnances médicales\n📅 **Agenda** : Planification des rendez-vous\n💬 **Messagerie** : Communication avec les patients\n📸 **OCR** : Numérisation de documents\n🤖 **IA WARMS** : Assistant intelligent (moi !)\n\nBesoin d\'aide spécifique ? N\'hésitez pas à demander !';
-    } else if (message.toLowerCase().includes('ocr')) {
-      reponse = 'L\'OCR (Reconnaissance Optique de Caractères) permet de numériser automatiquement les documents médicaux. Allez dans l\'onglet "Innovations" → "OCR" pour utiliser cette fonctionnalité. Prenez une photo ou uploadez un document, et WARMS extraira automatiquement les informations.';
-    } else {
-      reponse = 'Je comprends votre question. Pour l\'instant, je suis en version bêta et j\'apprends continuellement. Pour des questions médicales spécifiques, je vous recommande de consulter un professionnel de santé.\n\nPuis-je vous aider avec autre chose ?';
-    }
-
-    this.messages.push({
-      role: 'assistant',
-      content: reponse,
-      timestamp: new Date()
-    });
-  }
-
+  
   trackMessageId(index: number): number {
     return index;
   }
