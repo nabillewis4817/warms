@@ -6,6 +6,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { ConsultationsService, Consultation, ActeRealise, PhotoClinique } from '../../noyau/services/consultations.service';
 import { DialogueService } from '../../noyau/services/dialogue.service';
+import { Patients, Patient } from '../../noyau/services/patients';
 
 @Component({
   selector: 'app-consultations',
@@ -20,6 +21,7 @@ export class ConsultationsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly dialogueService = inject(DialogueService);
+  private readonly patientsService = inject(Patients);
   
   // Propriété pour accéder à Math dans le template
   readonly Math = Math;
@@ -29,6 +31,7 @@ export class ConsultationsComponent implements OnInit {
   consultationSelectionnee: Consultation | null = null;
   actesConsultation: ActeRealise[] = [];
   photosConsultation: PhotoClinique[] = [];
+  patients: Patient[] = [];
 
   // États UI
   chargement = false;
@@ -60,6 +63,7 @@ export class ConsultationsComponent implements OnInit {
   ngOnInit(): void {
     this.initialiserFormulaires();
     this.configurerRecherche();
+    this.chargerPatients();
     // Ne charger les consultations que si nécessaire
     // this.chargerConsultations();
   }
@@ -95,6 +99,22 @@ export class ConsultationsComponent implements OnInit {
         this.rechercherConsultations(terme);
       } else {
         this.chargerConsultations();
+      }
+    });
+  }
+
+  chargerPatients(): void {
+    this.patientsService.lister().subscribe({
+      next: (patients) => {
+        this.patients = patients;
+        console.log('Patients chargés:', patients.length);
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des patients:', error);
+        this.dialogueService.erreur({
+          titre: 'Erreur',
+          message: 'Impossible de charger la liste des patients. Veuillez réessayer.'
+        });
       }
     });
   }

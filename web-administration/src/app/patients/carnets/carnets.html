@@ -69,65 +69,62 @@
     <p>Récupération de vos carnets patients...</p>
   </div>
 
-  <!-- Grille des carnets patients -->
-  <main class="grille-carnets">
+  <!-- Grille des carnets patients avec style personnel -->
+  <main class="personnel-grid">
     <article 
       *ngFor="let patient of patientsFiltres; trackBy: suivreParIdPatient" 
-      class="carte-carnet"
+      class="personnel-card"
       (click)="ouvrirDossierPatient(patient)"
       [attr.aria-label]="'Carnet du patient ' + patient.prenom + ' ' + patient.nom + ', cliquer pour ouvrir'">
       
-      <!-- Icône du dossier avec image et initiales -->
-      <div class="conteneur-icone-dossier">
-        <!-- Image du dossier (folder.png) -->
-        <img 
-          [src]="cheminImageDossierPourTemplate" 
-          [alt]="'Icône dossier pour ' + patient.prenom + ' ' + patient.nom"
-          class="image-dossier" 
-          (error)="gererErreurImage($event)"
-          loading="lazy" />
-        
-        <!-- Initiales du patient en badge -->
-        <div class="cercle-initiales" 
-             [attr.aria-label]="obtenirInitialePatient(patient) + ' initiales de ' + patient.prenom + ' ' + patient.nom">
-          {{ obtenirInitialePatient(patient) }}
+      <!-- Header avec avatar et informations -->
+      <div class="card-header">
+        <!-- Avatar avec initiales -->
+        <div class="personnel-avatar">
+          <div class="cercle-initiales" 
+               [attr.aria-label]="obtenirInitialePatient(patient) + ' initiales de ' + patient.prenom + ' ' + patient.nom">
+            {{ obtenirInitialePatient(patient) }}
+          </div>
         </div>
-      </div>
-      
-      <!-- Informations du patient -->
-      <div class="contenu-carnet">
-        <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
-        <p class="numero-dossier">
-          <strong>N° Dossier:</strong> {{ patient.numero_dossier || 'Non assigné' }}
-        </p>
         
-        <!-- Informations de contact -->
-        <div class="informations-contact">
-          <p *ngIf="patient.telephone" class="info-contact">
+        <!-- Informations du patient -->
+        <div class="personnel-info">
+          <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
+          <p class="numero-dossier">
+            <strong>N° Dossier:</strong> {{ patient.numero_dossier || 'Non assigné' }}
+          </p>
+          
+          <!-- Informations de contact -->
+          <p *ngIf="patient.telephone" class="telephone">
             <i class="bi bi-telephone"></i>
             {{ patient.telephone }}
           </p>
-          <p *ngIf="patient.email" class="info-contact">
+          <p *ngIf="patient.email" class="email">
             <i class="bi bi-envelope"></i>
             {{ patient.email }}
           </p>
         </div>
-        
+      </div>
+      
+      <!-- Footer avec actions et QR -->
+      <div class="card-footer">
         <!-- Code QR du patient si disponible -->
         <div *ngIf="patient.qr_token" class="conteneur-qr">
           <img 
-            [src]="'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' + patient.qr_token" 
+            [src]="'https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=' + patient.qr_token" 
             [alt]="'Code QR pour ' + patient.prenom + ' ' + patient.nom"
             class="code-qr"
             loading="lazy" />
-          <small class="legende-qr">Code QR d'accès</small>
+          <small class="legende-qr">QR Accès</small>
         </div>
-      </div>
-      
-      <!-- Indicateur de clic -->
-      <div class="indicateur-clic">
-        <i class="bi bi-box-arrow-up-right"></i>
-        <span>Ouvrir le dossier</span>
+        
+        <!-- Actions -->
+        <div class="card-actions">
+          <button class="btn-edit" (click)="ouvrirDossierPatient(patient); $event.stopPropagation()">
+            <i class="bi bi-folder-open"></i>
+            Dossier
+          </button>
+        </div>
       </div>
     </article>
     

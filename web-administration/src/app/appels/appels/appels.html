@@ -1,0 +1,169 @@
+<section class="appels-section">
+  <header class="section-header">
+    <div class="header-content">
+      <div class="header-title">
+        <h1><i class="bi bi-telephone"></i> Gestion des Appels et Absences</h1>
+        <p>Suivi des appels patients et gestion des absences</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-primary" (click)="openModal()">
+          <i class="bi bi-plus-circle"></i>
+          <span>Nouvel appel</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  @if (loading) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <i class="bi bi-arrow-clockwise rotating"></i>
+        <p>Chargement des appels...</p>
+      </div>
+    </div>
+  } @else {
+    <div class="content-grid">
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Liste des appels</h3>
+          <div class="table-actions">
+            <div class="search-box">
+              <i class="bi bi-search"></i>
+              <input type="text" placeholder="Rechercher..." />
+            </div>
+          </div>
+        </div>
+        
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Date d'appel</th>
+                <th>Statut</th>
+                <th>Motif d'absence</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of appelsList; track item.id) {
+                <tr>
+                  <td>
+                    <div class="patient-info">
+                      <i class="bi bi-person-circle"></i>
+                      <span>{{ item.patient }}</span>
+                    </div>
+                  </td>
+                  <td>{{ item.date_appel }}</td>
+                  <td>
+                    <span class="status-badge" [style.background-color]="getStatutColor(item.statut)">
+                      {{ getStatutLabel(item.statut) }}
+                    </span>
+                  </td>
+                  <td>{{ item.motif_absence || '-' }}</td>
+                  <td>{{ item.notes || '-' }}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="btn-edit" (click)="openModal(item)" title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn-delete" (click)="delete(item)" title="Supprimer">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="no-data">
+                    <i class="bi bi-telephone-x"></i>
+                    <p>Aucun appel trouvé</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal d'ajout/modification -->
+  @if (showModal) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingItem ? 'Modifier l\'appel' : 'Nouvel appel' }}</h3>
+          <button class="btn-close" (click)="closeModal()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        
+        <form [formGroup]="form" (ngSubmit)="save()" class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="patient">Patient *</label>
+              <select id="patient" formControlName="patient" [class.error]="form.get('patient')?.invalid && form.get('patient')?.touched">
+                <option value="">Sélectionner un patient</option>
+                @for (patient of patientsList; track patient.id) {
+                  <option [value]="patient.id">{{ patient.prenom }} {{ patient.nom }}</option>
+                }
+              </select>
+              @if (form.get('patient')?.invalid && form.get('patient')?.touched) {
+                <small class="error-text">Le patient est requis</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="date_appel">Date d'appel *</label>
+              <input id="date_appel" type="datetime-local" formControlName="date_appel" 
+                     [class.error]="form.get('date_appel')?.invalid && form.get('date_appel')?.touched" />
+              @if (form.get('date_appel')?.invalid && form.get('date_appel')?.touched) {
+                <small class="error-text">La date d'appel est requise</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="statut">Statut *</label>
+              <select id="statut" formControlName="statut" [class.error]="form.get('statut')?.invalid && form.get('statut')?.touched">
+                <option value="present">Présent</option>
+                <option value="absent">Absent</option>
+                <option value="retard">En retard</option>
+              </select>
+              @if (form.get('statut')?.invalid && form.get('statut')?.touched) {
+                <small class="error-text">Le statut est requis</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="motif_absence">Motif d'absence</label>
+              <input id="motif_absence" type="text" formControlName="motif_absence" placeholder="Ex: Maladie, Raison personnelle" />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="notes">Notes</label>
+              <textarea id="notes" formControlName="notes" rows="3" placeholder="Notes supplémentaires..."></textarea>
+            </div>
+          </div>
+        </form>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn-primary" (click)="save()" [disabled]="form.invalid">
+            <i class="bi bi-check-circle"></i>
+            {{ editingItem ? 'Modifier' : 'Créer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Messages -->
+  @if (message) {
+    <div class="message" [class.success]="message.includes('succès')" [class.error]="message.includes('Erreur')">
+      <i [class]="message.includes('succès') ? 'bi bi-check-circle' : 'bi bi-exclamation-triangle'"></i>
+      <span>{{ message }}</span>
+    </div>
+  }
+</section>

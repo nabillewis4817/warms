@@ -28,6 +28,90 @@ form {
   gap: 4px;
 }
 
+// Styles pour la sélection de rôle
+.role-selection {
+  .role-label {
+    font-weight: 600;
+    color: var(--warms-blue);
+    margin-bottom: 12px;
+    font-size: 16px;
+    text-align: center;
+  }
+  
+  .role-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+  .role-option {
+    position: relative;
+    cursor: pointer;
+    
+    input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      
+      &:checked + .role-card {
+        border-color: var(--warms-blue);
+        background: linear-gradient(135deg, rgba(30, 77, 183, 0.05), rgba(30, 77, 183, 0.02));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(30, 77, 183, 0.15);
+        
+        .role-card i {
+          color: var(--warms-blue);
+          transform: scale(1.1);
+        }
+        
+        .role-card h4 {
+          color: var(--warms-blue);
+        }
+      }
+    }
+  }
+  
+  .role-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    background: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    
+    &:hover {
+      border-color: #c9d6f2;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    i {
+      font-size: 32px;
+      color: #64748b;
+      margin-bottom: 12px;
+      display: block;
+      transition: all 0.3s ease;
+    }
+    
+    h4 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #334155;
+      transition: all 0.3s ease;
+    }
+    
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+  }
+}
+
 input, select { 
   border: 1px solid #c9d6f2; 
   border-radius: 12px; 

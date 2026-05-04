@@ -1,0 +1,183 @@
+<section class="rendez-vous-section">
+  <header class="section-header">
+    <div class="header-content">
+      <div class="header-title">
+        <h1><i class="bi bi-calendar-check"></i> Gestion des Rendez-vous</h1>
+        <p>Planification et suivi des rendez-vous patients</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-primary" (click)="openModal()">
+          <i class="bi bi-plus-circle"></i>
+          <span>Nouveau rendez-vous</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  @if (loading) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <i class="bi bi-arrow-clockwise rotating"></i>
+        <p>Chargement des rendez-vous...</p>
+      </div>
+    </div>
+  } @else {
+    <div class="content-grid">
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Liste des rendez-vous</h3>
+          <div class="table-actions">
+            <div class="search-box">
+              <i class="bi bi-search"></i>
+              <input type="text" placeholder="Rechercher..." />
+            </div>
+          </div>
+        </div>
+        
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Date & Heure</th>
+                <th>Durée</th>
+                <th>Motif</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of rendezVousList; track item.id) {
+                <tr>
+                  <td>
+                    <div class="patient-info">
+                      <i class="bi bi-person-circle"></i>
+                      <span>{{ item.patient }}</span>
+                    </div>
+                  </td>
+                  <td>{{ item.date_heure }}</td>
+                  <td>{{ item.duree }} min</td>
+                  <td>{{ item.motif }}</td>
+                  <td>
+                    <span class="status-badge" [style.background-color]="getStatutColor(item.statut)">
+                      {{ getStatutLabel(item.statut) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="btn-edit" (click)="openModal(item)" title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn-delete" (click)="delete(item)" title="Supprimer">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="no-data">
+                    <i class="bi bi-calendar-x"></i>
+                    <p>Aucun rendez-vous trouvé</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal d'ajout/modification -->
+  @if (showModal) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingItem ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous' }}</h3>
+          <button class="btn-close" (click)="closeModal()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        
+        <form [formGroup]="form" (ngSubmit)="save()" class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="patient">Patient *</label>
+              <select id="patient" formControlName="patient" [class.error]="form.get('patient')?.invalid && form.get('patient')?.touched">
+                <option value="">Sélectionner un patient</option>
+                @for (patient of patientsList; track patient.id) {
+                  <option [value]="patient.id">{{ patient.prenom }} {{ patient.nom }}</option>
+                }
+              </select>
+              @if (form.get('patient')?.invalid && form.get('patient')?.touched) {
+                <small class="error-text">Le patient est requis</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="date_heure">Date & Heure *</label>
+              <input id="date_heure" type="datetime-local" formControlName="date_heure" 
+                     [class.error]="form.get('date_heure')?.invalid && form.get('date_heure')?.touched" />
+              @if (form.get('date_heure')?.invalid && form.get('date_heure')?.touched) {
+                <small class="error-text">La date et heure sont requises</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="duree">Durée (minutes) *</label>
+              <input id="duree" type="number" formControlName="duree" min="15" max="180"
+                     [class.error]="form.get('duree')?.invalid && form.get('duree')?.touched" />
+              @if (form.get('duree')?.invalid && form.get('duree')?.touched) {
+                <small class="error-text">La durée doit être entre 15 et 180 minutes</small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="statut">Statut *</label>
+              <select id="statut" formControlName="statut" [class.error]="form.get('statut')?.invalid && form.get('statut')?.touched">
+                <option value="programme">Programmé</option>
+                <option value="en_cours">En cours</option>
+                <option value="termine">Terminé</option>
+                <option value="annule">Annulé</option>
+              </select>
+              @if (form.get('statut')?.invalid && form.get('statut')?.touched) {
+                <small class="error-text">Le statut est requis</small>
+              }
+            </div>
+
+            <div class="form-group full-width">
+              <label for="motif">Motif *</label>
+              <input id="motif" type="text" formControlName="motif" placeholder="Ex: Consultation de contrôle"
+                     [class.error]="form.get('motif')?.invalid && form.get('motif')?.touched" />
+              @if (form.get('motif')?.invalid && form.get('motif')?.touched) {
+                <small class="error-text">Le motif est requis</small>
+              }
+            </div>
+
+            <div class="form-group full-width">
+              <label for="notes">Notes</label>
+              <textarea id="notes" formControlName="notes" rows="3" placeholder="Notes supplémentaires..."></textarea>
+            </div>
+          </div>
+        </form>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn-primary" (click)="save()" [disabled]="form.invalid">
+            <i class="bi bi-check-circle"></i>
+            {{ editingItem ? 'Modifier' : 'Créer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Messages -->
+  @if (message) {
+    <div class="message" [class.success]="message.includes('succès')" [class.error]="message.includes('Erreur')">
+      <i [class]="message.includes('succès') ? 'bi bi-check-circle' : 'bi bi-exclamation-triangle'"></i>
+      <span>{{ message }}</span>
+    </div>
+  }
+</section>

@@ -1,4 +1,19 @@
-<section>
+<section class="patient-creation">
+  <!-- Header section -->
+  <div class="header-section">
+    <div class="header-content">
+      <img src="../../assets/folder.png" alt="Carnet" class="header-icon" />
+      <div class="header-text">
+        <h2>Paramètres patient & génération carnet</h2>
+        @if (patient) {
+          <p class="subtitle">{{ patient.prenom }} {{ patient.nom }} - N° Dossier: {{ patient.numero_dossier || 'Non attribué' }}</p>
+        } @else {
+          <p class="subtitle">Configurez les informations du patient et générez son carnet médical</p>
+        }
+      </div>
+    </div>
+  </div>
+
   <!-- Loading state -->
   @if (loading) {
     <div class="loading-container">
@@ -8,119 +23,96 @@
       </div>
     </div>
   } @else {
-    <!-- Header avec infos patient -->
-    <div class="en-tete-parametres">
-      <div class="header-content">
-        <div class="header-left">
-          <img src="assets/folder.png" alt="Carnet" class="icone-carnet">
-          <div class="header-titre">
-            <h2>Paramètres patient & génération carnet</h2>
-            @if (patient) {
-              <p class="patient-nom">{{ patient.prenom }} {{ patient.nom }}</p>
-              <p class="patient-dossier">N° Dossier: {{ patient.numero_dossier || 'Non attribué' }}</p>
-            }
+    <!-- Progress bar -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="etape === 1 ? 50 : 100"></div>
+      </div>
+      <div class="progress-text">Étape {{ etape }} / 2</div>
+    </div>
+
+    <form [formGroup]="form" class="patient-form">
+      @if (etape === 1) {
+        <!-- Informations démographiques -->
+        <div class="form-section">
+          <div class="section-header">
+            <img src="../../assets/person.png" alt="Démographie" class="section-icon" />
+            <h3>Informations démographiques</h3>
+          </div>
+          <div class="form-grid">
+            <label class="form-field">
+              <span>Sexe *</span>
+              <div class="radio-group">
+                <label class="radio-option">
+                  <input type="radio" formControlName="sexe" [value]="'M'" />
+                  <span class="radio-custom"></span>
+                  <span class="radio-label">Homme</span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" formControlName="sexe" [value]="'F'" />
+                  <span class="radio-custom"></span>
+                  <span class="radio-label">Femme</span>
+                </label>
+              </div>
+            </label>
+            <label class="form-field">
+              <span>Âge</span>
+              <input type="number" formControlName="age" placeholder="Ex: 35" min="0" max="120" />
+            </label>
+            <label class="form-field">
+              <span>Taille (cm)</span>
+              <input type="number" formControlName="taille_cm" placeholder="Ex: 175" min="50" max="250" />
+            </label>
+            <label class="form-field">
+              <span>Poids (kg)</span>
+              <input type="number" formControlName="poids_kg" placeholder="Ex: 70" min="1" max="300" />
+            </label>
           </div>
         </div>
-      </div>
-    </div>
+      } @else {
+        <!-- Informations médicales -->
+        <div class="form-section">
+          <div class="section-header">
+            <img src="../../assets/medical.png" alt="Médical" class="section-icon" />
+            <h3>Informations médicales</h3>
+          </div>
+          <div class="form-grid">
+            <label class="form-field full-width">
+              <span>Symptômes actuels</span>
+              <textarea formControlName="symptomes" placeholder="Décrivez les symptômes actuels du patient..." rows="4"></textarea>
+            </label>
+            <label class="form-field full-width">
+              <span>Consultations précédentes</span>
+              <textarea formControlName="consultations_precedentes" placeholder="Historique des consultations précédentes..." rows="4"></textarea>
+            </label>
+          </div>
+        </div>
+      }
 
-    <!-- Progress bar -->
-    <div class="progress">
-      <div class="bar" [style.width.%]="etape === 1 ? 50 : 100"></div>
-    </div>
-
-    <!-- Formulaire -->
-    <div class="book" [formGroup]="form">
-      <div class="page" [class.page-flip]="etape === 2">
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="precedent()" [disabled]="etape === 1">
+          <i class="bi bi-chevron-left"></i>
+          Précédent
+        </button>
+        
         @if (etape === 1) {
-          <div class="grid">
-            <div class="form-header">
-              <h3><i class="bi bi-person"></i> Informations démographiques</h3>
-              <p>Modifiez les informations de base du patient</p>
-            </div>
-            
-            <label>Sexe</label>
-            <div class="radios">
-              <label class="radio-option">
-                <input type="radio" formControlName="sexe" [value]="'M'" />
-                <span class="radio-label">Homme</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" formControlName="sexe" [value]="'F'" />
-                <span class="radio-label">Femme</span>
-              </label>
-            </div>
-            
-            <label>Age</label>
-            <div class="input-group">
-              <input type="number" min="0" max="120" [formControl]="form.controls.age" placeholder="Âge du patient" />
-              <span class="input-suffix">ans</span>
-            </div>
-            
-            <label>Taille (cm)</label>
-            <div class="input-group">
-              <input type="number" min="50" max="250" [formControl]="form.controls.taille_cm" placeholder="Taille" />
-              <span class="input-suffix">cm</span>
-            </div>
-            
-            <label>Poids (kg)</label>
-            <div class="input-group">
-              <input type="number" min="1" max="300" [formControl]="form.controls.poids_kg" placeholder="Poids" />
-              <span class="input-suffix">kg</span>
-            </div>
-          </div>
+          <button type="button" class="btn-primary" (click)="suivant()">
+            Suivant
+            <i class="bi bi-chevron-right"></i>
+          </button>
         } @else {
-          <div class="grid">
-            <div class="form-header">
-              <h3><i class="bi bi-clipboard2-pulse"></i> Informations médicales</h3>
-              <p>Ajoutez les symptômes et historique médical</p>
-            </div>
-            
-            <label>Symptômes actuels</label>
-            <div class="textarea-container">
-              <textarea rows="4" [formControl]="form.controls.symptomes" 
-                        placeholder="Décrivez les symptômes actuels du patient..."></textarea>
-              <div class="char-count">{{ form.controls.symptomes.value?.length || 0 }} caractères</div>
-            </div>
-            
-            <label>Consultations précédentes</label>
-            <div class="textarea-container">
-              <textarea rows="4" [formControl]="form.controls.consultations_precedentes" 
-                        placeholder="Historique des consultations précédentes..."></textarea>
-              <div class="char-count">{{ form.controls.consultations_precedentes.value?.length || 0 }} caractères</div>
-            </div>
-          </div>
+          <button type="button" class="btn-success" (click)="genererCarnet()">
+            <i class="bi bi-check-circle"></i>
+            Générer le carnet
+          </button>
         }
       </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="actions">
-      <button class="btn-secondary" (click)="precedent()" [disabled]="etape === 1">
-        <i class="bi bi-chevron-left"></i>
-        Précédent
-      </button>
-      
-      <div class="step-indicator">
-        Étape {{ etape }} / 2
-      </div>
-      
-      @if (etape === 1) {
-        <button class="btn-primary" (click)="suivant()">
-          Suivant
-          <i class="bi bi-chevron-right"></i>
-        </button>
-      } @else {
-        <button class="btn-success" (click)="genererCarnet()">
-          <i class="bi bi-check-circle"></i>
-          Générer le carnet
-        </button>
-      }
-    </div>
+    </form>
 
     <!-- Messages -->
     @if (message) {
-      <div class="message" [class.success]="message.includes('succès')" [class.error]="message.includes('Erreur')">
+      <div class="alert-message" [class.success]="message.includes('succès')" [class.error]="message.includes('Erreur')">
         <i [class]="message.includes('succès') ? 'bi bi-check-circle' : 'bi bi-exclamation-triangle'"></i>
         <span>{{ message }}</span>
       </div>
@@ -129,11 +121,11 @@
     <!-- Erreur de chargement -->
     @if (message && !patient) {
       <div class="error-container">
-        <div class="error-carte">
+        <div class="error-card">
           <i class="bi bi-exclamation-triangle"></i>
           <h3>Erreur de chargement</h3>
           <p>{{ message }}</p>
-          <button class="retry-btn" (click)="chargerPatient()">
+          <button class="btn-retry" (click)="chargerPatient()">
             <i class="bi bi-arrow-clockwise"></i>
             Réessayer
           </button>

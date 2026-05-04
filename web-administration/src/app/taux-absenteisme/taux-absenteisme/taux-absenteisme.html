@@ -1,0 +1,204 @@
+<section class="taux-absenteisme-section">
+  <header class="section-header">
+    <div class="header-content">
+      <div class="header-title">
+        <h1><i class="bi bi-graph-up"></i> Taux d'Absentéisme</h1>
+        <p>Analyse et suivi des taux d'absentéisme par service</p>
+      </div>
+      <div class="header-actions">
+        <div class="export-buttons">
+          <button class="btn-secondary" (click)="exporter('csv')">
+            <i class="bi bi-file-earmark-excel"></i>
+            CSV
+          </button>
+          <button class="btn-secondary" (click)="exporter('pdf')">
+            <i class="bi bi-file-earmark-pdf"></i>
+            PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Statistiques principales -->
+  <div class="stats-grid">
+    <div class="stat-card primary">
+      <div class="stat-content">
+        <div class="stat-icon">
+          <i class="bi bi-percent"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ stats.totalTaux }}%</h3>
+          <p>Taux général</p>
+        </div>
+      </div>
+      <div class="stat-tendance">
+        <i [class]="getTendanceIcon(stats.tendance)" [style.color]="getTendanceColor(stats.tendance)"></i>
+      </div>
+    </div>
+
+    <div class="stat-card secondary">
+      <div class="stat-content">
+        <div class="stat-icon">
+          <i class="bi bi-bar-chart"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ stats.tauxMoyen }}%</h3>
+          <p>Taux moyen</p>
+        </div>
+      </div>
+      <div class="stat-tendance">
+        <i class="bi bi-dash-circle-fill" style="color: #6b7280;"></i>
+      </div>
+    </div>
+
+    <div class="stat-card info">
+      <div class="stat-content">
+        <div class="stat-icon">
+          <i class="bi bi-calendar-range"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ stats.periodeAnalyse }}</h3>
+          <p>Période d'analyse</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <div class="filters-container">
+    <div class="filters-header">
+      <h3><i class="bi bi-funnel"></i> Filtres</h3>
+      <button class="btn-link" (click)="reinitialiserFiltres()">Réinitialiser</button>
+    </div>
+    
+    <form [formGroup]="filterForm" class="filters-form">
+      <div class="filter-row">
+        <div class="form-group">
+          <label for="periode">Période</label>
+          <select id="periode" formControlName="periode">
+            <option value="jour">Aujourd'hui</option>
+            <option value="semaine">Cette semaine</option>
+            <option value="mois">Ce mois</option>
+            <option value="trimestre">Ce trimestre</option>
+            <option value="annee">Cette année</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="date_debut">Date début</label>
+          <input id="date_debut" type="date" formControlName="date_debut" />
+        </div>
+
+        <div class="form-group">
+          <label for="date_fin">Date fin</label>
+          <input id="date_fin" type="date" formControlName="date_fin" />
+        </div>
+
+        <div class="form-group">
+          <label for="service">Service</label>
+          <select id="service" formControlName="service">
+            <option value="">Tous les services</option>
+            <option value="consultations">Consultations</option>
+            <option value="urgences">Urgences</option>
+            <option value="radiologie">Radiologie</option>
+            <option value="laboratoire">Laboratoire</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <button type="button" class="btn-primary" (click)="appliquerFiltres()">
+            <i class="bi bi-search"></i>
+            Appliquer
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  @if (loading) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <i class="bi bi-arrow-clockwise rotating"></i>
+        <p>Chargement des taux d'absentéisme...</p>
+      </div>
+    </div>
+  } @else {
+    <!-- Tableau des taux -->
+    <div class="table-container">
+      <div class="table-header">
+        <h3>Détail des taux d'absentéisme</h3>
+        <div class="table-info">
+          <span class="info-badge">{{ tauxList.length }} enregistrements</span>
+        </div>
+      </div>
+      
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Période</th>
+              <th>Service</th>
+              <th>Taux général</th>
+              <th>Taux médecins</th>
+              <th>Taux infirmiers</th>
+              <th>Taux personnel</th>
+              <th>Total absences</th>
+              <th>Tendance</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of tauxList; track item.id) {
+              <tr>
+                <td>{{ item.periode }}</td>
+                <td>{{ item.service || 'Tous services' }}</td>
+                <td>
+                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_general)">
+                    {{ item.taux_general }}%
+                  </span>
+                </td>
+                <td>
+                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_medecins)">
+                    {{ item.taux_medecins }}%
+                  </span>
+                </td>
+                <td>
+                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_infirmiers)">
+                    {{ item.taux_infirmiers }}%
+                  </span>
+                </td>
+                <td>
+                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_personnel)">
+                    {{ item.taux_personnel }}%
+                  </span>
+                </td>
+                <td>{{ item.total_absences }} / {{ item.total_employes }}</td>
+                <td>
+                  <div class="tendance-cell">
+                    <i [class]="getTendanceIcon(item.tendance)" [style.color]="getTendanceColor(item.tendance)"></i>
+                    <span>{{ item.tendance.replace('_', ' ') }}</span>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="no-data">
+                  <i class="bi bi-graph-down"></i>
+                  <p>Aucune donnée d'absentéisme trouvée</p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Messages -->
+  @if (message) {
+    <div class="message" [class.success]="message.includes('succès')" [class.error]="message.includes('Erreur')">
+      <i [class]="message.includes('succès') ? 'bi bi-check-circle' : 'bi bi-exclamation-triangle'"></i>
+      <span>{{ message }}</span>
+    </div>
+  }
+</section>

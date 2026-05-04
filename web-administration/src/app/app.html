@@ -112,7 +112,6 @@
           </a>
         </div>
       </div>
-        <button class="ia-float" (click)="ouvrirWarms()"><i class="bi bi-stars"></i> Warms</button>
         <a routerLink="/ocr" class="ocr-link"><i class="bi bi-camera"></i> OCR</a>
         <button class="logout-btn" (click)="seDeconnecter()" title="Se déconnecter">
           <i class="bi bi-box-arrow-right"></i> Déconnexion
@@ -161,4 +160,18 @@
       </div>
     </div>
   }
+  
+  <!-- Composant d'alerte global -->
+  <app-alerte></app-alerte>
+
+  <!-- Gestionnaire global des erreurs de token -->
+  <app-global-token-error-handler></app-global-token-error-handler>
+
+  <!-- Bouton IA Warms flottant en bas à droite -->
+  <button class="ia-float-bottom-right" (click)="ouvrirWarms()" title="Assistant IA Warms">
+    <div class="ia-icon">
+      <i class="bi bi-android"></i>
+    </div>
+    <span class="ia-label">warms</span>
+  </button>
 </div>

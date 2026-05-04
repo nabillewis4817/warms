@@ -237,7 +237,7 @@
 <!-- Modal Formulaire -->
 @if (afficherFormulaire) {
   <div class="modal-overlay" (click)="fermerFormulaire()">
-    <div class="modal-content" #modalContent (click)="$event.stopPropagation()">
+    <div class="modal-content modal-animate-in" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>
           <i class="bi bi-stethoscope"></i>
@@ -255,6 +255,14 @@
               <label for="patient">Patient *</label>
               <select id="patient" formControlName="patient" class="form-control">
                 <option value="">Sélectionner un patient</option>
+                @for (patient of patients; track patient.id) {
+                  <option [value]="patient.id">
+                    {{ patient.prenom }} {{ patient.nom }} 
+                    @if (patient.telephone) {
+                      - {{ patient.telephone }}
+                    }
+                  </option>
+                }
               </select>
               @if (f['patient']?.invalid && f['patient']?.touched) {
                 <small class="error-text">Le patient est requis</small>

@@ -37,17 +37,28 @@
       <input placeholder="Téléphone" formControlName="telephone" />
     </div>
     
-    <div class="form-group">
-      <select formControlName="role" 
-              [class.error]="form.get('role')?.invalid && form.get('role')?.touched">
-        <option value="">Sélectionner un rôle</option>
-        <option value="patient">Patient</option>
-        <option value="infirmiere">Infirmière</option>
-        <option value="secretaire">Secrétaire</option>
-        <option value="chirurgien_dentiste">Chirurgien-dentiste</option>
-      </select>
+    <div class="form-group role-selection">
+      <label class="role-label">Sélectionner votre rôle</label>
+      <div class="role-options">
+        <label class="role-option">
+          <input type="radio" formControlName="role" value="secretaire" />
+          <div class="role-card">
+            <i class="bi bi-clipboard-data"></i>
+            <h4>Secrétaire</h4>
+            <p>Gestion administrative et planning</p>
+          </div>
+        </label>
+        <label class="role-option">
+          <input type="radio" formControlName="role" value="chirurgien_dentiste" />
+          <div class="role-card">
+            <i class="bi bi-heart-pulse"></i>
+            <h4>Chirurgien-dentiste</h4>
+            <p>Soins dentaires et consultations</p>
+          </div>
+        </label>
+      </div>
       @if (form.get('role')?.invalid && form.get('role')?.touched) {
-        <small class="error-text">Le rôle est requis</small>
+        <small class="error-text">Veuillez sélectionner un rôle</small>
       }
     </div>
     

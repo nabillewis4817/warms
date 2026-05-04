@@ -1,0 +1,34 @@
+<div *ngIf="alerte" class="alerte-overlay" [style.background-color]="getCouleurFond()">
+  <div class="alerte-container">
+    <div class="alerte-header">
+      <i class="bi alerte-icone" [class]="getIcone()"></i>
+      <span class="alerte-titre">{{alerte.titre}}</span>
+      <button class="alerte-fermer" (click)="fermerAlerte()" [style.color]="getCouleurBordure()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    
+    <div class="alerte-contenu">
+      <p class="alerte-message">{{alerte.message}}</p>
+      
+      <div *ngIf="alerte.details" class="alerte-details">
+        <p>{{alerte.details}}</p>
+      </div>
+      
+      <div *ngIf="alerte.action" class="alerte-action">
+        <p><strong>Action recommandée :</strong> {{alerte.action}}</p>
+      </div>
+    </div>
+    
+    <div class="alerte-footer">
+      <button 
+        class="alerte-bouton" 
+        (click)="fermerAlerte()"
+        [style.background-color]="getCouleurBordure()"
+        [style.color]="'white'"
+      >
+        {{alerte.boutonText || 'Compris!'}}
+      </button>
+    </div>
+  </div>
+</div>

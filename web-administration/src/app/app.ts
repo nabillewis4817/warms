@@ -11,10 +11,14 @@ import { NotificationsService } from './noyau/services/notifications.service';
 import { ThemeService } from './noyau/services/theme';
 import { TraductionService } from './noyau/services/traduction';
 import { DateTimeService } from './noyau/services/datetime.service';
+import { AlerteService } from './noyau/services/alerte.service';
+
+import { AlerteComponent } from './noyau/composants/alerte/alerte.component';
+import { GlobalTokenErrorHandlerComponent } from './noyau/composants/global-token-error-handler.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, DialogueModal, DialogueComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, DialogueModal, DialogueComponent, AlerteComponent, GlobalTokenErrorHandlerComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -38,7 +42,8 @@ export class App {
     private readonly messagerie: Messagerie,
     private readonly notificationsService: NotificationsService,
     private readonly router: Router,
-    readonly dateTimeService: DateTimeService
+    readonly dateTimeService: DateTimeService,
+    private readonly alerteService: AlerteService
   ) {
     // Initialiser les propriétés DateTime après l'injection
     this.formattedDateTime$ = this.dateTimeService.formattedDateTime$;
@@ -65,7 +70,9 @@ export class App {
   }
 
   get estPageConnexion(): boolean {
-    return this.router.url.startsWith('/connexion');
+    return this.router.url.startsWith('/connexion') || 
+           this.router.url.startsWith('/inscription') || 
+           this.router.url.startsWith('/mot-de-passe-oublie');
   }
 
   changerLangue(langue: 'fr' | 'en'): void {

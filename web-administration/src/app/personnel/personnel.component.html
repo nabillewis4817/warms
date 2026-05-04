@@ -22,37 +22,179 @@
     </form>
   </div>
 
-  <div class="personnel-grid" *ngIf="!chargement && personnelFiltre.length > 0">
-    <div class="personnel-card" *ngFor="let person of personnelFiltre" (click)="voirDetails(person)">
-      <div class="card-header">
-        <div class="personnel-avatar">
-          <img [src]="person.photo || '/assets/default-avatar.png'" [alt]="person.prenom + ' ' + person.nom">
-        </div>
-        <div class="personnel-info">
-          <h3>{{person.prenom}} {{person.nom}}</h3>
-          <p class="role">{{getRoleLabel(person.role)}}</p>
-          <p class="email">{{person.email}}</p>
-          <p class="telephone">{{person.telephone}}</p>
-        </div>
-        <div class="card-actions">
-          <button type="button" class="btn-edit" (click)="modifierPersonnel(person)">
-            <i class="bi bi-pencil"></i> Modifier
-          </button>
-          <button type="button" class="btn-delete" (click)="supprimerPersonnel(person)">
-            <i class="bi bi-trash"></i> Supprimer
-          </button>
-        </div>
+  <!-- Formulaire d'ajout/modification -->
+  <div class="modal-overlay" *ngIf="afficherFormulaireAjout" (click)="fermerFormulaire()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ modeEdition ? 'Modifier un membre' : 'Ajouter un membre' }}</h3>
+        <button type="button" class="btn-close" (click)="fermerFormulaire()">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
-      <div class="card-footer">
+      
+      <form [formGroup]="formulaireAjout" class="personnel-form" (ngSubmit)="enregistrerPersonnel()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prenom">Prénom *</label>
+            <input id="prenom" type="text" formControlName="prenom" class="form-control">
+            <small class="error-text" *ngIf="formulaireAjout.get('prenom')?.invalid && formulaireAjout.get('prenom')?.touched">
+              Le prénom est requis
+            </small>
+          </div>
+          
+          <div class="form-group">
+            <label for="nom">Nom *</label>
+            <input id="nom" type="text" formControlName="nom" class="form-control">
+            <small class="error-text" *ngIf="formulaireAjout.get('nom')?.invalid && formulaireAjout.get('nom')?.touched">
+              Le nom est requis
+            </small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input id="email" type="email" formControlName="email" class="form-control">
+            <small class="error-text" *ngIf="formulaireAjout.get('email')?.invalid && formulaireAjout.get('email')?.touched">
+              L'email est requis et doit être valide
+            </small>
+          </div>
+          
+          <div class="form-group">
+            <label for="telephone">Téléphone *</label>
+            <input id="telephone" type="tel" formControlName="telephone" class="form-control">
+            <small class="error-text" *ngIf="formulaireAjout.get('telephone')?.invalid && formulaireAjout.get('telephone')?.touched">
+              Le téléphone est requis
+            </small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="role">Rôle *</label>
+            <select id="role" formControlName="role" class="form-control">
+              <option value="">Sélectionner un rôle</option>
+              <option *ngFor="let role of roles" [value]="role">{{ getRoleLabel(role) }}</option>
+            </select>
+            <small class="error-text" *ngIf="formulaireAjout.get('role')?.invalid && formulaireAjout.get('role')?.touched">
+              Le rôle est requis
+            </small>
+          </div>
+          
+          <div class="form-group">
+            <label for="statut">Statut *</label>
+            <select id="statut" formControlName="statut" class="form-control">
+              <option value="actif">Actif</option>
+              <option value="inactif">Inactif</option>
+              <option value="conge">Congé</option>
+              <option value="suspendu">Suspendu</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="service">Service</label>
+            <select id="service" formControlName="service" class="form-control">
+              <option value="">Sélectionner un service</option>
+              <option *ngFor="let service of services" [value]="service">{{ service }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="specialite">Spécialité</label>
+            <select id="specialite" formControlName="specialite" class="form-control">
+              <option value="">Sélectionner une spécialité</option>
+              <option *ngFor="let specialite of specialites" [value]="specialite">{{ specialite }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="date_embauche">Date d'embauche</label>
+            <input id="date_embauche" type="date" formControlName="date_embauche" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="fermerFormulaire()">Annuler</button>
+          <button type="submit" class="btn-primary" [disabled]="formulaireAjout.invalid">
+            {{ modeEdition ? 'Modifier' : 'Ajouter' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="personnel-books" *ngIf="!chargement && personnelFiltre.length > 0">
+    <div class="personnel-book" *ngFor="let person of personnelFiltre" (click)="voirDetails(person)">
+      <!-- Couverture du livre (carnet) -->
+      <div class="book-cover">
+        <!-- Avatar avec initiales et icône de rôle -->
+        <div class="personnel-avatar">
+          <!-- Initiales du personnel -->
+          <div class="cercle-initiales" 
+               [attr.aria-label]="getInitialesPersonnel(person) + ' initiales de ' + person.prenom + ' ' + person.nom">
+            {{ getInitialesPersonnel(person) }}
+          </div>
+          <!-- Icône du rôle en badge -->
+          <div class="role-badge">
+            <img [src]="getRoleIcon(person.role)" [alt]="person.role" class="role-img">
+          </div>
+        </div>
+        
+        <!-- Informations principales -->
+        <div class="book-title">
+          <h3>{{person.prenom}} {{person.nom}}</h3>
+          <p class="role-label">{{getRoleLabel(person.role)}}</p>
+        </div>
+        
+        <!-- Badge de statut -->
         <div class="status-badge" [style.background-color]="getStatutColor(person.statut)">
           {{getStatutBadge(person.statut)}}
         </div>
-        <div class="service-info">
-          <span class="service">{{person.service || 'Non spécifié'}}</span>
-          <span class="specialite">{{person.specialite || 'Non spécifiée'}}</span>
-        </div>
-        <div class="date-embauche">
-          Embauché le: {{person.date_embauche}}
+        
+        <!-- Effet de reliure -->
+        <div class="book-spine"></div>
+      </div>
+      
+      <!-- Contenu du carnet (ouvert) -->
+      <div class="book-content">
+        <div class="content-page">
+          <!-- Informations de contact -->
+          <div class="contact-info">
+            <div class="info-item">
+              <i class="bi bi-envelope"></i>
+              <span>{{person.email}}</span>
+            </div>
+            <div class="info-item">
+              <i class="bi bi-telephone"></i>
+              <span>{{person.telephone}}</span>
+            </div>
+            <div class="info-item" *ngIf="person.service">
+              <i class="bi bi-building"></i>
+              <span>{{person.service}}</span>
+            </div>
+            <div class="info-item" *ngIf="person.specialite">
+              <i class="bi bi-award"></i>
+              <span>{{person.specialite}}</span>
+            </div>
+            <div class="info-item" *ngIf="person.date_embauche">
+              <i class="bi bi-calendar-check"></i>
+              <span>Depuis {{formatDate(person.date_embauche)}}</span>
+            </div>
+          </div>
+          
+          <!-- Actions -->
+          <div class="book-actions">
+            <button type="button" class="btn-edit" (click)="modifierPersonnel(person); $event.stopPropagation()">
+              <i class="bi bi-pencil"></i> Modifier
+            </button>
+            <button type="button" class="btn-delete" (click)="supprimerPersonnel(person); $event.stopPropagation()">
+              <i class="bi bi-trash"></i> Supprimer
+            </button>
+          </div>
         </div>
       </div>
     </div>

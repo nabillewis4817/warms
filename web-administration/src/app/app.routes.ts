@@ -18,6 +18,9 @@ import { Ocr } from './innovations/ocr/ocr';
 import { IaWarms } from './innovations/ia-warms/ia-warms';
 import { Avis } from './avis/avis';
 import { ConsultationsComponent } from './consultations/consultations/consultations.component';
+import { RendezVousComponent } from './rendez-vous/rendez-vous/rendez-vous';
+import { AppelsComponent } from './appels/appels/appels';
+import { TauxAbsenteismeComponent } from './taux-absenteisme/taux-absenteisme/taux-absenteisme';
 import { authentificationGuard } from './noyau/gardes/authentification-guard';
 import { roleGuard } from './noyau/gardes/role-guard';
 
@@ -55,19 +58,19 @@ export const routes: Routes = [
   // Routes pour les rendez-vous
   { 
     path: 'rendez-vous', 
-    component: ConsultationsComponent, 
+    component: RendezVousComponent, 
     canActivate: [authentificationGuard]
   },
   // Routes pour les appels et absences
   { 
     path: 'appels', 
-    component: ConsultationsComponent, 
+    component: AppelsComponent, 
     canActivate: [authentificationGuard]
   },
   // Routes pour les taux d'absentéisme
   { 
     path: 'taux-absenteisme', 
-    component: ConsultationsComponent, 
+    component: TauxAbsenteismeComponent, 
     canActivate: [authentificationGuard]
   },
 ];

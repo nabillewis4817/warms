@@ -1,77 +1,114 @@
-<section>
-  <div class="header">
-    <h2><i class="bi bi-chat-dots-fill"></i> Messagerie</h2>
-    <p class="description">Sélectionnez un patient pour démarrer une conversation</p>
+<section class="messagerie-container">
+  <!-- Header moderne -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-chat-dots-fill"></i>
+      </div>
+      <div class="header-text">
+        <h2>Messagerie</h2>
+        <p class="subtitle">Gérez vos conversations avec les patients et l'équipe</p>
+      </div>
+    </div>
   </div>
-  
-  <!-- Sélection du patient et démarrage du chat -->
-  <div class="chat-actions">
-    <div class="patient-selector">
-      <label for="patient-select" class="selector-label">
-        <i class="bi bi-person-fill"></i> Choisir un patient:
-      </label>
-      <select [(ngModel)]="patientSelectionne" id="patient-select" class="patient-select">
-        <option value="">Sélectionner un patient...</option>
-        @for (patient of listePatients; track patient.id) {
-          <option [value]="patient">{{ patient.prenom }} {{ patient.nom }}</option>
-        }
-      </select>
+
+  <!-- Section de création de conversation -->
+  <div class="creation-section">
+    <div class="section-header">
+      <i class="bi bi-plus-circle"></i>
+      <h3>Nouvelle conversation</h3>
+    </div>
+    <div class="creation-form">
+      <div class="form-group">
+        <label for="patient-select" class="form-label">
+          <i class="bi bi-person-fill"></i>
+          Sélectionner un patient
+        </label>
+        <select [(ngModel)]="patientSelectionne" id="patient-select" class="form-select">
+          <option value="">Choisir un patient...</option>
+          @for (patient of listePatients; track patient.id) {
+            <option [value]="patient">{{ patient.prenom }} {{ patient.nom }}</option>
+          }
+        </select>
+      </div>
+      <button (click)="demarrerChatPatient()" 
+              [disabled]="!patientSelectionne" 
+              class="btn-primary">
+        <i class="bi bi-chat-dots-fill"></i>
+        Démarrer la conversation
+      </button>
+    </div>
+  </div>
+
+  <!-- Liste des conversations -->
+  <div class="conversations-section">
+    <div class="section-header">
+      <i class="bi bi-chat-left-text"></i>
+      <h3>Conversations récentes</h3>
+      <span class="conversation-count">{{ conversations.length }} conversation(s)</span>
     </div>
     
-    <button (click)="demarrerChatPatient()" [disabled]="!patientSelectionne" class="btn-start-chat">
-      <i class="bi bi-chat-dots-fill"></i> Démarrer le chat
-    </button>
-  </div>
-  
-  <!-- Liste des conversations -->
-  <div class="list">
-    @for (conversation of conversations; track conversation.id) {
-      <div class="conversation-item" [class.patient-conversation]="conversation.type_conversation === 'patient'">
-        <div class="conversation-header">
-          <a [routerLink]="['/messagerie/conversation', conversation.id]" class="conversation-link">
-            <div class="conversation-title">
-              {{ conversation.titre || ('Conversation #' + conversation.id) }}
-            </div>
-            <div class="conversation-meta">
-              @if (conversation.type_conversation === 'patient' && conversation.patient) {
-                <span class="patient-tag">
-                  <i class="bi bi-person-fill"></i>
-                  Patient: {{ conversation.patient }}
-                </span>
-              }
-              <span class="conversation-type">
-                @if (conversation.type_conversation === 'patient') {
-                  <i class="bi bi-chat-heart"></i> Patient
-                } @else {
-                  <i class="bi bi-chat-dots"></i> Interne
-                }
-              </span>
-              <span class="conversation-date">
-                <i class="bi bi-clock"></i>
-                {{ conversation.modifie_le | date:'dd/MM/yyyy HH:mm' }}
-              </span>
-            </div>
-          </a>
-        </div>
-        <div class="conversation-actions">
-          <button (click)="editerConversation(conversation)" class="btn-edit" title="Modifier">
-            <i class="bi bi-pencil"></i>
-          </button>
-          @if (conversation.type_conversation === 'patient') {
-            <button (click)="voirHistoriquePatient(conversation)" class="btn-history" title="Voir l'historique patient">
-              <i class="bi bi-clock-history"></i>
+    <div class="conversations-list">
+      @for (conversation of conversations; track conversation.id) {
+        <div class="conversation-card" 
+             [class.patient-conversation]="conversation.type_conversation === 'patient'"
+             [class.internal-conversation]="conversation.type_conversation !== 'patient'">
+          <div class="conversation-main">
+            <a [routerLink]="['/messagerie/conversation', conversation.id]" class="conversation-link">
+              <div class="conversation-header-info">
+                <div class="conversation-title">
+                  <i class="bi" 
+                     [ngClass]="conversation.type_conversation === 'patient' ? 'bi-chat-heart' : 'bi-chat-dots'"></i>
+                  {{ conversation.titre || ('Conversation #' + conversation.id) }}
+                </div>
+                <div class="conversation-meta">
+                  @if (conversation.type_conversation === 'patient' && conversation.patient) {
+                    <span class="meta-tag patient">
+                      <i class="bi bi-person-fill"></i>
+                      {{ conversation.patient }}
+                    </span>
+                  }
+                  <span class="meta-tag type">
+                    @if (conversation.type_conversation === 'patient') {
+                      Patient
+                    } @else {
+                      Interne
+                    }
+                  </span>
+                  <span class="meta-tag date">
+                    <i class="bi bi-clock"></i>
+                    {{ conversation.modifie_le | date:'dd/MM HH:mm' }}
+                  </span>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="conversation-actions">
+            <button (click)="editerConversation(conversation)" 
+                    class="btn-action btn-edit" 
+                    title="Modifier la conversation">
+              <i class="bi bi-pencil"></i>
             </button>
-          }
+            @if (conversation.type_conversation === 'patient') {
+              <button (click)="voirHistoriquePatient(conversation)" 
+                      class="btn-action btn-history" 
+                      title="Voir l'historique patient">
+                <i class="bi bi-clock-history"></i>
+              </button>
+            }
+          </div>
         </div>
-      </div>
-    }
-    
-    @if (conversations.length === 0) {
-      <div class="no-conversations">
-        <i class="bi bi-chat-dots"></i>
-        <p>Aucune conversation pour le moment</p>
-        <p>Créez votre première conversation en utilisant le formulaire ci-dessus</p>
-      </div>
-    }
+      }
+      
+      @if (conversations.length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="bi bi-chat-dots"></i>
+          </div>
+          <h4>Aucune conversation</h4>
+          <p>Commencez une nouvelle conversation en sélectionnant un patient ci-dessus</p>
+        </div>
+      }
+    </div>
   </div>
 </section>

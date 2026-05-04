@@ -24,11 +24,29 @@ export interface PersonnelFilters {
   statut?: string;
 }
 
+export interface Role {
+  id: string;
+  nom: string;
+  description: string;
+}
+
+export interface Service {
+  id: number;
+  nom: string;
+  description: string;
+}
+
+export interface Specialite {
+  id: number;
+  nom: string;
+  description: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class PersonnelService {
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/personnel';
+  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/personnel/personnel/';
 
   constructor(private http: HttpClient) {}
 
@@ -62,19 +80,17 @@ export class PersonnelService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // Obtenir les rôles disponibles
-  getRoles(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/roles`);
+  // Charger les options depuis le backend
+  getRoles(): Observable<Role[]> {
+    return this.http.get<Role[]>(`http://127.0.0.1:8000/api/v1/personnel/roles/`);
   }
 
-  // Obtenir les services disponibles
-  getServices(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/services`);
+  getServices(): Observable<Service[]> {
+    return this.http.get<Service[]>(`http://127.0.0.1:8000/api/v1/personnel/services/`);
   }
 
-  // Obtenir les spécialités disponibles
-  getSpecialites(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/specialites`);
+  getSpecialites(): Observable<Specialite[]> {
+    return this.http.get<Specialite[]>(`http://127.0.0.1:8000/api/v1/personnel/specialites/`);
   }
 
   // Exporter le personnel

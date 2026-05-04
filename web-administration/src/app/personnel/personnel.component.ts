@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { PersonnelService, Personnel, PersonnelFilters } from '../noyau/services/personnel.service';
+import { PersonnelService, Personnel, PersonnelFilters, Role, Service, Specialite } from '../noyau/services/personnel.service';
+import { AlerteService } from '../noyau/services/alerte.service';
 
 @Component({
   selector: 'app-personnel',
@@ -12,6 +13,7 @@ import { PersonnelService, Personnel, PersonnelFilters } from '../noyau/services
 })
 export class PersonnelComponent implements OnInit {
   form: any;
+  formulaireAjout: any;
   personnel: Personnel[] = [];
   personnelFiltre: Personnel[] = [];
   chargement = false;
@@ -19,11 +21,17 @@ export class PersonnelComponent implements OnInit {
   roles: string[] = [];
   services: string[] = [];
   specialites: string[] = [];
+  
+  // États pour l'ajout/modification
+  afficherFormulaireAjout = false;
+  modeEdition = false;
+  personnelSelectionne: Personnel | null = null;
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private personnelService: PersonnelService
+    private personnelService: PersonnelService,
+    private alerteService: AlerteService
   ) {
     this.form = this.fb.group({
       recherche: [''],
@@ -31,11 +39,24 @@ export class PersonnelComponent implements OnInit {
       statut: [''],
       service: ['']
     });
+
+    this.formulaireAjout = this.fb.group({
+      prenom: ['', [Validators.required]],
+      nom: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+      telephone: ['', [Validators.required]],
+      role: ['', [Validators.required]],
+      service: [''],
+      specialite: [''],
+      date_embauche: [''],
+      statut: ['actif', [Validators.required]]
+    });
   }
 
   ngOnInit(): void {
     this.chargerPersonnel();
     this.chargerOptions();
+    this.initialiserRoles();
   }
 
   chargerPersonnel(): void {
@@ -44,16 +65,20 @@ export class PersonnelComponent implements OnInit {
     
     this.personnelService.getPersonnel(filters).subscribe({
       next: (data) => {
-        this.personnel = data;
-        this.personnelFiltre = data;
+        // Filtrer pour n'afficher que le personnel de la clinique
+        // Exclure les patients et autres rôles non-clinique
+        const rolesClinique = ['chirurgien_dentiste', 'chirurgien-dentiste', 'secrétaire', 'secretary'];
+        this.personnel = data.filter(person => 
+          rolesClinique.includes(person.role?.toLowerCase())
+        );
+        this.personnelFiltre = this.personnel;
         this.chargement = false;
       },
       error: (error) => {
         console.error('Erreur lors du chargement du personnel:', error);
+        this.personnel = [];
+        this.personnelFiltre = [];
         this.chargement = false;
-        // En cas d'erreur, utiliser des données de démonstration
-        this.personnel = this.getDonneesDemonstration();
-        this.personnelFiltre = this.personnel;
       }
     });
   }
@@ -61,8 +86,9 @@ export class PersonnelComponent implements OnInit {
   chargerOptions(): void {
     // Charger les rôles, services et spécialités disponibles
     this.personnelService.getRoles().subscribe({
-      next: (data) => {
-        this.roles = data;
+      next: (data: Role[]) => {
+        // Extraire les noms des objets
+        this.roles = data.map(item => item.nom);
       },
       error: () => {
         this.roles = ['chirurgien_dentiste', 'secretaire', 'infirmiere', 'patient'];
@@ -70,8 +96,9 @@ export class PersonnelComponent implements OnInit {
     });
 
     this.personnelService.getServices().subscribe({
-      next: (data) => {
-        this.services = data;
+      next: (data: Service[]) => {
+        // Extraire les noms des objets
+        this.services = data.map(item => item.nom);
       },
       error: () => {
         this.services = ['Chirurgie générale', 'Orthodontie', 'Pédiatrie', 'Administration'];
@@ -79,82 +106,69 @@ export class PersonnelComponent implements OnInit {
     });
 
     this.personnelService.getSpecialites().subscribe({
-      next: (data) => {
-        this.specialites = data;
+      next: (data: Specialite[]) => {
+        // Extraire les noms des objets
+        this.specialites = data.map(item => item.nom);
       },
       error: () => {
-        this.specialites = ['Implantologie', 'Orthodontie', 'Pédiatrie', 'Parodontologie'];
+        this.specialites = ['Odontologie générale', 'Chirurgie orale', 'Orthodontie', 'Parodontologie'];
       }
     });
   }
 
-  getDonneesDemonstration(): Personnel[] {
-    return [
-      {
-        id: 1,
-        nom: 'Martin',
-        prenom: 'Jean',
-        email: 'jean.martin@warms.com',
-        telephone: '+237123456789',
-        role: 'chirurgien_dentiste',
-        statut: 'actif',
-        date_embauche: '2020-01-15',
-        service: 'Chirurgie générale',
-        specialite: 'Implantologie',
-        photo: undefined
-      },
-      {
-        id: 2,
-        nom: 'Durand',
-        prenom: 'Sophie',
-        email: 'sophie.durand@warms.com',
-        telephone: '+237987654321',
-        role: 'secretaire',
-        statut: 'actif',
-        date_embauche: '2019-03-20',
-        service: 'Administration',
-        specialite: undefined,
-        photo: undefined
-      },
-      {
-        id: 3,
-        nom: 'Lefebvre',
-        prenom: 'Marie',
-        email: 'marie.lefebvre@warms.com',
-        telephone: '+237654321987',
-        role: 'infirmiere',
-        statut: 'actif',
-        date_embauche: '2021-06-10',
-        service: 'Chirurgie générale',
-        specialite: 'Assistance chirurgicale',
-        photo: undefined
-      }
+  // Supprimé : getDonneesDemonstration() - Utilisation des vraies données PostgreSQL
+
+  filtrerPersonnel(): void {
+    const terme = this.form.get('recherche')?.value?.toLowerCase() || '';
+    const role = this.form.get('role')?.value || '';
+    const statut = this.form.get('statut')?.value || '';
+    const service = this.form.get('service')?.value || '';
+
+    this.personnelFiltre = this.personnel.filter(person => {
+      const matchRecherche = !terme || 
+        person.prenom.toLowerCase().includes(terme) ||
+        person.nom.toLowerCase().includes(terme) ||
+        person.email.toLowerCase().includes(terme);
+      
+      const matchRole = !role || person.role === role;
+      const matchStatut = !statut || person.statut === statut;
+      const matchService = !service || person.service === service;
+
+      return matchRecherche && matchRole && matchStatut && matchService;
+    });
+  }
+
+  initialiserRoles(): void {
+    this.roles = [
+      'chirurgien-dentiste',
+      'secrétaire',
+      'infirmière',
+      'cuisinier',
+      'vigile',
+      'technicien de surface',
+      'assistant dentaire',
+      'orthodontiste',
+      'parodontiste',
+      'radiologue',
+      'administrateur'
     ];
   }
 
-  filtrerPersonnel(): void {
-    const filtreTexte = this.form.value.recherche?.toLowerCase() || '';
-    const filtreRole = this.form.value.role || '';
-    const filtreStatut = this.form.value.statut || '';
-    const filtreService = this.form.value.service || '';
-    
-    this.personnelFiltre = this.personnel.filter(person => {
-      const matchTexte = !filtreTexte || 
-        person.nom.toLowerCase().includes(filtreTexte) ||
-        person.prenom.toLowerCase().includes(filtreTexte) ||
-        person.email.toLowerCase().includes(filtreTexte);
-      
-      const matchRole = !filtreRole || person.role === filtreRole;
-      const matchStatut = !filtreStatut || person.statut === filtreStatut;
-      const matchService = !filtreService || person.service === filtreService;
-      
-      return matchTexte && matchRole && matchStatut && matchService;
-    });
-  }
-
   ajouterPersonnel(): void {
-    // Navigation vers le formulaire d'ajout
-    this.router.navigate(['/personnel/nouveau']);
+    this.modeEdition = false;
+    this.personnelSelectionne = null;
+    this.formulaireAjout.reset({
+      prenom: '',
+      nom: '',
+      email: '',
+      telephone: '',
+      role: '',
+      service: '',
+      specialite: '',
+      date_embauche: '',
+      statut: 'actif'
+    });
+    this.afficherFormulaireAjout = true;
   }
 
   modifierPersonnel(person: Personnel): void {
@@ -201,11 +215,94 @@ export class PersonnelComponent implements OnInit {
     });
   }
 
+  fermerFormulaire(): void {
+    this.afficherFormulaireAjout = false;
+    this.modeEdition = false;
+    this.personnelSelectionne = null;
+    this.formulaireAjout.reset();
+  }
+
+  enregistrerPersonnel(): void {
+    if (this.formulaireAjout.invalid) {
+      this.formulaireAjout.markAllAsTouched();
+      const champsErreurs = Object.keys(this.formulaireAjout.controls)
+        .filter(key => this.formulaireAjout.get(key)?.invalid)
+        .map(key => {
+          const control = this.formulaireAjout.get(key);
+          return this.getNomChamp(key);
+        });
+      
+      this.alerteService.afficherErreurValidation(champsErreurs);
+      return;
+    }
+
+    const donnees = this.formulaireAjout.value;
+
+    if (this.modeEdition && this.personnelSelectionne) {
+      // Mode édition
+      this.personnelService.mettreAJourPersonnel(this.personnelSelectionne.id, donnees).subscribe({
+        next: () => {
+          this.fermerFormulaire();
+          this.chargerPersonnel();
+          this.alerteService.afficherSuccess('Personnel modifié avec succès');
+        },
+        error: (error) => {
+          console.error('Erreur lors de la modification:', error);
+          this.alerteService.afficherErreurTechnique('Impossible de modifier le personnel', error);
+        }
+      });
+    } else {
+      // Mode ajout
+      this.personnelService.creerPersonnel(donnees).subscribe({
+        next: () => {
+          this.fermerFormulaire();
+          this.chargerPersonnel();
+          this.alerteService.afficherSuccess('Personnel ajouté avec succès');
+        },
+        error: (error) => {
+          console.error('Erreur lors de l\'ajout:', error);
+          if (error.status === 401) {
+            this.alerteService.afficherPermissionRefusee('secrétaire', 'créer ce type de personnel');
+          } else if (error.status === 403) {
+            this.alerteService.afficherPermissionInsuffise('secrétaire', 'chirurgien-dentiste', 'créer un chirurgien-dentiste');
+          } else {
+            this.alerteService.afficherErreurTechnique('Impossible d\'ajouter le personnel', error);
+          }
+        }
+      });
+    }
+  }
+
+  private getNomChamp(key: string): string {
+    const noms: { [key: string]: string } = {
+      'prenom': 'Prénom',
+      'nom': 'Nom',
+      'email': 'Email',
+      'telephone': 'Téléphone',
+      'role': 'Rôle',
+      'service': 'Service',
+      'specialite': 'Spécialité',
+      'date_embauche': 'Date d\'embauche',
+      'statut': 'Statut'
+    };
+    return noms[key] || key;
+  }
+
+  formatDate(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
   getRoleLabel(role: string): string {
     const labels: { [key: string]: string } = {
       'chirurgien_dentiste': 'Chirurgien Dentiste',
-      'secretaire': 'Secrétaire',
-      'infirmiere': 'Infirmière',
+      'secrétaire': 'Secrétaire',
+      'infirmière': 'Infirmière',
       'patient': 'Patient'
     };
     return labels[role] || role;
@@ -223,11 +320,83 @@ export class PersonnelComponent implements OnInit {
 
   getStatutColor(statut: string): string {
     const colors: { [key: string]: string } = {
-      'actif': '#28a745',
-      'inactif': '#6c757d',
-      'en_conge': '#ffc107',
-      'suspendu': '#dc3545'
+      'actif': '#22c55e',
+      'inactif': '#ef4444',
+      'conge': '#f59e0b',
+      'suspendu': '#6b7280'
     };
-    return colors[statut] || '#6c757d';
+    return colors[statut] || '#6b7280';
+  }
+
+  getInitialesPersonnel(person: any): string {
+    if (!person.prenom && !person.nom) return '?';
+    const prenom = person.prenom || '';
+    const nom = person.nom || '';
+    return (prenom.charAt(0) + nom.charAt(0)).toUpperCase();
+  }
+
+  getRoleIcon(role: string): string {
+    const icons: { [key: string]: string } = {
+      // Rôles dentaires
+      'chirurgien_dentiste': '/assets/dentist.png',
+      'chirurgien-dentiste': '/assets/dentist.png',
+      'dentist': '/assets/dentist.png',
+      'chirurgien dentiste': '/assets/dentist.png',
+      'dentiste': '/assets/dentist.png',
+      'assistant dentaire': '/assets/nurse.png',
+      'orthodontiste': '/assets/dentist.png',
+      'parodontiste': '/assets/dentist.png',
+      'radiologue': '/assets/medical.png',
+      
+      // Rôles médicaux
+      'infirmiere': '/assets/nurse.png',
+      'infirmière': '/assets/nurse.png',
+      'nurse': '/assets/nurse.png',
+      'medecin': '/assets/medical.png',
+      'médecin': '/assets/medical.png',
+      'doctor': '/assets/medical.png',
+      
+      // Rôles administratifs
+      'secrétaire': '/assets/secretary.png',
+      'secretary': '/assets/secretary.png',
+      'administrateur': '/assets/secretary.png',
+      'admin': '/assets/secretary.png',
+      'gestionnaire': '/assets/secretary.png',
+      
+      // Rôles de service
+      'cuisinier': '/assets/cleaner.png',
+      'vigile': '/assets/cleaner.png',
+      'technicien de surface': '/assets/cleaner.png',
+      'cleaner': '/assets/cleaner.png',
+      'agent de service': '/assets/cleaner.png',
+      'maintenance': '/assets/cleaner.png',
+      
+      // Patients
+      'patient': '/assets/patient.png',
+      'patients': '/assets/patient.png',
+      'client': '/assets/patient.png'
+    };
+    
+    // Normaliser le rôle pour la recherche (insensible à la casse et aux accents)
+    const normalizedRole = role.toLowerCase().trim();
+    
+    // Chercher d'abord une correspondance exacte
+    if (icons[normalizedRole]) {
+      return icons[normalizedRole];
+    }
+    
+    // Chercher une correspondance partielle
+    for (const [key, value] of Object.entries(icons)) {
+      if (normalizedRole.includes(key) || key.includes(normalizedRole)) {
+        return value;
+      }
+    }
+    
+    // Debug: afficher le rôle et la recherche si pas trouvé
+    console.log(`Rôle non trouvé: "${role}" (normalisé: "${normalizedRole}")`);
+    console.log('Rôles disponibles:', Object.keys(icons));
+    
+    // Valeur par défaut
+    return '/assets/default-avatar.png';
   }
 }

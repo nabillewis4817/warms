@@ -1,54 +1,123 @@
 <section class="chat-container">
+  <!-- Header de conversation -->
   <header class="chat-header">
-    <h2>Conversation</h2>
-    <div class="chat-status">
-      <span *ngIf="chargement" class="status-indicator loading"><i class="bi bi-arrow-clockwise"></i> Chargement...</span>
-      <span *ngIf="!chargement" class="status-indicator online"><i class="bi bi-circle-fill"></i> En ligne</span>
+    <div class="header-info">
+      <div class="conversation-title">
+        <i class="bi bi-chat-dots-fill"></i>
+        <h2>Conversation</h2>
+      </div>
+      <div class="chat-status">
+        @if (chargement) {
+          <span class="status-indicator loading">
+            <i class="bi bi-arrow-clockwise"></i>
+            Chargement...
+          </span>
+        } @else {
+          <span class="status-indicator online">
+            <i class="bi bi-circle-fill"></i>
+            En ligne
+          </span>
+        }
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" title="Rafraîchir">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+      <button class="btn-icon" title="Informations">
+        <i class="bi bi-info-circle"></i>
+      </button>
     </div>
   </header>
 
+  <!-- Conteneur des messages -->
   <div class="messages-container">
-    <div *ngIf="messages.length === 0 && !chargement" class="empty-state">
-        <i class="bi bi-chat-dots"></i>
-        <p>Aucun message pour le moment</p>
+    @if (messages.length === 0 && !chargement) {
+      <div class="empty-state">
+        <div class="empty-icon">
+          <i class="bi bi-chat-dots"></i>
+        </div>
+        <h3>Aucun message</h3>
         <p>Soyez le premier à démarrer la conversation!</p>
+        <div class="suggestions">
+          <button class="suggestion-btn">
+            <i class="bi bi-hand-wave"></i>
+            Bonjour !
+          </button>
+          <button class="suggestion-btn">
+            <i class="bi bi-question-circle"></i>
+            Comment allez-vous ?
+          </button>
+        </div>
       </div>
+    }
     
-    <ng-container *ngIf="messages.length > 0 || chargement">
-      <article *ngFor="let message of messages; trackBy: trackMessageId" class="message" [class.own]="message.auteur_username === 'current_user'">
-        <div class="message-avatar">
-          <div class="avatar-circle">
-            {{ (message.auteur_username || 'U').charAt(0).toUpperCase() }}
-          </div>
-        </div>
-        <div class="message-content">
-          <div class="message-header">
-            <strong class="author">{{ message.auteur_username || 'Utilisateur' }}</strong>
-            <span class="timestamp">{{ message.cree_le | date:'HH:mm' }}</span>
-          </div>
-          <p class="message-text">{{ message.contenu }}</p>
-        </div>
-      </article>
-    </ng-container>
+    @if (messages.length > 0 || chargement) {
+      <div class="messages-list">
+        @for (message of messages; track message.id) {
+          <article class="message" 
+                   [class.own]="message.auteur_username === 'current_user'"
+                   [class.other]="message.auteur_username !== 'current_user'">
+            <div class="message-avatar">
+              <div class="avatar-circle">
+                {{ (message.auteur_username || 'U').charAt(0).toUpperCase() }}
+              </div>
+            </div>
+            <div class="message-content">
+              <div class="message-header">
+                <strong class="author">{{ message.auteur_username || 'Utilisateur' }}</strong>
+                <span class="timestamp">{{ message.cree_le | date:'HH:mm' }}</span>
+              </div>
+              <div class="message-bubble">
+                <p class="message-text">{{ message.contenu }}</p>
+              </div>
+              <div class="message-actions">
+                <button class="btn-action" title="Répondre">
+                  <i class="bi bi-reply"></i>
+                </button>
+                <button class="btn-action" title="Copier">
+                  <i class="bi bi-clipboard"></i>
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
   </div>
 
+  <!-- Formulaire d'envoi -->
   <form class="message-form" [formGroup]="form" (ngSubmit)="envoyer()">
-    <div class="input-group">
-      <input 
-        type="text" 
-        formControlName="contenu" 
-        placeholder="Écrire un message..." 
-        class="message-input"
-        [disabled]="chargement"
-        autocomplete="off"
-      />
+    <div class="form-container">
+      <div class="input-wrapper">
+        <input 
+          type="text" 
+          formControlName="contenu" 
+          placeholder="Écrire un message..." 
+          class="message-input"
+          [disabled]="chargement"
+          autocomplete="off"
+        />
+        <div class="input-actions">
+          <button type="button" class="btn-icon" title="Pièce jointe">
+            <i class="bi bi-paperclip"></i>
+          </button>
+          <button type="button" class="btn-icon" title="Émoji">
+            <i class="bi bi-emoji-smile"></i>
+          </button>
+        </div>
+      </div>
       <button 
         type="submit" 
         class="send-button"
         [disabled]="form.invalid || chargement"
-        [style.cursor]="form.invalid || chargement ? 'not-allowed' : 'pointer'"
+        [class.sending]="chargement"
       >
-        <i class="bi bi-send-fill"></i>
+        @if (chargement) {
+          <i class="bi bi-arrow-clockwise loading"></i>
+        } @else {
+          <i class="bi bi-send-fill"></i>
+        }
       </button>
     </div>
   </form>

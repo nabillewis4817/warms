@@ -188,15 +188,6 @@
   border-radius: 8px 8px 8px 8px;
 }
 
-.ia-float {
-  border: none;
-  border-radius: 999px;
-  padding: 8px 14px;
-  background: #0d1b3e;
-  color: #fff;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
 
 .ocr-link {
   color: #1a2e6b;
@@ -235,8 +226,7 @@
   font-size: 16px;
 }
 
-.quick-action:hover,
-.ia-float:hover {
+.quick-action:hover {
   transform: translateY(-1px);
   opacity: 0.92;
 }
@@ -736,3 +726,62 @@
 }
 
 // #EbaJioloLewis
+
+// Bouton IA Warms flottant en bas à droite
+.ia-float-bottom-right {
+  position: fixed !important;
+  bottom: 25px !important;
+  right: 25px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  z-index: 99999 !important;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: auto !important;
+  transform: translateZ(0);
+  will-change: transform;
+
+  &:hover {
+    transform: translateY(-3px) scale(1.05) translateZ(0);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    cursor: pointer !important;
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(1.02) translateZ(0);
+  }
+
+  .ia-icon {
+    background: transparent;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2px;
+
+    i {
+      font-size: 22px;
+      color: white;
+    }
+  }
+
+  .ia-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
