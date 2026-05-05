@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
@@ -452,10 +451,13 @@ class OfflineService {
       
       // Nettoyer les anciennes données
       final dataKeysToDelete = <String>[];
-      for (final entry in _dataBox.entries) {
-        final timestamp = entry.value['timestamp'] as String?;
-        if (timestamp != null && timestamp.compareTo(cutoffIso) < 0) {
-          dataKeysToDelete.add(entry.key);
+      for (final key in _dataBox.keys) {
+        final value = _dataBox.get(key);
+        if (value != null) {
+          final timestamp = value['timestamp'] as String?;
+          if (timestamp != null && timestamp.compareTo(cutoffIso) < 0) {
+            dataKeysToDelete.add(key);
+          }
         }
       }
       
@@ -465,10 +467,13 @@ class OfflineService {
       
       // Nettoyer les anciennes actions
       final actionKeysToDelete = <String>[];
-      for (final entry in _actionsBox.entries) {
-        final timestamp = entry.value['timestamp'] as String?;
-        if (timestamp != null && timestamp.compareTo(cutoffIso) < 0) {
-          actionKeysToDelete.add(entry.key);
+      for (final key in _actionsBox.keys) {
+        final value = _actionsBox.get(key);
+        if (value != null) {
+          final timestamp = value['timestamp'] as String?;
+          if (timestamp != null && timestamp.compareTo(cutoffIso) < 0) {
+            actionKeysToDelete.add(key);
+          }
         }
       }
       

@@ -78,6 +78,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
     return MaterialApp(
       title: 'WARMS Mobile',
       theme: ThemeData(
+        scaffoldBackgroundColor: modeSombre ? const Color(0xFF0D1B3E) : const Color(0xFFF0F4FF),
         useMaterial3: true,
         brightness: modeSombre ? Brightness.dark : Brightness.light,
         colorScheme: ColorScheme.fromSeed(
@@ -85,7 +86,6 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
           brightness: modeSombre ? Brightness.dark : Brightness.light,
         ),
       ),
-      scaffoldBackgroundColor: modeSombre ? const Color(0xFF0D1B3E) : const Color(0xFFF0F4FF),
       home: connecte
           ? (roleUtilisateur == 'patient' ? _buildEcranPatient() : _buildEcranPreferences())
           : _buildEcranConnexion(),
@@ -450,7 +450,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                     ),
                     child: Row(
                       children: [
@@ -611,7 +611,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
             child: Column(
               children: [
                 Expanded(
-                  child: Container(
+child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -627,7 +627,9 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(12),
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -1114,7 +1116,7 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
                     TextField(
                       controller: _passwordCtrl,
                       obscureText: !showPassword,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Mot de passe',
                         prefixIcon: Icon(Icons.lock),
                         suffixIcon: IconButton(

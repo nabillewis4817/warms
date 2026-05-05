@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
 
 /// Service d'Intelligence Artificielle pour WARMS Mobile
 /// 

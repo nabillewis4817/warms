@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /**
  * Service de notifications pour WARMS Mobile
@@ -202,10 +204,10 @@ class NotificationService {
     );
 
     await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
-      notificationDetails,
+      id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title: title,
+      body: body,
+      notificationDetails: notificationDetails,
       payload: payload,
     );
   }
@@ -288,7 +290,7 @@ class NotificationService {
     required int id,
     required String title,
     required String body,
-    required Time scheduledTime,
+    required TimeOfDay scheduledTime,
     required RepeatInterval repeatInterval,
   }) async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
@@ -313,14 +315,12 @@ class NotificationService {
     );
 
     await _notifications.zonedSchedule(
-      id,
-      title,
-      body,
-      _nextInstanceOfTime(scheduledTime),
-      notificationDetails,
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: _nextInstanceOfTime(scheduledTime),
+      notificationDetails: notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
@@ -328,7 +328,7 @@ class NotificationService {
   /**
    * Calcule la prochaine occurrence d'une heure spécifique
    */
-  tz.TZDateTime _nextInstanceOfTime(Time time) {
+  tz.TZDateTime _nextInstanceOfTime(TimeOfDay time) {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(
       tz.local,
@@ -337,9 +337,10 @@ class NotificationService {
       now.day,
       time.hour,
       time.minute,
-      time.second,
+      0,
     );
-
+    
+    // Si l'heure est déjà passée aujourd'hui, planifier pour demain
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
@@ -433,9 +434,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 
   await notifications.show(
-    DateTime.now().millisecondsSinceEpoch.remainder(100000),
-    message.notification?.title ?? 'WARMS',
-    message.notification?.body ?? 'Nouveau message',
-    notificationDetails,
+    id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+    title: message.notification?.title ?? 'WARMS',
+    body: message.notification?.body ?? 'Nouveau message',
+    payload: 'notification',
+    notificationDetails: notificationDetails,
   );
 }

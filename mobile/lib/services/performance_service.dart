@@ -123,7 +123,6 @@ class PerformanceService {
    */
   Future<void> _collectPerformanceMetrics() async {
     try {
-      final startTime = DateTime.now();
       
       // Métriques de base
       final memoryUsage = await _getMemoryUsage();
@@ -357,12 +356,10 @@ class PerformanceService {
       );
       
       // Configurer la barre de statut
-      await SystemChrome.setSystemUIOverlayStyle(
+      SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(
-          statusBarColor: Color(0xFF1E4DB7),
-          statusBarIconBrightness: Brightness.light,
-          navigationBarColor: Color(0xFF1E4DB7),
-          navigationBarIconBrightness: Brightness.light,
+          systemNavigationBarColor: Color(0xFF1E4DB7),
+          systemNavigationBarIconBrightness: Brightness.light,
         ),
       );
       

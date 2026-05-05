@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import '../services/ia_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// Écran de Chat IA pour WARMS Mobile
 /// 
