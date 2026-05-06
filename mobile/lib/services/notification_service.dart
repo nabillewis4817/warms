@@ -352,7 +352,7 @@ class NotificationService {
    * Annule une notification
    */
   Future<void> cancelNotification(int id) async {
-    await _notifications.cancel(id);
+    await _notifications.cancel(id: id);
   }
 
   /**

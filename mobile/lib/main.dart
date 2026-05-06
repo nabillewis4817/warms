@@ -7,10 +7,15 @@ import 'package:flutter/foundation.dart';
 // Import des écrans IA WARMS
 import 'screens/ia_chat_screen.dart';
 import 'screens/ia_recherche_screen.dart';
+import 'screens/enhanced_chat_screen.dart';
 import 'services/datetime_service.dart';
 
+// Import du thème WARMS et composants
+import 'themes/warms_theme.dart';
+import 'widgets/warms_card.dart';
+
 void main() {
-  runApp(const MaterialApp(
+  runApp(MaterialApp(
     home: WarmsMobileApp(),
     debugShowCheckedModeBanner: false,
     localizationsDelegates: [
@@ -22,6 +27,9 @@ void main() {
       const Locale('fr', 'FR'),
       const Locale('en', 'US'),
     ],
+    theme: WarmsTheme.lightTheme,
+    darkTheme: WarmsTheme.darkTheme,
+    themeMode: ThemeMode.system,
   ));
 }
 
@@ -66,11 +74,19 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
   String langue = 'fr';
   final _warmsController = TextEditingController();
 
+  // Variables du profil utilisateur
+  String email = '';
+  String telephone = '';
+  String role = '';
+  String qrCode = '';
+  String photoProfil = '';
+
   @override
   void initState() {
     super.initState();
     _configurerIntercepteurAuth();
     _restaurerSession();
+    _chargerProfil();
   }
 
   @override
@@ -424,9 +440,22 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
     try {
       setState(() => message = 'Chargement des messages...');
       
-      // Récupérer les messages de la conversation
-      final response = await _dio.get('/conversations/$conversationId/messages/');
-      final messages = response.data as List<dynamic>;
+      // Récupérer les messages de la conversation avec gestion d'erreur améliorée
+      final response = await _dio.get(
+        '/conversations/$conversationId/messages/',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      
+      if (response.statusCode != 200) {
+        throw Exception('Erreur HTTP: ${response.statusCode}');
+      }
+      
+      final messages = response.data as List<dynamic>? ?? [];
       
       // Marquer les messages comme lus
       try {
@@ -805,13 +834,9 @@ child: Container(
   }
 
   Future<void> _ouvrirChatIA() async {
-    if (kDebugMode) {
-      print('Ouverture de l\'écran de chat IA');
-    }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => IAChatScreen(),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EnhancedChatScreen()),
     );
   }
 
@@ -1131,20 +1156,25 @@ child: Container(
                     const SizedBox(height: 24),
                     
                     // Bouton de connexion
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: chargement ? null : _connexion,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[600],
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    Tooltip(
+                      message: 'Connectez-vous pour accéder à votre compte WARMS',
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: chargement ? null : _connexion,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: WarmsTheme.warmsAccent,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 8,
+                            shadowColor: WarmsTheme.warmsBlue.withOpacity(0.3),
                           ),
-                        ),
-                        child: Text(
-                          chargement ? 'Connexion...' : 'Se connecter',
-                          style: const TextStyle(fontSize: 16),
+                          child: Text(
+                            chargement ? 'Connexion...' : 'Se connecter',
+                            style: const TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
                     ),
@@ -1237,16 +1267,42 @@ child: Container(
                   Wrap(
                     spacing: 8,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: _envoyerAvisPatient,
-                        icon: const Icon(Icons.rate_review),
-                        label: const Text('Envoyer un avis'),
+                      Tooltip(
+                        message: 'Partagez votre expérience sur la prise en charge',
+                        child: ElevatedButton.icon(
+                          onPressed: _envoyerAvisPatient,
+                          icon: const Icon(Icons.rate_review),
+                          label: const Text('Envoyer un avis'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: WarmsTheme.warmsSuccess,
+                            foregroundColor: Colors.white,
+                            elevation: 8,
+                            shadowColor: WarmsTheme.warmsSuccess.withOpacity(0.3),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: _afficherConversations,
-                        icon: const Icon(Icons.chat),
-                        label: const Text('Messages'),
+                      Tooltip(
+                        message: 'Consultez vos conversations et messages médicaux',
+                        child: ElevatedButton.icon(
+                          onPressed: _afficherConversations,
+                          icon: const Icon(Icons.chat),
+                          label: const Text('Messages'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: WarmsTheme.warmsInfo,
+                            foregroundColor: Colors.white,
+                            elevation: 8,
+                            shadowColor: WarmsTheme.warmsInfo.withOpacity(0.3),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1292,33 +1348,29 @@ child: Container(
           // Boutons flottants d'actions
           Column(
             children: [
-              // Bouton WARMS original
-              FloatingActionButton.extended(
-                onPressed: () => _ouvrirWarmsMobile(),
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('Warms'),
-                backgroundColor: const Color(0xFF0D1B3E),
-                heroTag: "warms_original",
-              ),
-              const SizedBox(height: 10),
-              
-              // Bouton Chat IA
-              FloatingActionButton.extended(
-                onPressed: () => _ouvrirChatIA(),
-                icon: const Icon(Icons.chat),
-                label: const Text('Chat IA'),
-                backgroundColor: const Color(0xFF9C27B0),
-                heroTag: "chat_ia",
+              // Bouton Chat IA amélioré avec Claude
+              Tooltip(
+                message: 'Discutez avec notre assistant médical IA propulsé par Claude',
+                child: FloatingActionButton.extended(
+                  onPressed: () => _ouvrirChatIA(),
+                  icon: const Icon(Icons.smart_toy),
+                  label: const Text('Chat IA'),
+                  backgroundColor: WarmsTheme.warmsAccent,
+                  heroTag: "chat_ia_claude",
+                ),
               ),
               const SizedBox(height: 10),
               
               // Bouton Recherche IA
-              FloatingActionButton.extended(
-                onPressed: () => _ouvrirRechercheIA(),
-                icon: const Icon(Icons.search),
-                label: const Text('Recherche IA'),
-                backgroundColor: const Color(0xFF2196F3),
-                heroTag: "recherche_ia",
+              Tooltip(
+                message: 'Recherchez des informations médicales fiables et actualisées',
+                child: FloatingActionButton.extended(
+                  onPressed: () => _ouvrirRechercheIA(),
+                  icon: const Icon(Icons.search),
+                  label: const Text('Recherche IA'),
+                  backgroundColor: WarmsTheme.warmsBlue,
+                  heroTag: "recherche_ia",
+                ),
               ),
             ],
           ),
@@ -1350,14 +1402,255 @@ child: Container(
                   ),
                   const SizedBox(height: 16),
                   
+                  // Profil utilisateur complet avec photo et QR code
+                  Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          WarmsTheme.warmsAccent.withOpacity(0.1),
+                          WarmsTheme.warmsBlue.withOpacity(0.05),
+
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: WarmsTheme.warmsAccent.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // Photo de profil et informations
+                        Row(
+                          children: [
+                            // Photo de profil
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: WarmsTheme.warmsBg,
+                                border: Border.all(
+                                  color: WarmsTheme.warmsAccent,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: WarmsTheme.warmsBlue.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 35,
+                                    backgroundImage: photoProfil.isNotEmpty
+                                        ? NetworkImage(photoProfil)
+                                        : null,
+                                    backgroundColor: WarmsTheme.warmsGray,
+                                    child: photoProfil.isEmpty
+                                        ? Icon(
+                                            Icons.person,
+                                            size: 40,
+                                            color: Colors.white,
+                                          )
+                                        : null,
+                                  ),
+                                  // Bouton pour modifier la photo
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        // TODO: Implémenter la modification de photo
+                                      },
+                                      child: Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.2),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt,
+                                          size: 14,
+                                          color: WarmsTheme.warmsAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Informations utilisateur
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '$prenomNom',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: WarmsTheme.warmsNavy,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    role,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: WarmsTheme.warmsGray,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    email,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: WarmsTheme.warmsGray,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    telephone,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: WarmsTheme.warmsGray,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // QR Code
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: WarmsTheme.warmsAccent.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.qr_code,
+                                    color: WarmsTheme.warmsAccent,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    langue == 'fr' ? 'Mon QR Code' : 'My QR Code',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: WarmsTheme.warmsNavy,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                width: 200,
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: WarmsTheme.warmsBg,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: WarmsTheme.warmsGray.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: qrCode.isNotEmpty
+                                    ? Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.qr_code_scanner,
+                                            size: 48,
+                                            color: WarmsTheme.warmsAccent,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            langue == 'fr' ? 'Scannez pour accéder à votre carnet' : 'Scan to access your notebook',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: WarmsTheme.warmsGray,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.qr_code_2,
+                                            size: 48,
+                                            color: WarmsTheme.warmsGray.withOpacity(0.5),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            langue == 'fr' ? 'QR Code non disponible' : 'QR Code not available',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: WarmsTheme.warmsGray,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
                   // Bouton d'actualisation
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      await Future.wait([_chargerPatients(), _chargerStats()]);
-                      setState(() => message = langue == 'fr' ? 'Données actualisées.' : 'Data refreshed.');
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: Text(langue == 'fr' ? 'Actualiser' : 'Refresh'),
+                  Tooltip(
+                    message: 'Actualiser les données patients et statistiques',
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await Future.wait([_chargerPatients(), _chargerStats()]);
+                        setState(() => message = langue == 'fr' ? 'Données actualisées.' : 'Data refreshed.');
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: Text(langue == 'fr' ? 'Actualiser' : 'Refresh'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: WarmsTheme.warmsBlue,
+                        foregroundColor: Colors.white,
+                        elevation: 8,
+                        shadowColor: WarmsTheme.warmsBlue.withOpacity(0.3),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
                   
                   const SizedBox(height: 16),
@@ -1458,15 +1751,24 @@ child: Container(
                   const SizedBox(height: 16),
                   
                   // Bouton de sauvegarde
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _sauvegarderPreferences,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                  Tooltip(
+                    message: langue == 'fr' 
+                      ? 'Enregistrer vos préférences et paramètres' 
+                      : 'Save your preferences and settings',
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _sauvegarderPreferences,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: WarmsTheme.warmsAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 8,
+                          shadowColor: WarmsTheme.warmsBlue.withOpacity(0.3),
+                        ),
+                        child: Text(
+                          langue == 'fr' ? 'Enregistrer' : 'Save',
+                        ),
                       ),
-                      child: Text(langue == 'fr' ? 'Enregistrer' : 'Save'),
                     ),
                   ),
                 ],
