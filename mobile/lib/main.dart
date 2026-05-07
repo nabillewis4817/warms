@@ -3,11 +3,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 // Import des écrans IA WARMS
 import 'screens/ia_chat_screen.dart';
 import 'screens/ia_recherche_screen.dart';
 import 'screens/enhanced_chat_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/datetime_service.dart';
 
 // Import du thème WARMS et composants
@@ -15,32 +17,53 @@ import 'themes/warms_theme.dart';
 import 'widgets/warms_card.dart';
 
 void main() {
-  runApp(MaterialApp(
-    home: WarmsMobileApp(),
-    debugShowCheckedModeBanner: false,
-    localizationsDelegates: [
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-    ],
-    supportedLocales: [
-      const Locale('fr', 'FR'),
-      const Locale('en', 'US'),
-    ],
-    theme: WarmsTheme.lightTheme,
-    darkTheme: WarmsTheme.darkTheme,
-    themeMode: ThemeMode.system,
-  ));
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  runApp(const WarmsMobileApp());
 }
 
-class WarmsMobileApp extends StatefulWidget {
+class WarmsMobileApp extends StatelessWidget {
   const WarmsMobileApp({super.key});
 
   @override
-  State<WarmsMobileApp> createState() => _WarmsMobileAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'WARMS Mobile',
+      debugShowCheckedModeBanner: false,
+      theme: WarmsTheme.lightTheme,
+      darkTheme: WarmsTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('fr', 'FR'),
+        Locale('en', 'US'),
+      ],
+      locale: const Locale('fr', 'FR'),
+      home: const SplashScreen(),
+      routes: {
+        '/main': (context) => const WarmsMobileAppBody(),
+      },
+      onGenerateRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => const WarmsMobileAppBody(),
+        );
+      },
+    );
+  }
 }
 
-class _WarmsMobileAppState extends State<WarmsMobileApp> {
+class WarmsMobileAppBody extends StatefulWidget {
+  const WarmsMobileAppBody({super.key});
+
+  @override
+  State<WarmsMobileAppBody> createState() => _WarmsMobileAppBodyState();
+}
+
+class _WarmsMobileAppBodyState extends State<WarmsMobileAppBody> {
   final _storage = const FlutterSecureStorage();
   final _dio = Dio(BaseOptions(baseUrl: 'http://127.0.0.1:8000/api/v1'));
 
@@ -86,35 +109,13 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
     super.initState();
     _configurerIntercepteurAuth();
     _restaurerSession();
-    _chargerProfil();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'WARMS Mobile',
-      theme: ThemeData(
-        scaffoldBackgroundColor: modeSombre ? const Color(0xFF0D1B3E) : const Color(0xFFF0F4FF),
-        useMaterial3: true,
-        brightness: modeSombre ? Brightness.dark : Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E4DB7),
-          brightness: modeSombre ? Brightness.dark : Brightness.light,
-        ),
-      ),
-      home: connecte
-          ? (roleUtilisateur == 'patient' ? _buildEcranPatient() : _buildEcranPreferences())
-          : _buildEcranConnexion(),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('fr', 'FR'),
-        Locale('en', 'US'),
-      ],
-    );
+    return connecte
+        ? (roleUtilisateur == 'patient' ? _buildEcranPatient() : _buildEcranPreferences())
+        : _buildEcranConnexion();
   }
 
   void _configurerIntercepteurAuth() {
@@ -139,7 +140,8 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
       ),
     );
   }
-
+  
+  
   Future<void> _restaurerSession() async {
     try {
       final token = await _storage.read(key: 'warms_access');
@@ -230,48 +232,77 @@ class _WarmsMobileAppState extends State<WarmsMobileApp> {
   }
 
   Future<void> _chargerProfil() async {
-    try {
-      print('Chargement du profil utilisateur...');
-      final rep = await _dio.get('/personnel/me/');
-      final data = rep.data as Map<String, dynamic>;
-      
-      print('Profil chargé: ${data['username']} - Role: ${data['role']}');
-      
-      final prefs = (data['preferences_notifications'] as Map?)?.cast<String, dynamic>() ?? {};
-      setState(() {
-        connecte = true;
-        prenomNom = '${data['prenom'] ?? ''} ${data['nom'] ?? ''}'.trim();
-        roleUtilisateur = (data['role'] ?? '').toString();
-        langue = (data['langue_interface'] as String?) == 'en' ? 'en' : 'fr';
-        modeSombre = data['mode_sombre'] == true;
-        notifEmail = prefs['email'] == null ? true : prefs['email'] == true;
-        notifSms = prefs['sms'] == true;
-        notifPush = prefs['push'] == null ? true : prefs['push'] == true;
-        rappelsAuto = prefs['rappels_auto'] == null ? true : prefs['rappels_auto'] == true;
-      });
-      
-      print('Chargement des badges...');
-      await _chargerBadges();
-      
-      if (roleUtilisateur == 'patient') {
-        print('Chargement des données spécifiques au patient...');
-        await Future.wait([_chargerProfilPatient(), _chargerOrdonnancesPatient()]);
-      }
-      
-      print('Chargement des données générales...');
-      await Future.wait([_chargerPatients(), _chargerStats()]);
-      
-      print('Profil et données chargés avec succès');
-    } on DioException catch (e) {
-      print('Erreur Dio lors du chargement du profil: ${e.response?.statusCode} - ${e.message}');
-      setState(() => message = 'Impossible de charger le profil (${e.response?.statusCode}).');
-      await _deconnexion();
-    } catch (e) {
-      print('Erreur inattendue lors du chargement du profil: $e');
-      setState(() => message = 'Erreur lors du chargement du profil.');
-      await _deconnexion();
+  try {
+    // ÉTAPE 1 — Affichage immédiat depuis le cache local
+    final storedEmail = await _storage.read(key: 'user_email') ?? '';
+    final storedPhone = await _storage.read(key: 'user_phone') ?? '';
+    final storedRole = await _storage.read(key: 'user_role') ?? '';
+    final storedQrCode = await _storage.read(key: 'user_qr_code') ?? '';
+    final storedPhoto = await _storage.read(key: 'user_photo') ?? '';
+    final storedName = await _storage.read(key: 'user_name') ?? '';
+    
+    setState(() {
+      email = storedEmail;
+      telephone = storedPhone;
+      role = storedRole;
+      qrCode = storedQrCode;
+      photoProfil = storedPhoto;
+      prenomNom = storedName;
+    });
+
+    // ÉTAPE 2 — Mise à jour depuis l'API
+    print('Chargement du profil utilisateur...');
+    final rep = await _dio.get('/personnel/me/');
+    final data = rep.data as Map<String, dynamic>;
+
+    print('Profil chargé: ${data['username']} - Role: ${data['role']}');
+
+    final prefs = (data['preferences_notifications'] as Map?)
+        ?.cast<String, dynamic>() ?? {};
+
+    // Mettre à jour le cache local avec les nouvelles données
+    await _storage.write(key: 'user_name', 
+        value: '${data['prenom'] ?? ''} ${data['nom'] ?? ''}'.trim());
+    await _storage.write(key: 'user_role', 
+        value: (data['role'] ?? '').toString());
+    await _storage.write(key: 'user_email', 
+        value: (data['email'] ?? '').toString());
+
+    setState(() {
+      connecte = true;
+      prenomNom = '${data['prenom'] ?? ''} ${data['nom'] ?? ''}'.trim();
+      roleUtilisateur = (data['role'] ?? '').toString();
+      langue = (data['langue_interface'] as String?) == 'en' ? 'en' : 'fr';
+      modeSombre = data['mode_sombre'] == true;
+      notifEmail = prefs['email'] == null ? true : prefs['email'] == true;
+      notifSms = prefs['sms'] == true;
+      notifPush = prefs['push'] == null ? true : prefs['push'] == true;
+      rappelsAuto = prefs['rappels_auto'] == null 
+          ? true : prefs['rappels_auto'] == true;
+    });
+
+    await _chargerBadges();
+
+    if (roleUtilisateur == 'patient') {
+      await Future.wait([
+        _chargerProfilPatient(), 
+        _chargerOrdonnancesPatient(),
+      ]);
     }
+
+    await Future.wait([_chargerPatients(), _chargerStats()]);
+
+  } on DioException catch (e) {
+    print('Erreur Dio: ${e.response?.statusCode} - ${e.message}');
+    setState(() => message = 
+        'Impossible de charger le profil (${e.response?.statusCode}).');
+    await _deconnexion();
+  } catch (e) {
+    print('Erreur inattendue: $e');
+    setState(() => message = 'Erreur lors du chargement du profil.');
+    await _deconnexion();
   }
+}
 
   Future<void> _chargerPatients() async {
     try {
@@ -1067,11 +1098,12 @@ child: Container(
   Widget _buildEcranConnexion() {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             // Logo et titre
             Column(
               children: [
@@ -1110,13 +1142,17 @@ child: Container(
             const SizedBox(height: 48),
             
             // Formulaire de connexion
-            Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width - 64,
+              ),
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
                     const Text(
                       'Connexion',
                       style: TextStyle(
@@ -1164,6 +1200,7 @@ child: Container(
                           onPressed: chargement ? null : _connexion,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: WarmsTheme.warmsAccent,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1173,7 +1210,11 @@ child: Container(
                           ),
                           child: Text(
                             chargement ? 'Connexion...' : 'Se connecter',
-                            style: const TextStyle(fontSize: 16),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -1203,12 +1244,14 @@ child: Container(
                         ),
                       ),
                     ],
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
+      ),
       ),
     );
   }
