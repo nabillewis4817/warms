@@ -56,7 +56,6 @@ export class PersonnelComponent implements OnInit {
   ngOnInit(): void {
     this.chargerPersonnel();
     this.chargerOptions();
-    this.initialiserRoles();
   }
 
   chargerPersonnel(): void {
@@ -65,12 +64,8 @@ export class PersonnelComponent implements OnInit {
     
     this.personnelService.getPersonnel(filters).subscribe({
       next: (data) => {
-        // Filtrer pour n'afficher que le personnel de la clinique
-        // Exclure les patients et autres rôles non-clinique
-        const rolesClinique = ['chirurgien_dentiste', 'chirurgien-dentiste', 'secrétaire', 'secretary'];
-        this.personnel = data.filter(person => 
-          rolesClinique.includes(person.role?.toLowerCase())
-        );
+        // Exclure les patients: onglet dédié au personnel.
+        this.personnel = data.filter((person) => person.role?.toLowerCase() !== 'patient');
         this.personnelFiltre = this.personnel;
         this.chargement = false;
       },
@@ -87,11 +82,10 @@ export class PersonnelComponent implements OnInit {
     // Charger les rôles, services et spécialités disponibles
     this.personnelService.getRoles().subscribe({
       next: (data: Role[]) => {
-        // Extraire les noms des objets
-        this.roles = data.map(item => item.nom);
+        this.roles = data.map(item => item.id);
       },
       error: () => {
-        this.roles = ['chirurgien_dentiste', 'secretaire', 'infirmiere', 'patient'];
+        this.roles = ['chirurgien_dentiste', 'secretaire', 'infirmiere'];
       }
     });
 
@@ -136,22 +130,6 @@ export class PersonnelComponent implements OnInit {
 
       return matchRecherche && matchRole && matchStatut && matchService;
     });
-  }
-
-  initialiserRoles(): void {
-    this.roles = [
-      'chirurgien-dentiste',
-      'secrétaire',
-      'infirmière',
-      'cuisinier',
-      'vigile',
-      'technicien de surface',
-      'assistant dentaire',
-      'orthodontiste',
-      'parodontiste',
-      'radiologue',
-      'administrateur'
-    ];
   }
 
   ajouterPersonnel(): void {
@@ -301,8 +279,10 @@ export class PersonnelComponent implements OnInit {
   getRoleLabel(role: string): string {
     const labels: { [key: string]: string } = {
       'chirurgien_dentiste': 'Chirurgien Dentiste',
-      'secrétaire': 'Secrétaire',
-      'infirmière': 'Infirmière',
+      'secretaire': 'Secrétaire',
+      'infirmiere': 'Infirmière',
+      'assistant': 'Assistant',
+      'admin': 'Administrateur',
       'patient': 'Patient'
     };
     return labels[role] || role;

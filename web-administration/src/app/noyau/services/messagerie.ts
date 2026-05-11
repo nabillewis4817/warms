@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Conversation {
   id: number;
@@ -31,7 +32,7 @@ export interface BadgesNotifications {
   providedIn: 'root',
 })
 export class Messagerie {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1';
+  private readonly baseUrl = environment.apiBaseUrl;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -45,10 +46,11 @@ export class Messagerie {
     );
   }
 
-  creerConversation(titre: string): Observable<Conversation> {
+  creerConversation(titre: string, typeConversation: 'interne' | 'patient' = 'interne', patientId?: number): Observable<Conversation> {
     return this.http.post<Conversation>(`${this.baseUrl}/conversations/`, {
       titre,
-      type_conversation: 'interne',
+      type_conversation: typeConversation,
+      ...(patientId ? { patient: patientId } : {}),
     });
   }
 

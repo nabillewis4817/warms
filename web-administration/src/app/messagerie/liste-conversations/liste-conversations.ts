@@ -42,23 +42,10 @@ export class ListeConversations implements OnInit {
   }
 
   private filtrerConversationsParPatient(conversations: Conversation[]): Conversation[] {
-    // Si l'utilisateur est un patient, ne montrer que ses conversations
     const utilisateur = this.obtenirUtilisateurConnecte();
-    
-    if (utilisateur?.role?.toLowerCase() === 'patient') {
-      // Filtrer pour ne montrer que les conversations de ce patient
-      return conversations.filter(conv => 
-        conv.type_conversation === 'patient' && 
-        conv.patient === utilisateur.id
-      );
-    }
-    
-    // Pour le personnel médical, montrer toutes les conversations de type patient
-    // mais avec indication du patient concerné
-    return conversations.filter(conv => 
-      conv.type_conversation === 'patient' || 
-      conv.participants?.includes(utilisateur?.id)
-    );
+    // Le backend renvoie déjà les conversations autorisées pour l'utilisateur connecté.
+    // On garde un filtrage défensif basé sur la participation.
+    return conversations.filter((conv) => conv.participants?.includes(utilisateur?.id));
   }
 
   private obtenirUtilisateurConnecte(): any {
@@ -75,32 +62,36 @@ export class ListeConversations implements OnInit {
 
   creerConversation(): void {
     if (!this.titre.trim()) return;
-    
-    const payload: any = {
-      titre: this.titre,
-      type_conversation: 'patient'
-    };
-    
-    // Ajouter le patient si sélectionné
+
     if (this.patientSelectionne) {
-      payload.patient = this.patientSelectionne.id;
-    } else {
-      this.dialogueService.erreur({
-        titre: 'Erreur',
-        message: 'Veuillez sélectionner un patient pour démarrer une conversation.'
-      }).subscribe();
+      this.messagerie
+        .creerConversation(this.titre, 'patient', this.patientSelectionne.id)
+        .subscribe({
+          next: (conversation) => {
+            this.titre = '';
+            this.patientSelectionne = null;
+            this.charger();
+            this.router.navigate(['/messagerie/conversation', conversation.id]);
+          },
+          error: () => {
+            this.dialogueService.erreur({
+              titre: 'Erreur',
+              message: 'Impossible de créer la conversation. Veuillez réessayer.'
+            }).subscribe();
+          }
+        });
       return;
     }
-    
-    this.messagerie.creerConversation(this.titre).subscribe({
+
+    // Sans patient sélectionné, on crée une conversation interne simple.
+    this.messagerie.creerConversation(this.titre, 'interne').subscribe({
       next: (conversation) => {
         this.titre = '';
         this.patientSelectionne = null;
         this.charger();
-        // Rediriger vers la conversation
         this.router.navigate(['/messagerie/conversation', conversation.id]);
       },
-      error: (error) => {
+      error: () => {
         this.dialogueService.erreur({
           titre: 'Erreur',
           message: 'Impossible de créer la conversation. Veuillez réessayer.'
@@ -119,16 +110,15 @@ export class ListeConversations implements OnInit {
     }
 
     const titre = `Chat avec ${this.patientSelectionne.prenom} ${this.patientSelectionne.nom}`;
-    
-    this.messagerie.creerConversation(titre).subscribe({
+
+    this.messagerie.creerConversation(titre, 'patient', this.patientSelectionne.id).subscribe({
       next: (conversation) => {
         this.titre = '';
         this.patientSelectionne = null;
         this.charger();
-        // Rediriger vers la conversation
         this.router.navigate(['/messagerie/conversation', conversation.id]);
       },
-      error: (error) => {
+      error: () => {
         this.dialogueService.erreur({
           titre: 'Erreur',
           message: 'Impossible de démarrer le chat. Veuillez réessayer.'

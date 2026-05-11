@@ -200,6 +200,8 @@ export class TableauDeBord implements OnInit {
       },
       error: (error) => {
         console.error('Erreur vue générale:', error);
+        this.erreurBackend = true;
+        this.messageErreur = "Impossible de charger les statistiques détaillées.";
         this.chargement = false;
       },
     });

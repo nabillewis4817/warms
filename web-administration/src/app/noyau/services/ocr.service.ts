@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface OCRResult {
   text: string;
@@ -31,7 +32,7 @@ export interface OCROptions {
   providedIn: 'root'
 })
 export class OCRService {
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/ocr';
+  private readonly apiUrl = `${environment.apiBaseUrl}/ocr`;
 
   constructor(private http: HttpClient) {}
 

@@ -150,6 +150,20 @@ class PatientViewSet(viewsets.ModelViewSet):
         )
         return Response({"id": patient.id, "actif": patient.actif})
 
+    @action(detail=True, methods=["post"], permission_classes=[EstPersonnelCabinet])
+    def desarchiver(self, request, pk=None):
+        patient = self.get_object()
+        patient.actif = True
+        patient.save(update_fields=["actif", "modifie_le"])
+        journaliser(
+            acteur=request.user,
+            action="patient.unarchived",
+            objet_type="Patient",
+            objet_id=patient.id,
+            message=f"Désarchivage du patient {patient.prenom} {patient.nom}.",
+        )
+        return Response({"id": patient.id, "actif": patient.actif})
+
     def destroy(self, request, pk=None):
         """
         Supprime définitivement un patient avec ses données associées.

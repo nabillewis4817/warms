@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface EntreeJournal {
   id: number;
@@ -16,7 +17,7 @@ export interface EntreeJournal {
   providedIn: 'root',
 })
 export class Journaux {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1';
+  private readonly baseUrl = environment.apiBaseUrl;
   constructor(private readonly http: HttpClient) {}
 
   lister(): Observable<EntreeJournal[]> {

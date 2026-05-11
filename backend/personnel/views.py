@@ -1,5 +1,5 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, parser_classes
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -55,8 +55,17 @@ def me(request):
 
 class UtilisateurViewSet(viewsets.ModelViewSet):
     queryset = Utilisateur.objects.all().order_by("-date_joined")
-    permission_classes = [AllowAny]  # Temporairement AllowAny pour tout le debug
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy", "desactiver"]:
+            self.permission_classes = [PeutGererComptes]
+        elif self.action in ["valider"]:
+            self.permission_classes = [EstChirurgienDentiste]
+        else:
+            self.permission_classes = [IsAuthenticated]
+        return super().get_permissions()
 
     def list(self, request, *args, **kwargs):
         """Override list pour ajouter des logs de débogage"""
@@ -158,6 +167,7 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
 
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def me_preferences(request):
     user = request.user
     serializer = PreferencesUtilisateurSerializer(user, data=request.data, partial=True)

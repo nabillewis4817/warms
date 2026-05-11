@@ -44,7 +44,7 @@ export class ListePatients implements OnInit {
       if (!confirme) return;
       
       this.actionEnCours[patient.id] = 'archivage';
-      this.patientsService.modifier(patient.id, { actif: false } as any).subscribe({
+      this.patientsService.archiver(patient.id).subscribe({
         next: () => {
           delete this.actionEnCours[patient.id];
           this.charger();

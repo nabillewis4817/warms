@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface PersonnelCompte {
   id: number;
@@ -14,7 +15,7 @@ export interface PersonnelCompte {
 
 @Injectable({ providedIn: 'root' })
 export class PersonnelService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/personnel/utilisateurs';
+  private readonly baseUrl = `${environment.apiBaseUrl}/personnel/personnel`;
   constructor(private readonly http: HttpClient) {}
 
   lister(): Observable<PersonnelCompte[]> {

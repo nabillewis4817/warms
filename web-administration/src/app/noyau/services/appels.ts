@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AppelsService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/appels';
+  private readonly baseUrl = `${environment.apiBaseUrl}/appels`;
 
   constructor(private readonly http: HttpClient) {}
 

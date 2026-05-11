@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import '../config/api_config.dart';
 
 /// Service d'Intelligence Artificielle pour WARMS Mobile
 /// 
@@ -27,7 +28,7 @@ class IAService {
   /// Client HTTP pour les appels API
   /// Configuration optimisée pour les appels backend WARMS
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://127.0.0.1:8000/api/v1/ia-shared',
+    baseUrl: ApiConfig.iaSharedBaseUrl,
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',

@@ -23,11 +23,33 @@ class ParticipantConversationSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     auteur_username = serializers.CharField(source="auteur.username", read_only=True)
+    envoyeur = serializers.SerializerMethodField()
+    timestamp = serializers.DateTimeField(source="cree_le", read_only=True)
+    est_lu = serializers.BooleanField(source="lu", read_only=True)
+    est_recu = serializers.BooleanField(source="lu", read_only=True)
 
     class Meta:
         model = Message
-        fields = ["id", "conversation", "auteur", "auteur_username", "contenu", "lu", "cree_le"]
+        fields = [
+            "id",
+            "conversation",
+            "auteur",
+            "auteur_username",
+            "contenu",
+            "lu",
+            "cree_le",
+            "envoyeur",
+            "timestamp",
+            "est_lu",
+            "est_recu",
+        ]
         read_only_fields = ["auteur", "lu", "cree_le"]
+
+    def get_envoyeur(self, obj):
+        request = self.context.get("request")
+        if request and getattr(request, "user", None) and obj.auteur_id == request.user.id:
+            return "moi"
+        return "autre"
 
 
 class ConversationSerializer(serializers.ModelSerializer):

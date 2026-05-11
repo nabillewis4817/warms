@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface PreferencesNotifications {
   email?: boolean;
@@ -37,7 +38,7 @@ export interface PatchPreferencesPayload {
   providedIn: 'root',
 })
 export class PreferencesUtilisateurService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/personnel';
+  private readonly baseUrl = `${environment.apiBaseUrl}/personnel`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -47,6 +48,10 @@ export class PreferencesUtilisateurService {
 
   mettreAJourPreferences(payload: PatchPreferencesPayload): Observable<Partial<ProfilUtilisateur>> {
     return this.http.patch<Partial<ProfilUtilisateur>>(`${this.baseUrl}/me/preferences/`, payload);
+  }
+
+  mettreAJourPreferencesMultipart(formData: FormData): Observable<Partial<ProfilUtilisateur>> {
+    return this.http.patch<Partial<ProfilUtilisateur>>(`${this.baseUrl}/me/preferences/`, formData);
   }
 }
 

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface JetonsAuth {
   access: string;
@@ -30,7 +31,7 @@ export interface UtilisateurConnecte {
   providedIn: 'root',
 })
 export class Authentification {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/personnel';
+  private readonly baseUrl = `${environment.apiBaseUrl}/personnel`;
   readonly utilisateur = signal<UtilisateurConnecte | null>(null);
 
   constructor(private readonly http: HttpClient) {}
@@ -48,7 +49,11 @@ export class Authentification {
 
   chargerProfil(): Observable<UtilisateurConnecte> {
     return this.http.get<UtilisateurConnecte>(`${this.baseUrl}/me/`).pipe(
-      tap((profil) => this.utilisateur.set(profil))
+      tap((profil) => {
+        this.utilisateur.set(profil);
+        // Utilisé par certaines pages (ex: filtrage messagerie)
+        localStorage.setItem('utilisateur', JSON.stringify(profil));
+      })
     );
   }
 
@@ -76,6 +81,7 @@ export class Authentification {
   deconnexion(): void {
     localStorage.removeItem('warms_access');
     localStorage.removeItem('warms_refresh');
+    localStorage.removeItem('utilisateur');
     this.utilisateur.set(null);
   }
 

@@ -3,6 +3,7 @@ backend/env/
 backend/__pycache__/
 backend/*.pyc
 backend/db.sqlite3
+backend/.env
 
 # Angular
 web-administration/node_modules/

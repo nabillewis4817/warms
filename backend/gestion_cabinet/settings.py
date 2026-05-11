@@ -95,10 +95,30 @@ WSGI_APPLICATION = "gestion_cabinet.wsgi.application"
 
 
 # Base de données:
-# - en dev: PostgreSQL recommandé
-# - fallback possible en SQLite si on ne fournit pas de variables d'env
+# En local/dev, on veut éviter l'ambiguïté "ça marche mais sur SQLite".
+# Si `DATABASE_URL` n'est pas défini, on utilise SQLite uniquement en mode DEBUG
+# et on affiche un avertissement clair.
 default_db_url = f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}"
-DATABASES = {"default": env.db("DATABASE_URL", default=default_db_url)}
+DATABASE_URL = env("DATABASE_URL", default="")
+if not DATABASE_URL:
+    if env("DJANGO_DEBUG", default=True):
+        import warnings
+
+        warnings.warn(
+            "DATABASE_URL n'est pas défini: utilisation de SQLite (backend/db.sqlite3). "
+            "Pour utiliser PostgreSQL, crée `backend/.env` et définis DATABASE_URL.",
+            RuntimeWarning,
+        )
+        DATABASES = {"default": env.db("DATABASE_URL", default=default_db_url)}
+    else:
+        raise RuntimeError("DATABASE_URL requis en production (PostgreSQL).")
+else:
+    # Parser via django-environ, en s'appuyant sur la variable d'environnement.
+    # (On évite une API non standard selon les versions.)
+    import os
+
+    os.environ["DATABASE_URL"] = DATABASE_URL
+    DATABASES = {"default": env.db("DATABASE_URL")}
 
 
 # Password validation

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { catchError, tap, shareReplay } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface TauxAbsenteisme {
   id?: number;
@@ -52,8 +53,8 @@ export interface UpdateTauxAbsenteisme {
   providedIn: 'root'
 })
 export class TauxAbsenteismeService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/consultations';
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/consultations/taux-absenteisme';
+  private readonly baseUrl = `${environment.apiBaseUrl}/consultations`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/consultations/taux-absenteisme`;
 
   // Cache pour les taux d'absentéisme
   private tauxCache = new BehaviorSubject<TauxAbsenteisme[]>([]);

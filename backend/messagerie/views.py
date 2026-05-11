@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from django.db.models import Count
 
 from journaux.utils import journaliser
+from patients.models import Patient
 
 from .models import Conversation, Message, NotificationInterne, ParticipantConversation
 from .serializers import (
@@ -20,6 +21,18 @@ class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        # Confidentialité stricte: un utilisateur ne voit que ses conversations,
+        # sauf superuser.
+        if user.is_superuser:
+            return Conversation.objects.prefetch_related("participants").all()
+        return (
+            Conversation.objects.prefetch_related("participants")
+            .filter(participants=user)
+            .distinct()
+        )
+
     def perform_create(self, serializer):
         conversation = serializer.save(cree_par=self.request.user)
         ParticipantConversation.objects.get_or_create(
@@ -27,6 +40,14 @@ class ConversationViewSet(viewsets.ModelViewSet):
             utilisateur=self.request.user,
             defaults={"est_admin": True},
         )
+        # Conversation patient: ajouter automatiquement le patient lié comme participant.
+        if conversation.type_conversation == Conversation.TypeConversation.PATIENT and conversation.patient_id:
+            patient_user_id = getattr(conversation.patient, "user_id", None)
+            if patient_user_id:
+                ParticipantConversation.objects.get_or_create(
+                    conversation=conversation,
+                    utilisateur_id=patient_user_id,
+                )
         journaliser(
             acteur=self.request.user,
             action="conversation.created",
@@ -133,9 +154,9 @@ class ConversationViewSet(viewsets.ModelViewSet):
                                      conversation.patient and
                                      Patient.objects.filter(user=request.user, id=conversation.patient.id).exists())
             
-            # Autoriser aussi le personnel du cabinet (dentistes, assistants)
+            # Autoriser le personnel cabinet (rôles Warm's)
             is_staff = (hasattr(request.user, 'role') and 
-                       request.user.role.lower() in ['dentiste', 'assistant', 'admin', 'personnel'])
+                       request.user.role.lower() in ['chirurgien_dentiste', 'secretaire', 'infirmiere', 'admin'])
             
             if not (is_participant or is_patient_conversation or is_staff or request.user.is_superuser):
                 return Response({
@@ -195,7 +216,10 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 for user in destinataires
             ]
         )
-        return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+        return Response(
+            MessageSerializer(message, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class ParticipantConversationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { catchError, tap, shareReplay } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface Appel {
   id?: number;
@@ -72,9 +73,9 @@ export interface UpdateAbsence {
   providedIn: 'root'
 })
 export class AppelsService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/consultations';
-  private readonly appelsUrl = 'http://127.0.0.1:8000/api/v1/consultations/appels';
-  private readonly absencesUrl = 'http://127.0.0.1:8000/api/v1/consultations/absences';
+  private readonly baseUrl = `${environment.apiBaseUrl}/consultations`;
+  private readonly appelsUrl = `${environment.apiBaseUrl}/consultations/appels`;
+  private readonly absencesUrl = `${environment.apiBaseUrl}/consultations/absences`;
 
   // Cache pour les appels
   private appelsCache = new BehaviorSubject<Appel[]>([]);

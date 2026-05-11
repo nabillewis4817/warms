@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, timeout } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface WarmsIARequest {
   question: string;
@@ -25,7 +26,7 @@ export interface WarmsIAInfo {
   providedIn: 'root'
 })
 export class WarmsIAService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/ia';
+  private readonly baseUrl = `${environment.apiBaseUrl}/ia`;
 
   constructor(private http: HttpClient) {}
 

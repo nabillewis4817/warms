@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Personnel {
   id: number;
@@ -15,6 +16,17 @@ export interface Personnel {
   date_embauche?: string;
   statut: string;
   derniere_connexion?: string;
+}
+
+interface PersonnelApi {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  telephone: string;
+  role: string;
+  is_active: boolean;
 }
 
 export interface PersonnelFilters {
@@ -46,7 +58,7 @@ export interface Specialite {
   providedIn: 'root'
 })
 export class PersonnelService {
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/personnel/personnel/';
+  private readonly apiUrl = `${environment.apiBaseUrl}/personnel/personnel/`;
 
   constructor(private http: HttpClient) {}
 
@@ -62,35 +74,42 @@ export class PersonnelService {
       });
       params = `?${queryParams.toString()}`;
     }
-    return this.http.get<Personnel[]>(`${this.apiUrl}${params}`);
+    return this.http.get<PersonnelApi[] | { results: PersonnelApi[] }>(`${this.apiUrl}${params}`).pipe(
+      map((response) => {
+        const items = Array.isArray(response) ? response : response.results ?? [];
+        return items.map((item) => this.mapApiToPersonnel(item));
+      })
+    );
   }
 
   // Créer un nouveau membre du personnel
   creerPersonnel(personnel: Partial<Personnel>): Observable<Personnel> {
-    return this.http.post<Personnel>(this.apiUrl, personnel);
+    const payload = this.mapPersonnelToApiPayload(personnel);
+    return this.http.post<PersonnelApi>(this.apiUrl, payload).pipe(map((item) => this.mapApiToPersonnel(item)));
   }
 
   // Mettre à jour un membre du personnel
   mettreAJourPersonnel(id: number, personnel: Partial<Personnel>): Observable<Personnel> {
-    return this.http.put<Personnel>(`${this.apiUrl}/${id}`, personnel);
+    const payload = this.mapPersonnelToApiPayload(personnel);
+    return this.http.patch<PersonnelApi>(`${this.apiUrl}${id}/`, payload).pipe(map((item) => this.mapApiToPersonnel(item)));
   }
 
   // Supprimer un membre du personnel
   supprimerPersonnel(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 
   // Charger les options depuis le backend
   getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(`http://127.0.0.1:8000/api/v1/personnel/roles/`);
+    return this.http.get<Role[]>(`${environment.apiBaseUrl}/personnel/roles/`);
   }
 
   getServices(): Observable<Service[]> {
-    return this.http.get<Service[]>(`http://127.0.0.1:8000/api/v1/personnel/services/`);
+    return this.http.get<Service[]>(`${environment.apiBaseUrl}/personnel/services/`);
   }
 
   getSpecialites(): Observable<Specialite[]> {
-    return this.http.get<Specialite[]>(`http://127.0.0.1:8000/api/v1/personnel/specialites/`);
+    return this.http.get<Specialite[]>(`${environment.apiBaseUrl}/personnel/specialites/`);
   }
 
   // Exporter le personnel
@@ -111,5 +130,35 @@ export class PersonnelService {
   // Obtenir les statistiques du personnel
   getStatistiques(): Observable<any> {
     return this.http.get(`${this.apiUrl}/statistiques`);
+  }
+
+  private mapApiToPersonnel(item: PersonnelApi): Personnel {
+    return {
+      id: item.id,
+      prenom: item.first_name ?? '',
+      nom: item.last_name ?? '',
+      email: item.email ?? '',
+      telephone: item.telephone ?? '',
+      role: item.role ?? '',
+      statut: item.is_active ? 'actif' : 'inactif',
+    };
+  }
+
+  private mapPersonnelToApiPayload(personnel: Partial<Personnel>): Record<string, unknown> {
+    const prenom = (personnel.prenom ?? '').trim();
+    const nom = (personnel.nom ?? '').trim();
+    const email = (personnel.email ?? '').trim();
+    const fallbackUsername = [prenom, nom].filter(Boolean).join('.').toLowerCase() || email.split('@')[0] || `user${Date.now()}`;
+
+    return {
+      username: fallbackUsername,
+      first_name: prenom,
+      last_name: nom,
+      email,
+      telephone: personnel.telephone ?? '',
+      role: personnel.role ?? 'infirmiere',
+      // facultatif backend, mot de passe temporaire généré si vide
+      password: '',
+    };
   }
 }

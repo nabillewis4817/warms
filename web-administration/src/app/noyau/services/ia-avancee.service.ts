@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface RechercheWebResult {
   titre: string;
@@ -33,7 +34,7 @@ export interface ContexteMedical {
   providedIn: 'root'
 })
 export class IAAvanceeService {
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/ia-avancee';
+  private readonly apiUrl = `${environment.apiBaseUrl}/ia-avancee`;
   private apiKey = 'YOUR_API_KEY'; // À configurer
 
   constructor(private http: HttpClient) {}

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface VueGeneraleStats {
   kpis: {
@@ -26,7 +27,7 @@ export interface VueGeneraleStats {
   providedIn: 'root',
 })
 export class StatistiquesService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/statistiques';
+  private readonly baseUrl = `${environment.apiBaseUrl}/statistiques`;
   constructor(private readonly http: HttpClient) {}
 
   vueGenerale(): Observable<VueGeneraleStats> {

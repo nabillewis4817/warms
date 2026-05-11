@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Journal {
   id: number;
@@ -24,7 +25,7 @@ export interface JournalFilters {
   providedIn: 'root'
 })
 export class JournauxService {
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/journaux';
+  private readonly apiUrl = `${environment.apiBaseUrl}/journaux`;
 
   constructor(private http: HttpClient) {}
 

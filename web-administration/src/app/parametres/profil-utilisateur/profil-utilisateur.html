@@ -6,6 +6,23 @@
     <p>Chargement...</p>
   } @else {
     <form [formGroup]="form" (ngSubmit)="enregistrer()">
+      <div class="photo-block">
+        @if (photoPreview) {
+          <img class="avatar" [src]="photoPreview" alt="Photo profil" />
+        } @else {
+          <div class="avatar placeholder">Photo</div>
+        }
+        <div class="photo-actions">
+          <label class="import-btn">
+            Changer photo
+            <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+          </label>
+          @if (photoPreview) {
+            <button type="button" (click)="supprimerPhoto()">Supprimer photo</button>
+          }
+        </div>
+      </div>
+
       <div class="grid">
         <label>Prénom <input type="text" formControlName="first_name" /></label>
         <label>Nom <input type="text" formControlName="last_name" /></label>
@@ -32,7 +49,15 @@
         <label class="toggle">Rappels auto <input type="checkbox" formControlName="notif_rappels_auto" /></label>
       </div>
 
-      <button type="submit">{{ traductionService.t('save') }}</button>
+      <div class="actions">
+        <button type="submit">{{ traductionService.t('save') }}</button>
+        <button type="button" (click)="exporterPreferences()">Exporter</button>
+        <label class="import-btn">
+          Importer
+          <input type="file" accept=".json,application/json" (change)="importerPreferences($event)" />
+        </label>
+        <button type="button" (click)="deconnexion()">Déconnexion</button>
+      </div>
     </form>
   }
 

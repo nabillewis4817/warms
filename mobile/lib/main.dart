@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 // Import des écrans IA WARMS
+import 'config/api_config.dart';
 import 'screens/ia_chat_screen.dart';
 import 'screens/ia_recherche_screen.dart';
 import 'screens/enhanced_chat_screen.dart';
@@ -65,7 +66,7 @@ class WarmsMobileAppBody extends StatefulWidget {
 
 class _WarmsMobileAppBodyState extends State<WarmsMobileAppBody> {
   final _storage = const FlutterSecureStorage();
-  final _dio = Dio(BaseOptions(baseUrl: 'http://127.0.0.1:8000/api/v1'));
+  final _dio = Dio(BaseOptions(baseUrl: ApiConfig.apiBaseUrl));
 
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();

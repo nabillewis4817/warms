@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { catchError, tap, shareReplay } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface Consultation {
   id: number;
@@ -77,11 +78,11 @@ export interface ConsultationUpdate {
   providedIn: 'root'
 })
 export class ConsultationsService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/consultations';
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/consultations/consultations';
-  private readonly actesUrl = 'http://127.0.0.1:8000/api/v1/consultations/actes';
-  private readonly schemasUrl = 'http://127.0.0.1:8000/api/v1/consultations/schemas-dentaires';
-  private readonly photosUrl = 'http://127.0.0.1:8000/api/v1/consultations/photos-cliniques';
+  private readonly baseUrl = `${environment.apiBaseUrl}/consultations`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/consultations/consultations`;
+  private readonly actesUrl = `${environment.apiBaseUrl}/consultations/actes`;
+  private readonly schemasUrl = `${environment.apiBaseUrl}/consultations/schemas-dentaires`;
+  private readonly photosUrl = `${environment.apiBaseUrl}/consultations/photos-cliniques`;
 
   // Cache pour les consultations
   private consultationsCache = new BehaviorSubject<Consultation[]>([]);

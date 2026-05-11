@@ -217,46 +217,52 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _buildAnimatedText() {
     const String text = 'WARMS';
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: text.split('').asMap().entries.map((entry) {
-        final index = entry.key;
-        final letter = entry.value;
-        
-        return AnimatedBuilder(
-          animation: _textController,
-          builder: (context, child) {
-            final delay = index * 100; // Délai progressif pour chaque lettre
-            final animationValue = (_textController.value - (delay / 1500)).clamp(0.0, 1.0);
-            
-            return Transform.translate(
-              offset: Offset(
-                0,
-                animationValue * 20 * (index % 2 == 0 ? -1 : 1), // Effet de vague
-              ),
-              child: Opacity(
-                opacity: animationValue,
-                child: Text(
-                  letter,
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: _letterSpacing.value,
-                    shadows: [
-                      Shadow(
-                        color: const Color(0xFF0D1B3E).withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+    // Important (Flutter Web / petits écrans):
+    // Le Row peut overflow si la largeur est trop faible. On scale le texte
+    // pour garantir un layout sans exception (sinon écran blanc).
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: text.split('').asMap().entries.map((entry) {
+          final index = entry.key;
+          final letter = entry.value;
+
+          return AnimatedBuilder(
+            animation: _textController,
+            builder: (context, child) {
+              final delay = index * 100; // Délai progressif pour chaque lettre
+              final animationValue = (_textController.value - (delay / 1500)).clamp(0.0, 1.0);
+
+              return Transform.translate(
+                offset: Offset(
+                  0,
+                  animationValue * 20 * (index % 2 == 0 ? -1 : 1), // Effet de vague
+                ),
+                child: Opacity(
+                  opacity: animationValue,
+                  child: Text(
+                    letter,
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: _letterSpacing.value,
+                      shadows: [
+                        Shadow(
+                          color: const Color(0xFF0D1B3E).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      }).toList(),
+              );
+            },
+          );
+        }).toList(),
+      ),
     );
   }
 }

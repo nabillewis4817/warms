@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Patient {
   id: number;
@@ -52,7 +53,7 @@ export interface CreerPatientPayload {
   providedIn: 'root',
 })
 export class Patients {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1';
+  private readonly baseUrl = environment.apiBaseUrl;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -85,7 +86,7 @@ export class Patients {
   }
 
   supprimerAmeliore(id: number): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.baseUrl}/patients/${id}/supprimer-ameliore/`, {});
+    return this.http.delete<{ message: string }>(`${this.baseUrl}/patients/${id}/supprimer-ameliore/`);
   }
 
   exporter(filters?: any): Observable<Blob> {

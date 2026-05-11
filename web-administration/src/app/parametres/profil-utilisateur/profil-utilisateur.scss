@@ -9,6 +9,34 @@
   margin: 6px 0 20px;
 }
 
+.photo-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #c9d6f2;
+}
+
+.avatar.placeholder {
+  display: grid;
+  place-items: center;
+  background: #f5f8ff;
+  color: #4f5d7a;
+  font-weight: 700;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 form {
   display: grid;
   gap: 16px;
@@ -52,6 +80,27 @@ button {
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.import-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: #e9f0ff;
+  color: var(--warms-blue);
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.import-btn input {
+  display: none;
 }
 
 .message {

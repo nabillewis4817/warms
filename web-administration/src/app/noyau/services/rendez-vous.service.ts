@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { catchError, tap, shareReplay } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface RendezVous {
   id?: number;
@@ -47,8 +48,8 @@ export interface UpdateRendezVous {
   providedIn: 'root'
 })
 export class RendezVousService {
-  private readonly baseUrl = 'http://127.0.0.1:8000/api/v1/rendez-vous';
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/v1/rendez-vous/rendez-vous';
+  private readonly baseUrl = `${environment.apiBaseUrl}/rendez-vous`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/rendez-vous/rendez-vous`;
 
   // Cache pour les rendez-vous
   private rendezVousCache = new BehaviorSubject<RendezVous[]>([]);
