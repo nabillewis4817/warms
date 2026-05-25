@@ -64,15 +64,22 @@ export class ConsultationsComponent implements OnInit {
     this.initialiserFormulaires();
     this.configurerRecherche();
     this.chargerPatients();
-    // Ne charger les consultations que si nécessaire
-    // this.chargerConsultations();
+    this.chargerConsultations();
+  }
+
+  onPatientChange(patientId: number | null): void {
+    if (!patientId) return;
+    const patient = this.patients.find((p) => p.id === patientId);
+    if (patient?.dossier_id) {
+      this.formulaireConsultation.patchValue({ dossier: patient.dossier_id });
+    }
   }
 
   private initialiserFormulaires(): void {
     // Formulaire consultation
     this.formulaireConsultation = this.fb.group({
       patient: [null, Validators.required],
-      dossier: [null, Validators.required],
+      dossier: [null],
       rendez_vous: [null],
       praticien: [null],
       date: [null, Validators.required],
@@ -217,8 +224,15 @@ export class ConsultationsComponent implements OnInit {
       return;
     }
 
-    const donnees = this.formulaireConsultation.value;
-    
+    const raw = this.formulaireConsultation.value;
+    const donnees = {
+      ...raw,
+      patient: raw.patient ? Number(raw.patient) : null,
+      dossier: raw.dossier ? Number(raw.dossier) : undefined,
+      praticien: raw.praticien ? Number(raw.praticien) : undefined,
+      rendez_vous: raw.rendez_vous ? Number(raw.rendez_vous) : undefined,
+    };
+
     const operation = this.modeEdition
       ? this.consultationsService.updateConsultation(this.consultationSelectionnee!.id, donnees)
       : this.consultationsService.createConsultation(donnees);

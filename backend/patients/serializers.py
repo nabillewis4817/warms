@@ -8,6 +8,7 @@ from .models import AvisPatient, DossierPatient, PageCarnet, Patient, PieceJoint
 class PatientSerializer(serializers.ModelSerializer):
     numero_dossier = serializers.CharField(source="dossier.numero_dossier", read_only=True)
     qr_token = serializers.CharField(source="dossier.qr.token", read_only=True)
+    dossier_id = serializers.IntegerField(source="dossier.id", read_only=True)
 
     class Meta:
         model = Patient
@@ -32,6 +33,7 @@ class PatientSerializer(serializers.ModelSerializer):
             "derniere_consultation_details",
             "infirmiere_referente",
             "numero_dossier",
+            "dossier_id",
             "qr_token",
             "actif",
             "cree_le",

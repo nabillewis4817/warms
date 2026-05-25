@@ -26,6 +26,9 @@ export class PersonnelComponent implements OnInit {
   afficherFormulaireAjout = false;
   modeEdition = false;
   personnelSelectionne: Personnel | null = null;
+  detailOuvert = false;
+  detailChargement = false;
+  personnelDetail: Personnel | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -169,7 +172,23 @@ export class PersonnelComponent implements OnInit {
   }
 
   voirDetails(person: Personnel): void {
-    console.log('Détails du personnel:', person);
+    this.detailOuvert = true;
+    this.detailChargement = true;
+    this.personnelDetail = person;
+    this.personnelService.obtenirDetail(person.id).subscribe({
+      next: (detail) => {
+        this.personnelDetail = detail;
+        this.detailChargement = false;
+      },
+      error: () => {
+        this.detailChargement = false;
+      },
+    });
+  }
+
+  fermerDetails(): void {
+    this.detailOuvert = false;
+    this.personnelDetail = null;
   }
 
   exporterPersonnel(): void {

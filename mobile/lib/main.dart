@@ -3,14 +3,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'dart:async';
 
 // Import des écrans IA WARMS
 import 'config/api_config.dart';
 import 'screens/ia_chat_screen.dart';
 import 'screens/ia_recherche_screen.dart';
 import 'screens/enhanced_chat_screen.dart';
-import 'screens/splash_screen.dart';
 import 'services/datetime_service.dart';
 
 // Import du thème WARMS et composants
@@ -18,9 +17,30 @@ import 'themes/warms_theme.dart';
 import 'widgets/warms_card.dart';
 
 void main() {
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  runApp(const WarmsMobileApp());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  ErrorWidget.builder = (details) => Material(
+        color: const Color(0xFFF0F4FF),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Erreur WARMS:\n${details.exceptionAsString()}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFFB91C1C)),
+            ),
+          ),
+        ),
+      );
+
+  runZonedGuarded(
+    () => runApp(const WarmsMobileApp()),
+    (error, stack) {
+      if (kDebugMode) {
+        debugPrint('WARMS: $error\n$stack');
+      }
+    },
+  );
 }
 
 class WarmsMobileApp extends StatelessWidget {
@@ -44,14 +64,9 @@ class WarmsMobileApp extends StatelessWidget {
         Locale('en', 'US'),
       ],
       locale: const Locale('fr', 'FR'),
-      home: const SplashScreen(),
+      home: const WarmsMobileAppBody(),
       routes: {
         '/main': (context) => const WarmsMobileAppBody(),
-      },
-      onGenerateRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) => const WarmsMobileAppBody(),
-        );
       },
     );
   }
@@ -74,6 +89,7 @@ class _WarmsMobileAppBodyState extends State<WarmsMobileAppBody> {
   // Services WARMS
   final _dateTimeService = DateTimeService();
 
+  bool bootEnCours = true;
   bool connecte = false;
   bool chargement = false;
   bool showPassword = false;
@@ -109,14 +125,64 @@ class _WarmsMobileAppBodyState extends State<WarmsMobileAppBody> {
   void initState() {
     super.initState();
     _configurerIntercepteurAuth();
-    _restaurerSession();
+    _demarrerApplication();
+  }
+
+  Future<void> _demarrerApplication() async {
+    try {
+      await _restaurerSession();
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('WARMS boot error: $e\n$st');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => bootEnCours = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (bootEnCours) {
+      return _buildEcranDemarrage();
+    }
     return connecte
         ? (roleUtilisateur == 'patient' ? _buildEcranPatient() : _buildEcranPreferences())
         : _buildEcranConnexion();
+  }
+
+  Widget _buildEcranDemarrage() {
+    return const Scaffold(
+      backgroundColor: Color(0xFF1E4DB7),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.medical_services, size: 72, color: Colors.white),
+            SizedBox(height: 24),
+            Text(
+              'WARMS',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 4,
+              ),
+            ),
+            SizedBox(height: 32),
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _configurerIntercepteurAuth() {
@@ -308,7 +374,11 @@ class _WarmsMobileAppBodyState extends State<WarmsMobileAppBody> {
   Future<void> _chargerPatients() async {
     try {
       final rep = await _dio.get('/patients/');
-      setState(() => patients = rep.data as List<dynamic>);
+      final data = rep.data;
+      final liste = data is List
+          ? data
+          : (data is Map ? (data['results'] as List<dynamic>? ?? []) : <dynamic>[]);
+      setState(() => patients = liste);
     } on DioException {
       // silencieux pour éviter de bloquer l'app en cas d'erreur ponctuelle
     }

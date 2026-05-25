@@ -26,7 +26,7 @@ export class RendezVousComponent implements OnInit {
   message = '';
 
   form = this.fb.group({
-    patient: ['', Validators.required],
+    patient: [null as number | null, Validators.required],
     date_heure: ['', Validators.required],
     duree: [30, [Validators.required, Validators.min(15), Validators.max(180)]],
     motif: ['', Validators.required],
@@ -78,7 +78,7 @@ export class RendezVousComponent implements OnInit {
       });
     } else {
       this.form.reset({
-        patient: '',
+        patient: null,
         date_heure: '',
         duree: 30,
         motif: '',
@@ -117,9 +117,12 @@ export class RendezVousComponent implements OnInit {
         this.closeModal();
         this.loadRendezVous();
       },
-      error: (err: any) => {
+        error: (err: any) => {
         console.error('Erreur lors de la sauvegarde:', err);
-        this.message = 'Erreur lors de la sauvegarde du rendez-vous';
+        const detail = err?.error;
+        this.message = typeof detail === 'object'
+          ? Object.values(detail).flat().join(' ')
+          : (detail || 'Erreur lors de la sauvegarde du rendez-vous');
       }
     });
   }

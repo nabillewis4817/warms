@@ -24,6 +24,14 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         "patient", "dossier", "rendez_vous", "praticien"
     ).all()
     serializer_class = ConsultationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        patient = serializer.validated_data.get("patient")
+        dossier = serializer.validated_data.get("dossier")
+        if not dossier and patient is not None:
+            dossier = getattr(patient, "dossier", None)
+        serializer.save(dossier=dossier)
 
 
 class ActeRealiseViewSet(viewsets.ModelViewSet):

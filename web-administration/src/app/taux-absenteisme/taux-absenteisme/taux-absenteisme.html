@@ -28,8 +28,8 @@
           <i class="bi bi-percent"></i>
         </div>
         <div class="stat-info">
-          <h3>{{ stats.totalTaux }}%</h3>
-          <p>Taux général</p>
+          <h3>{{ stats.tauxMoyen }}%</h3>
+          <p>Taux moyen (historique)</p>
         </div>
       </div>
       <div class="stat-tendance">
@@ -95,21 +95,14 @@
           <input id="date_fin" type="date" formControlName="date_fin" />
         </div>
 
-        <div class="form-group">
-          <label for="service">Service</label>
-          <select id="service" formControlName="service">
-            <option value="">Tous les services</option>
-            <option value="consultations">Consultations</option>
-            <option value="urgences">Urgences</option>
-            <option value="radiologie">Radiologie</option>
-            <option value="laboratoire">Laboratoire</option>
-          </select>
-        </div>
-
-        <div class="form-group">
+        <div class="form-group filter-actions">
           <button type="button" class="btn-primary" (click)="appliquerFiltres()">
             <i class="bi bi-search"></i>
-            Appliquer
+            Actualiser
+          </button>
+          <button type="button" class="btn-secondary" (click)="calculerPeriode()">
+            <i class="bi bi-calculator"></i>
+            Calculer la période
           </button>
         </div>
       </div>

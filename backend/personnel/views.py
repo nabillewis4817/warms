@@ -266,6 +266,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                         'message': 'Module patient non disponible. Contactez l\'administration.'
                     })
 
+                journaliser(
+                    acteur=user,
+                    action="auth.login",
+                    objet_type="Utilisateur",
+                    objet_id=user.id,
+                    message=f"Connexion réussie ({user.username}).",
+                    metadata={"role": getattr(user, "role", None)},
+                )
+
             return response
 
         except Exception as e:
@@ -589,12 +598,14 @@ def journaux_list(request):
         if recherche:
             queryset = queryset.filter(
                 Q(action__icontains=recherche) |
-                Q(message__icontains=recherche) |
-                Q(acteur__username__icontains=recherche)
+                Q(details__icontains=recherche) |
+                Q(acteur__username__icontains=recherche) |
+                Q(acteur__first_name__icontains=recherche) |
+                Q(acteur__last_name__icontains=recherche)
             )
         
         if type_filter:
-            queryset = queryset.filter(action__icontains=type_filter)
+            queryset = queryset.filter(type_action=type_filter)
         
         if utilisateur_filter:
             queryset = queryset.filter(acteur__username__icontains=utilisateur_filter)
@@ -607,14 +618,18 @@ def journaux_list(request):
         
         # Sérialisation
         journaux = []
-        for log in queryset[:50]:  # Limiter à 50 résultats
+        for log in queryset[:200]:
+            acteur_label = "Système"
+            if log.acteur:
+                nom = f"{log.acteur.first_name} {log.acteur.last_name}".strip()
+                acteur_label = nom or log.acteur.username
             journaux.append({
                 "id": log.id,
                 "date": log.cree_le.strftime('%Y-%m-%d %H:%M'),
-                "utilisateur": log.acteur.username if log.acteur else "Système",
-                "action": log.action.replace('.', ' ').title(),
-                "details": log.message or log.action,
-                "type": get_journal_type(log.action),
+                "utilisateur": acteur_label,
+                "action": log.action.replace('.', ' ').replace('_', ' ').title(),
+                "details": log.details or log.action,
+                "type": log.type_action or get_journal_type(log.action),
                 "icone": get_journal_icon(log.action)
             })
         

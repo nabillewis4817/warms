@@ -15,6 +15,8 @@ export class JournauxComponent implements OnInit {
   journaux: Journal[] = [];
   journauxFiltres: Journal[] = [];
   chargement = false;
+  erreurChargement = '';
+  journalSelectionne: Journal | null = null;
   filtre = '';
   typesJournaux: string[] = [];
   utilisateurs: string[] = [];
@@ -40,6 +42,7 @@ export class JournauxComponent implements OnInit {
 
   chargerJournaux(): void {
     this.chargement = true;
+    this.erreurChargement = '';
     const filters: JournalFilters = this.form.value;
     
     this.journauxService.getJournaux(filters).subscribe({
@@ -50,10 +53,10 @@ export class JournauxComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erreur lors du chargement des journaux:', error);
+        this.journaux = [];
+        this.journauxFiltres = [];
+        this.erreurChargement = 'Impossible de charger les journaux. Vérifiez la connexion au serveur.';
         this.chargement = false;
-        // En cas d'erreur, utiliser des données de démonstration
-        this.journaux = this.getDonneesDemonstration();
-        this.journauxFiltres = this.journaux;
       }
     });
   }
@@ -89,47 +92,6 @@ export class JournauxComponent implements OnInit {
       
       return matchTexte && matchType && matchUtilisateur && matchDateDebut && matchDateFin;
     });
-  }
-
-  getDonneesDemonstration(): Journal[] {
-    return [
-      {
-        id: 1,
-        date: '2026-04-23 14:30',
-        utilisateur: 'Dr. Martin',
-        action: 'Création patient',
-        details: 'Patient DOE John créé avec dossier WARMS-000001',
-        type: 'patient',
-        icone: 'person_add'
-      },
-      {
-        id: 2,
-        date: '2026-04-23 14:25',
-        utilisateur: 'Dr. Martin',
-        action: 'Modification consultation',
-        details: 'Consultation du patient Smith modifiée',
-        type: 'consultation',
-        icone: 'edit'
-      },
-      {
-        id: 3,
-        date: '2026-04-23 14:20',
-        utilisateur: 'Secrétaire',
-        action: 'Création rendez-vous',
-        details: 'Rendez-vous créé pour patient Dupont',
-        type: 'rendez_vous',
-        icone: 'calendar_today'
-      },
-      {
-        id: 4,
-        date: '2026-04-23 14:15',
-        utilisateur: 'Dr. Martin',
-        action: 'Connexion',
-        details: 'Connexion au système',
-        type: 'systeme',
-        icone: 'login'
-      }
-    ];
   }
 
   exporterJournaux(): void {
@@ -221,8 +183,11 @@ export class JournauxComponent implements OnInit {
   }
 
   voirDetails(journal: Journal): void {
-    console.log('Détails du journal:', journal);
-    // TODO: Ouvrir une modale avec les détails complets
+    this.journalSelectionne = journal;
+  }
+
+  fermerDetails(): void {
+    this.journalSelectionne = null;
   }
 
   exporterJournal(journal: Journal): void {

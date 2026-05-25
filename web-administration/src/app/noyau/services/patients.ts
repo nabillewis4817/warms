@@ -10,6 +10,7 @@ export interface Patient {
   telephone: string;
   email: string;
   numero_dossier?: string;
+  dossier_id?: number;
   qr_token?: string;
   statut_parcours?: string;
   actif: boolean;

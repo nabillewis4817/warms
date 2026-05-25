@@ -3,8 +3,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { TauxAbsenteismeService } from '../../noyau/services/taux-absenteisme';
-import { TauxAbsenteisme } from '../../noyau/services/taux-absenteisme';
+import { TauxAbsenteismeService, TauxAbsenteisme, CalculerTauxPayload } from '../../noyau/services/taux-absenteisme';
 
 @Component({
   selector: 'app-taux-absenteisme',
@@ -21,86 +20,118 @@ export class TauxAbsenteismeComponent implements OnInit {
   loading = false;
   message = '';
 
-  // Filtres
   filterForm = this.fb.group({
     periode: ['mois'],
     date_debut: [''],
     date_fin: [''],
-    service: ['']
   });
 
-  // Statistiques
   stats = {
     totalTaux: 0,
     tauxMoyen: 0,
     tendance: 'stable',
-    periodeAnalyse: 'Ce mois'
+    periodeAnalyse: 'Ce mois',
   };
 
   ngOnInit(): void {
+    this.initialiserDates();
     this.loadTauxAbsenteisme();
-    this.loadStats();
+  }
+
+  private initialiserDates(): void {
+    const fin = new Date();
+    const debut = new Date();
+    debut.setDate(1);
+    this.filterForm.patchValue({
+      date_debut: debut.toISOString().split('T')[0],
+      date_fin: fin.toISOString().split('T')[0],
+      periode: 'mois',
+    });
   }
 
   loadTauxAbsenteisme(): void {
     this.loading = true;
-    this.tauxAbsenteismeService.lister().subscribe({
-      next: (data: TauxAbsenteisme[]) => {
+    this.tauxAbsenteismeService.historique(this.filterForm.value.periode || 'mois').subscribe({
+      next: (data) => {
         this.tauxList = data;
+        this.calculerStatsLocales();
         this.loading = false;
       },
-      error: (err: any) => {
-        console.error('Erreur lors du chargement des taux d\'absentéisme:', err);
-        this.message = 'Impossible de charger les taux d\'absentéisme';
+      error: () => {
+        this.tauxList = [];
         this.loading = false;
-      }
+        this.message = 'Impossible de charger l\'historique des taux.';
+      },
     });
   }
 
-  loadStats(): void {
-    // Simuler des statistiques - à remplacer par l'appel API réel
+  private calculerStatsLocales(): void {
+    if (!this.tauxList.length) {
+      this.stats = { totalTaux: 0, tauxMoyen: 0, tendance: 'stable', periodeAnalyse: '—' };
+      return;
+    }
+    const moyenne = this.tauxList.reduce((s, t) => s + t.taux_absenteisme, 0) / this.tauxList.length;
+    const dernier = this.tauxList[0];
+    const avant = this.tauxList[1];
+    let tendance = 'stable';
+    if (avant && dernier.taux_absenteisme < avant.taux_absenteisme) tendance = 'en_baisse';
+    if (avant && dernier.taux_absenteisme > avant.taux_absenteisme) tendance = 'en_hausse';
     this.stats = {
-      totalTaux: 12.5,
-      tauxMoyen: 10.2,
-      tendance: 'en_baisse',
-      periodeAnalyse: 'Ce mois'
+      totalTaux: this.tauxList.length,
+      tauxMoyen: Math.round(moyenne * 10) / 10,
+      tendance,
+      periodeAnalyse: `${dernier.periode_debut} → ${dernier.periode_fin}`,
     };
   }
 
+  calculerPeriode(): void {
+    const v = this.filterForm.getRawValue();
+    if (!v.date_debut || !v.date_fin) {
+      this.message = 'Indiquez une date de début et de fin.';
+      return;
+    }
+    const payload: CalculerTauxPayload = {
+      periode_debut: v.date_debut,
+      periode_fin: v.date_fin,
+      type_periode: v.periode || 'mois',
+    };
+    this.loading = true;
+    this.tauxAbsenteismeService.calculer(payload).subscribe({
+      next: () => {
+        this.message = 'Taux calculé et enregistré.';
+        this.loadTauxAbsenteisme();
+      },
+      error: (err) => {
+        this.loading = false;
+        this.message = err?.error?.error || 'Erreur lors du calcul du taux.';
+      },
+    });
+  }
+
   appliquerFiltres(): void {
-    const filters = this.filterForm.value;
-    console.log('Filtres appliqués:', filters);
-    // Appliquer les filtres via le service
     this.loadTauxAbsenteisme();
   }
 
   reinitialiserFiltres(): void {
-    this.filterForm.reset({
-      periode: 'mois',
-      date_debut: '',
-      date_fin: '',
-      service: ''
-    });
+    this.initialiserDates();
     this.loadTauxAbsenteisme();
   }
 
   exporter(format: string): void {
-    console.log('Exportation au format:', format);
-    this.message = `Exportation ${format} en cours...`;
-    // Implémenter l'exportation
+    this.message = `Export ${format} — utilisez l'onglet Appels pour le détail.`;
   }
 
   getTauxColor(taux: number): string {
-    if (taux < 5) return '#22c55e'; // Vert - bon
-    if (taux < 10) return '#f59e0b'; // Orange - attention
-    return '#dc2626'; // Rouge - critique
+    if (taux < 5) return '#22c55e';
+    if (taux < 10) return '#f59e0b';
+    return '#dc2626';
   }
 
   getTendanceIcon(tendance: string): string {
     switch (tendance) {
-      case 'en_hausse': return 'bi-arrow-up-circle-fill';
-      case 'en_baisse': return 'bi-arrow-down-circle-fill';
-      default: return 'bi-dash-circle-fill';
+      case 'en_hausse': return 'bi-arrow-up';
+      case 'en_baisse': return 'bi-arrow-down';
+      default: return 'bi-dash';
     }
   }
 

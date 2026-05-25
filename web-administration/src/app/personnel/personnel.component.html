@@ -210,4 +210,40 @@
     <h3>Aucun membre trouvé</h3>
     <p>Aucun membre du personnel ne correspond à vos critères de recherche.</p>
   </div>
+
+  <div class="modal-overlay" *ngIf="detailOuvert" (click)="fermerDetails()">
+    <div class="modal-content detail-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Fiche personnel</h3>
+        <button type="button" class="btn-close" (click)="fermerDetails()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="detail-body" *ngIf="personnelDetail as p">
+        <div class="detail-avatar">
+          <span class="cercle-initiales large">{{ getInitialesPersonnel(p) }}</span>
+          <img [src]="getRoleIcon(p.role)" [alt]="p.role" class="role-img">
+        </div>
+        <h4>{{ p.prenom }} {{ p.nom }}</h4>
+        <p class="role-label">{{ getRoleLabel(p.role) }}</p>
+        <span class="status-badge" [style.background-color]="getStatutColor(p.statut)">
+          {{ getStatutBadge(p.statut) }}
+        </span>
+        <ul class="detail-list" *ngIf="!detailChargement">
+          <li><i class="bi bi-envelope"></i> {{ p.email || '—' }}</li>
+          <li><i class="bi bi-telephone"></i> {{ p.telephone || '—' }}</li>
+          <li *ngIf="p.service"><i class="bi bi-building"></i> {{ p.service }}</li>
+          <li *ngIf="p.specialite"><i class="bi bi-award"></i> {{ p.specialite }}</li>
+          <li *ngIf="p.date_embauche"><i class="bi bi-calendar-check"></i> Depuis {{ formatDate(p.date_embauche) }}</li>
+          <li *ngIf="p.derniere_connexion"><i class="bi bi-clock"></i> Dernière connexion : {{ p.derniere_connexion }}</li>
+        </ul>
+        <p *ngIf="detailChargement">Chargement des détails…</p>
+        <div class="detail-actions">
+          <button type="button" class="btn-edit" (click)="modifierPersonnel(p); fermerDetails()">
+            <i class="bi bi-pencil"></i> Modifier
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

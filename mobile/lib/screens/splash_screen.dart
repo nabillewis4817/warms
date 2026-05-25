@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:lottie/lottie.dart';
-import '../themes/warms_theme.dart';
 
 /// Écran de splash animé pour WARMS Mobile
 /// 
@@ -99,10 +96,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
   
   Future<void> _navigateToMain() async {
-    await Future.delayed(const Duration(seconds: 4));
-    if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/main');
-    }
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed('/main');
   }
 
   @override

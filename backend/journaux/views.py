@@ -38,14 +38,19 @@ class LogActiviteViewSet(viewsets.ReadOnlyModelViewSet):
         date_debut = self.request.query_params.get('dateDebut')
         date_fin = self.request.query_params.get('dateFin')
         if date_debut:
-            queryset = queryset.filter(date_heure__gte=date_debut)
+            queryset = queryset.filter(cree_le__date__gte=date_debut)
         if date_fin:
-            queryset = queryset.filter(date_heure__lte=date_fin)
+            queryset = queryset.filter(cree_le__date__lte=date_fin)
         
         # Filtrage par type
         type_log = self.request.query_params.get('type')
         if type_log:
             queryset = queryset.filter(type_action=type_log)
+        
+        # Alias query param « type » (frontend)
+        type_alias = self.request.query_params.get('type')
+        if type_alias:
+            queryset = queryset.filter(type_action=type_alias)
         
         # Filtrage par utilisateur
         utilisateur = self.request.query_params.get('utilisateur')

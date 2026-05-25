@@ -22,11 +22,24 @@ interface PersonnelApi {
   id: number;
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
+  prenom?: string;
+  nom?: string;
+  nom_complet?: string;
   telephone: string;
   role: string;
   is_active: boolean;
+  service?: string;
+  specialite?: string;
+  date_embauche?: string;
+  statut?: string;
+  photo?: string;
+  photo_profil?: string;
+  langue_interface?: string;
+  mode_sombre?: boolean;
+  date_joined?: string;
+  last_login?: string;
 }
 
 export interface PersonnelFilters {
@@ -63,6 +76,12 @@ export class PersonnelService {
   constructor(private http: HttpClient) {}
 
   // Obtenir tout le personnel avec filtres
+  obtenirDetail(id: number): Observable<Personnel> {
+    return this.http.get<PersonnelApi>(`${this.apiUrl}${id}/`).pipe(
+      map((item) => this.mapApiToPersonnel(item))
+    );
+  }
+
   getPersonnel(filters?: PersonnelFilters): Observable<Personnel[]> {
     let params = '';
     if (filters) {
@@ -133,14 +152,27 @@ export class PersonnelService {
   }
 
   private mapApiToPersonnel(item: PersonnelApi): Personnel {
+    let prenom = (item.first_name ?? item.prenom ?? '').trim();
+    let nom = (item.last_name ?? item.nom ?? '').trim();
+    if (!prenom && !nom && item.nom_complet) {
+      const parts = item.nom_complet.trim().split(/\s+/);
+      prenom = parts[0] ?? '';
+      nom = parts.slice(1).join(' ');
+    }
+    const statut = item.statut ?? (item.is_active === false ? 'inactif' : 'actif');
     return {
       id: item.id,
-      prenom: item.first_name ?? '',
-      nom: item.last_name ?? '',
+      prenom,
+      nom,
       email: item.email ?? '',
       telephone: item.telephone ?? '',
       role: item.role ?? '',
-      statut: item.is_active ? 'actif' : 'inactif',
+      service: item.service,
+      specialite: item.specialite,
+      photo: item.photo ?? item.photo_profil,
+      date_embauche: item.date_embauche,
+      statut,
+      derniere_connexion: item.last_login,
     };
   }
 

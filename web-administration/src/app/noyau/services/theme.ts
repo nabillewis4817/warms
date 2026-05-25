@@ -9,7 +9,7 @@ export class ThemeService {
   appliquer(modeSombre: boolean): void {
     this.modeSombre.set(modeSombre);
     document.body.classList.toggle('theme-sombre', modeSombre);
+    document.documentElement.classList.toggle('theme-sombre', modeSombre);
+    document.documentElement.style.colorScheme = modeSombre ? 'dark' : 'light';
   }
 }
-
-// #EbaJioloLewis

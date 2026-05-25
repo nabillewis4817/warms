@@ -8,8 +8,13 @@
   --warms-bg: #f0f4ff;
   --warms-card: #ffffff;
   --warms-gray: #4a5568;
+  --warms-text: #334155;
+  --warms-text-muted: #64748b;
+  --warms-border: #c9d6f2;
+  --warms-input-bg: #ffffff;
   --warms-font-title: 'Quicksand', sans-serif;
   --warms-font-body: 'Quicksand', sans-serif;
+  --warms-shadow: rgba(26, 46, 107, 0.15);
 }
 
 * {
@@ -20,16 +25,94 @@ body {
   margin: 0;
   font-family: var(--warms-font-body);
   background: var(--warms-bg);
-  color: var(--warms-gray);
+  color: var(--warms-text);
   background-image:
     radial-gradient(circle at 10% 10%, rgba(30, 77, 183, 0.10), transparent 26%),
     radial-gradient(circle at 90% 8%, rgba(26, 46, 107, 0.11), transparent 28%);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 body.theme-sombre {
+  --warms-navy: #e8f0ff;
+  --warms-blue: #b8c9f0;
+  --warms-accent: #5b8def;
   --warms-bg: #0b1530;
   --warms-card: #182543;
   --warms-gray: #d6deef;
+  --warms-text: #e8f0ff;
+  --warms-text-muted: #a8b8d8;
+  --warms-border: #2a3f6b;
+  --warms-input-bg: #121e38;
+  --warms-shadow: rgba(0, 0, 0, 0.35);
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(91, 141, 239, 0.12), transparent 26%),
+    radial-gradient(circle at 90% 8%, rgba(26, 46, 107, 0.25), transparent 28%);
 }
 
-// #EbaJioloLewis
+body.theme-sombre h1,
+body.theme-sombre h2,
+body.theme-sombre h3,
+body.theme-sombre h4,
+body.theme-sombre h5,
+body.theme-sombre h6 {
+  color: var(--warms-text);
+}
+
+body.theme-sombre p,
+body.theme-sombre span,
+body.theme-sombre label,
+body.theme-sombre td,
+body.theme-sombre th,
+body.theme-sombre li {
+  color: var(--warms-text);
+}
+
+body.theme-sombre small,
+body.theme-sombre .hint,
+body.theme-sombre .subtitle {
+  color: var(--warms-text-muted);
+}
+
+body.theme-sombre input,
+body.theme-sombre select,
+body.theme-sombre textarea {
+  background: var(--warms-input-bg);
+  color: var(--warms-text);
+  border-color: var(--warms-border);
+}
+
+body.theme-sombre .card,
+body.theme-sombre article,
+body.theme-sombre .modal-content,
+body.theme-sombre .kpi-card,
+body.theme-sombre .chart-card {
+  background: var(--warms-card) !important;
+  color: var(--warms-text);
+  border-color: var(--warms-border);
+}
+
+body.theme-sombre table {
+  color: var(--warms-text);
+}
+
+body.theme-sombre table thead {
+  background: rgba(91, 141, 239, 0.15);
+}
+
+body.theme-sombre table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body.theme-sombre a:not(.sidebar a) {
+  color: var(--warms-accent);
+}
+
+body.theme-sombre .btn-primary,
+body.theme-sombre button.btn-primary {
+  color: #fff;
+}
+
+body.theme-sombre .loading,
+body.theme-sombre .empty-state {
+  color: var(--warms-text-muted);
+}

@@ -48,6 +48,7 @@ export const routes: Routes = [
   { path: 'journaux', component: JournauxComponent, canActivate: [authentificationGuard] },
   { path: 'avis', component: Avis, canActivate: [authentificationGuard] },
   { path: 'personnel', component: PersonnelComponent, canActivate: [authentificationGuard] },
+  { path: 'parametres', redirectTo: 'parametres/profil', pathMatch: 'full' },
   { path: 'parametres/profil', component: ProfilUtilisateur, canActivate: [authentificationGuard] },
   // Routes pour les consultations et gestion clinique
   { 

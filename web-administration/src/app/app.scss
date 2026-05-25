@@ -537,6 +537,28 @@
   }
 }
 
+body.theme-sombre .sidebar {
+  background: #0b1530;
+  border-right: 1px solid var(--warms-border);
+}
+
+body.theme-sombre .sidebar a {
+  color: #e8f0ff;
+}
+
+body.theme-sombre .topbar,
+body.theme-sombre .page.card {
+  background: var(--warms-card);
+  color: var(--warms-text);
+}
+
+body.theme-sombre .quick-action,
+body.theme-sombre .notification-toggle {
+  background: var(--warms-input-bg);
+  color: var(--warms-text);
+  border: 1px solid var(--warms-border);
+}
+
 // Mode sombre pour le widget datetime
 @media (prefers-color-scheme: dark) {
   .datetime-extended {

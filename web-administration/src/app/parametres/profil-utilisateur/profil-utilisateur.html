@@ -1,67 +1,99 @@
-<section class="profil">
-  <h2>{{ traductionService.t('profile') }}</h2>
-  <p class="hint">Personnalise ton compte, tes notifications et l'interface.</p>
-
-  @if (enChargement) {
-    <p>Chargement...</p>
-  } @else {
-    <form [formGroup]="form" (ngSubmit)="enregistrer()">
-      <div class="photo-block">
-        @if (photoPreview) {
-          <img class="avatar" [src]="photoPreview" alt="Photo profil" />
-        } @else {
-          <div class="avatar placeholder">Photo</div>
-        }
-        <div class="photo-actions">
-          <label class="import-btn">
-            Changer photo
-            <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
-          </label>
-          @if (photoPreview) {
-            <button type="button" (click)="supprimerPhoto()">Supprimer photo</button>
-          }
-        </div>
-      </div>
-
-      <div class="grid">
-        <label>Prénom <input type="text" formControlName="first_name" /></label>
-        <label>Nom <input type="text" formControlName="last_name" /></label>
-        <label>Email <input type="email" formControlName="email" /></label>
-        <label>Téléphone <input type="text" formControlName="telephone" /></label>
-        <label>
-          Langue
-          <select formControlName="langue_interface">
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-        <label class="toggle">
-          Mode sombre
-          <input type="checkbox" formControlName="mode_sombre" />
-        </label>
-      </div>
-
-      <h3>Notifications et rappels</h3>
-      <div class="grid notif">
-        <label class="toggle">Email <input type="checkbox" formControlName="notif_email" /></label>
-        <label class="toggle">SMS <input type="checkbox" formControlName="notif_sms" /></label>
-        <label class="toggle">Push <input type="checkbox" formControlName="notif_push" /></label>
-        <label class="toggle">Rappels auto <input type="checkbox" formControlName="notif_rappels_auto" /></label>
-      </div>
-
-      <div class="actions">
-        <button type="submit">{{ traductionService.t('save') }}</button>
-        <button type="button" (click)="exporterPreferences()">Exporter</button>
-        <label class="import-btn">
-          Importer
-          <input type="file" accept=".json,application/json" (change)="importerPreferences($event)" />
-        </label>
-        <button type="button" (click)="deconnexion()">Déconnexion</button>
-      </div>
-    </form>
-  }
+<section class="parametres-page">
+  <header class="page-header">
+    <div>
+      <h1><i class="bi bi-gear-wide-connected"></i> Paramètres</h1>
+      <p class="hint">Profil, apparence, notifications et sécurité de votre compte WARMS.</p>
+    </div>
+    @if (profil) {
+      <div class="role-chip">{{ profil.role }}</div>
+    }
+  </header>
 
   @if (message) {
-    <p class="message">{{ message }}</p>
+    <div class="toast" [class.success]="message.includes('succès') || message.includes('export')">
+      {{ message }}
+    </div>
+  }
+
+  @if (enChargement) {
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <p>Chargement de vos préférences…</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="enregistrer()" class="settings-layout">
+      <article class="card profile-card">
+        <h2><i class="bi bi-person-badge"></i> Identité</h2>
+        <div class="photo-row">
+          @if (photoPreview) {
+            <img class="avatar" [src]="photoPreview" alt="Photo profil" />
+          } @else {
+            <div class="avatar placeholder">{{ (profil?.prenom || '?')[0] }}{{ (profil?.nom || '')[0] }}</div>
+          }
+          <div class="photo-actions">
+            <label class="btn-secondary">
+              <i class="bi bi-camera"></i> Changer photo
+              <input type="file" accept="image/*" (change)="onPhotoSelected($event)" hidden />
+            </label>
+            @if (photoPreview) {
+              <button type="button" class="btn-danger" (click)="supprimerPhoto()">Supprimer</button>
+            }
+          </div>
+        </div>
+        <div class="fields-grid">
+          <label>Prénom <input type="text" formControlName="first_name" /></label>
+          <label>Nom <input type="text" formControlName="last_name" /></label>
+          <label>Email <input type="email" formControlName="email" /></label>
+          <label>Téléphone <input type="text" formControlName="telephone" /></label>
+        </div>
+      </article>
+
+      <article class="card prefs-card">
+        <h2><i class="bi bi-palette"></i> Interface</h2>
+        <div class="fields-grid">
+          <label>
+            Langue
+            <select formControlName="langue_interface">
+              <option value="fr">Français</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <label class="switch-row">
+            <span>Mode sombre</span>
+            <input type="checkbox" formControlName="mode_sombre" />
+          </label>
+        </div>
+      </article>
+
+      <article class="card notif-card">
+        <h2><i class="bi bi-bell"></i> Notifications</h2>
+        <div class="switch-grid">
+          <label class="switch-row"><span>Email</span><input type="checkbox" formControlName="notif_email" /></label>
+          <label class="switch-row"><span>SMS</span><input type="checkbox" formControlName="notif_sms" /></label>
+          <label class="switch-row"><span>Push</span><input type="checkbox" formControlName="notif_push" /></label>
+          <label class="switch-row"><span>Rappels automatiques</span><input type="checkbox" formControlName="notif_rappels_auto" /></label>
+        </div>
+      </article>
+
+      <article class="card security-card">
+        <h2><i class="bi bi-shield-lock"></i> Compte</h2>
+        <p class="meta">Utilisateur : <strong>{{ profil?.username }}</strong></p>
+        <div class="actions-row">
+          <button type="submit" class="btn-primary">
+            <i class="bi bi-save"></i> {{ traductionService.t('save') }}
+          </button>
+          <button type="button" class="btn-secondary" (click)="exporterPreferences()">
+            <i class="bi bi-download"></i> Exporter
+          </button>
+          <label class="btn-secondary">
+            <i class="bi bi-upload"></i> Importer
+            <input type="file" accept=".json,application/json" (change)="importerPreferences($event)" hidden />
+          </label>
+          <button type="button" class="btn-danger" (click)="deconnexion()">
+            <i class="bi bi-box-arrow-right"></i> Déconnexion
+          </button>
+        </div>
+      </article>
+    </form>
   }
 </section>

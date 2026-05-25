@@ -1,50 +1,135 @@
-.profil h2 {
+.parametres-page {
+  display: grid;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.page-header h1 {
   margin: 0;
   font-family: var(--warms-font-title);
   color: var(--warms-blue);
-  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .hint {
-  margin: 6px 0 20px;
+  margin: 8px 0 0;
+  color: #5a6b8a;
 }
 
-.photo-block {
+.role-chip {
+  background: linear-gradient(135deg, #1e4db7, #3b82f6);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #e8f0ff;
+  color: var(--warms-blue);
+  font-weight: 600;
+}
+
+.toast.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.loading-card {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 40px;
+  background: #f8faff;
+  border-radius: 16px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #c9d6f2;
+  border-top-color: var(--warms-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f7;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(30, 77, 183, 0.06);
+}
+
+.card h2 {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+  color: var(--warms-blue);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
+}
+
+.profile-card {
+  grid-column: 1 / -1;
+}
+
+.photo-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .avatar {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #c9d6f2;
+  border: 3px solid #c9d6f2;
 }
 
 .avatar.placeholder {
   display: grid;
   place-items: center;
-  background: #f5f8ff;
-  color: #4f5d7a;
+  background: linear-gradient(145deg, #eef3ff, #dbe7ff);
+  color: var(--warms-blue);
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .photo-actions {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-form {
+.fields-grid,
+.switch-grid {
   display: grid;
-  gap: 16px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 14px;
 }
 
@@ -53,60 +138,65 @@ label {
   flex-direction: column;
   gap: 6px;
   font-weight: 500;
+  color: #334155;
 }
 
 input,
 select {
   border: 1px solid #c9d6f2;
   border-radius: 12px;
-  padding: 10px;
+  padding: 10px 12px;
   background: #fff;
 }
 
-.toggle {
+.switch-row {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   background: #f5f8ff;
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
 }
 
-button {
-  border: none;
-  border-radius: 14px;
-  padding: 12px 16px;
-  background: var(--warms-accent);
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
+.security-card {
+  grid-column: 1 / -1;
 }
 
-.actions {
+.meta {
+  margin: 0 0 14px;
+  color: #64748b;
+}
+
+.actions-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.import-btn {
+.btn-primary,
+.btn-secondary,
+.btn-danger {
   border: none;
-  border-radius: 14px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: var(--warms-accent);
+  color: #fff;
+}
+
+.btn-secondary {
   background: #e9f0ff;
   color: var(--warms-blue);
-  font-weight: 700;
-  cursor: pointer;
-  width: fit-content;
 }
 
-.import-btn input {
-  display: none;
+.btn-danger {
+  background: #fee2e2;
+  color: #b91c1c;
 }
-
-.message {
-  margin-top: 12px;
-  color: var(--warms-blue);
-  font-weight: 600;
-}
-
-// #EbaJioloLewis

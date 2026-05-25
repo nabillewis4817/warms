@@ -141,7 +141,7 @@
               <div class="journal-meta">
                 <span class="journal-date">
                   <i class="bi bi-calendar"></i>
-                  {{ journal.date | date:'dd/MM/yyyy HH:mm' }}
+                  {{ journal.date }}
                 </span>
                 <span class="journal-user">
                   <i class="bi bi-person"></i>
@@ -179,17 +179,42 @@
       </div>
     </div>
 
+    @if (erreurChargement) {
+      <div class="empty-state error">
+        <p>{{ erreurChargement }}</p>
+        <button class="btn-primary" (click)="rafraichir()">Réessayer</button>
+      </div>
+    }
+
     <!-- État vide -->
-    <div class="empty-state" *ngIf="!chargement && journauxFiltres.length === 0">
+    <div class="empty-state" *ngIf="!chargement && !erreurChargement && journauxFiltres.length === 0">
       <div class="empty-icon">
         <i class="bi bi-journal-text"></i>
       </div>
       <h3>Aucun journal trouvé</h3>
-      <p>Aucune entrée de journal ne correspond à vos critères de recherche.</p>
+      <p>Les actions (connexion, CRUD patients, personnel…) apparaîtront ici automatiquement.</p>
       <button class="btn-primary" (click)="resetFilters()">
         <i class="bi bi-arrow-counterclockwise"></i>
         Réinitialiser les filtres
       </button>
     </div>
   </div>
+
+  @if (journalSelectionne) {
+    <div class="modal-overlay" (click)="fermerDetails()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <header>
+          <h3>Détail de l'activité</h3>
+          <button type="button" (click)="fermerDetails()"><i class="bi bi-x-lg"></i></button>
+        </header>
+        <dl>
+          <dt>Date</dt><dd>{{ journalSelectionne.date }}</dd>
+          <dt>Utilisateur</dt><dd>{{ journalSelectionne.utilisateur }}</dd>
+          <dt>Type</dt><dd>{{ getTypeLabel(journalSelectionne.type) }}</dd>
+          <dt>Action</dt><dd>{{ journalSelectionne.action }}</dd>
+          <dt>Détails</dt><dd>{{ journalSelectionne.details }}</dd>
+        </dl>
+      </div>
+    </div>
+  }
 </section>

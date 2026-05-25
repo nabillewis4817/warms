@@ -11,7 +11,7 @@ import { StatistiquesService } from '../../noyau/services/statistiques';
   styleUrl: './vue-generale.scss',
 })
 export class VueGenerale implements OnInit, OnDestroy {
-  stats: any = {};
+  stats: Record<string, unknown> = {};
   loading = true;
   error: string | null = null;
   private refreshSubscription: Subscription | null = null;
@@ -20,32 +20,27 @@ export class VueGenerale implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.chargerStats();
-    // Auto-refresh toutes les 30 secondes pour les statistiques en temps réel
-    this.refreshSubscription = interval(30000).subscribe(() => {
-      this.chargerStats();
-    });
+    this.refreshSubscription = interval(30000).subscribe(() => this.chargerStats());
   }
 
   ngOnDestroy(): void {
-    if (this.refreshSubscription) {
-      this.refreshSubscription.unsubscribe();
-    }
+    this.refreshSubscription?.unsubscribe();
   }
 
   chargerStats(): void {
     this.loading = true;
     this.error = null;
-    
+
     this.statsService.vueGenerale().subscribe({
-      next: (data: any) => {
-        this.stats = data;
+      next: (data) => {
+        this.stats = { ...data, ...(data['kpis'] as object) };
         this.loading = false;
       },
-      error: (err: any) => {
+      error: (err) => {
         console.error('Erreur lors du chargement des statistiques:', err);
-        this.error = 'Impossible de charger les statistiques';
+        this.error = 'Impossible de charger les statistiques depuis le serveur.';
         this.loading = false;
-      }
+      },
     });
   }
 

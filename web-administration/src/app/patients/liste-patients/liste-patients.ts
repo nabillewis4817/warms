@@ -53,11 +53,15 @@ export class ListePatients implements OnInit {
             message: `Le patient ${patient.prenom} ${patient.nom} a été archivé avec succès.`
           }).subscribe();
         },
-        error: () => {
+        error: (err) => {
           delete this.actionEnCours[patient.id];
+          const detail = err?.error?.detail;
+          const msg = typeof detail === 'string'
+            ? detail
+            : 'Archivage refusé ou erreur serveur. Connectez-vous en tant que personnel du cabinet.';
           this.dialogueService.erreur({
             titre: 'Erreur d\'archivage',
-            message: 'Une erreur est survenue lors de l\'archivage du patient. Veuillez réessayer.'
+            message: msg
           }).subscribe();
         }
       });
@@ -74,7 +78,7 @@ export class ListePatients implements OnInit {
       if (!confirme) return;
       
       this.actionEnCours[patient.id] = 'suppression';
-      this.patientsService.supprimer(patient.id).subscribe({
+      this.patientsService.supprimerAmeliore(patient.id).subscribe({
         next: () => {
           delete this.actionEnCours[patient.id];
           this.charger();
@@ -83,11 +87,15 @@ export class ListePatients implements OnInit {
             message: `Le patient ${patient.prenom} ${patient.nom} a été supprimé définitivement.`
           }).subscribe();
         },
-        error: () => {
+        error: (err) => {
           delete this.actionEnCours[patient.id];
+          const detail = err?.error?.detail;
+          const msg = typeof detail === 'string'
+            ? detail
+            : 'Une erreur est survenue lors de la suppression du patient. Vérifiez vos droits (personnel cabinet) et les données liées.';
           this.dialogueService.erreur({
             titre: 'Erreur de suppression',
-            message: 'Une erreur est survenue lors de la suppression du patient. Veuillez réessayer.'
+            message: msg
           }).subscribe();
         }
       });

@@ -253,7 +253,7 @@
           <div class="form-row">
             <div class="form-group">
               <label for="patient">Patient *</label>
-              <select id="patient" formControlName="patient" class="form-control">
+              <select id="patient" formControlName="patient" class="form-control" (change)="onPatientChange(+$any($event.target).value || 0)">
                 <option value="">Sélectionner un patient</option>
                 @for (patient of patients; track patient.id) {
                   <option [value]="patient.id">
@@ -270,7 +270,7 @@
             </div>
             
             <div class="form-group">
-              <label for="dossier">Dossier *</label>
+              <label for="dossier">Dossier (auto si lié au patient)</label>
               <select id="dossier" formControlName="dossier" class="form-control">
                 <option value="">Sélectionner un dossier</option>
               </select>

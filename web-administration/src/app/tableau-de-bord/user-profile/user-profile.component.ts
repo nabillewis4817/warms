@@ -102,7 +102,7 @@ export class UserProfileComponent implements OnInit {
 
   naviguerVersParametres(): void {
     this.fermerMenu();
-    this.router.navigate(['/parametres']);
+    this.router.navigate(['/parametres/profil']);
   }
 
   seDeconnecter(): void {
