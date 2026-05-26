@@ -131,51 +131,36 @@
           <thead>
             <tr>
               <th>Période</th>
-              <th>Service</th>
-              <th>Taux général</th>
-              <th>Taux médecins</th>
-              <th>Taux infirmiers</th>
-              <th>Taux personnel</th>
-              <th>Total absences</th>
-              <th>Tendance</th>
+              <th>Type</th>
+              <th>Présents</th>
+              <th>Absents</th>
+              <th>Appels</th>
+              <th>Taux absentéisme</th>
+              <th>Taux présence</th>
             </tr>
           </thead>
           <tbody>
             @for (item of tauxList; track item.id) {
               <tr>
-                <td>{{ item.periode }}</td>
-                <td>{{ item.service || 'Tous services' }}</td>
+                <td>{{ item.periode_debut }} → {{ item.periode_fin }}</td>
+                <td>{{ item.type_periode }}</td>
+                <td>{{ item.total_presents }}</td>
+                <td>{{ item.total_absents }}</td>
+                <td>{{ item.total_appels }}</td>
                 <td>
-                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_general)">
-                    {{ item.taux_general }}%
+                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_absenteisme)">
+                    {{ item.taux_absenteisme | number:'1.1-1' }}%
                   </span>
                 </td>
                 <td>
-                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_medecins)">
-                    {{ item.taux_medecins }}%
+                  <span class="taux-badge" [style.background-color]="getTauxColor(100 - item.taux_absenteisme)">
+                    {{ item.taux_presence | number:'1.1-1' }}%
                   </span>
-                </td>
-                <td>
-                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_infirmiers)">
-                    {{ item.taux_infirmiers }}%
-                  </span>
-                </td>
-                <td>
-                  <span class="taux-badge" [style.background-color]="getTauxColor(item.taux_personnel)">
-                    {{ item.taux_personnel }}%
-                  </span>
-                </td>
-                <td>{{ item.total_absences }} / {{ item.total_employes }}</td>
-                <td>
-                  <div class="tendance-cell">
-                    <i [class]="getTendanceIcon(item.tendance)" [style.color]="getTendanceColor(item.tendance)"></i>
-                    <span>{{ item.tendance.replace('_', ' ') }}</span>
-                  </div>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="8" class="no-data">
+                <td colspan="7" class="no-data">
                   <i class="bi bi-graph-down"></i>
                   <p>Aucune donnée d'absentéisme trouvée</p>
                 </td>

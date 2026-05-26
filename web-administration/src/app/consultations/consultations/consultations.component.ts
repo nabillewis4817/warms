@@ -7,6 +7,8 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ConsultationsService, Consultation, ActeRealise, PhotoClinique } from '../../noyau/services/consultations.service';
 import { DialogueService } from '../../noyau/services/dialogue.service';
 import { Patients, Patient } from '../../noyau/services/patients';
+import { PersonnelService, Personnel } from '../../noyau/services/personnel.service';
+import { RendezVousService, RendezVous } from '../../noyau/services/rendez-vous';
 
 @Component({
   selector: 'app-consultations',
@@ -22,18 +24,22 @@ export class ConsultationsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly dialogueService = inject(DialogueService);
   private readonly patientsService = inject(Patients);
-  
-  // Propriété pour accéder à Math dans le template
+  private readonly personnelService = inject(PersonnelService);
+  private readonly rendezVousService = inject(RendezVousService);
+
   readonly Math = Math;
 
-  // Données
   consultations: Consultation[] = [];
   consultationSelectionnee: Consultation | null = null;
   actesConsultation: ActeRealise[] = [];
   photosConsultation: PhotoClinique[] = [];
   patients: Patient[] = [];
+  praticiens: Personnel[] = [];
+  rendezVousList: RendezVous[] = [];
+  chargementPatients = false;
+  chargementPraticiens = false;
+  consultationsChargees = false;
 
-  // États UI
   chargement = false;
   afficherDetails = false;
   afficherFormulaire = false;
@@ -64,6 +70,8 @@ export class ConsultationsComponent implements OnInit {
     this.initialiserFormulaires();
     this.configurerRecherche();
     this.chargerPatients();
+    this.chargerPraticiens();
+    this.chargerRendezVous();
     this.chargerConsultations();
   }
 
@@ -111,19 +119,75 @@ export class ConsultationsComponent implements OnInit {
   }
 
   chargerPatients(): void {
+    this.chargementPatients = true;
     this.patientsService.lister().subscribe({
       next: (patients) => {
         this.patients = patients;
-        console.log('Patients chargés:', patients.length);
+        this.chargementPatients = false;
       },
       error: (error) => {
         console.error('Erreur lors du chargement des patients:', error);
+        this.patients = [];
+        this.chargementPatients = false;
         this.dialogueService.erreur({
           titre: 'Erreur',
-          message: 'Impossible de charger la liste des patients. Veuillez réessayer.'
+          message: 'Impossible de charger la liste des patients. Vérifiez la connexion au serveur.',
         });
-      }
+      },
     });
+  }
+
+  chargerPraticiens(): void {
+    this.chargementPraticiens = true;
+    this.personnelService.getPersonnel().subscribe({
+      next: (liste) => {
+        this.praticiens = liste.filter(
+          (p) => p.statut !== 'inactif' && p.role?.toLowerCase() !== 'patient'
+        );
+        this.chargementPraticiens = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement du personnel:', error);
+        this.praticiens = [];
+        this.chargementPraticiens = false;
+      },
+    });
+  }
+
+  chargerRendezVous(): void {
+    this.rendezVousService.lister().subscribe({
+      next: (liste) => {
+        this.rendezVousList = liste;
+      },
+      error: () => {
+        this.rendezVousList = [];
+      },
+    });
+  }
+
+  libellePraticien(p: Personnel): string {
+    const nom = [p.prenom, p.nom].filter(Boolean).join(' ').trim();
+    return nom ? `${nom} (${this.libelleRole(p.role)})` : p.email || `Utilisateur #${p.id}`;
+  }
+
+  libelleRole(role: string): string {
+    const roles: Record<string, string> = {
+      chirurgien_dentiste: 'Chirurgien-dentiste',
+      secretaire: 'Secrétaire',
+      infirmiere: 'Infirmière',
+      administrateur: 'Administrateur',
+    };
+    return roles[role] ?? role;
+  }
+
+  libelleRendezVous(rdv: RendezVous): string {
+    const patient =
+      rdv.patient_prenom && rdv.patient_nom
+        ? `${rdv.patient_prenom} ${rdv.patient_nom}`
+        : this.patients.find((p) => p.id === rdv.patient)
+          ? `${this.patients.find((p) => p.id === rdv.patient)!.prenom} ${this.patients.find((p) => p.id === rdv.patient)!.nom}`
+          : `Patient #${rdv.patient}`;
+    return `${patient} — ${this.formatDate(rdv.date_heure)}`;
   }
 
   chargerConsultations(): void {
@@ -193,7 +257,13 @@ export class ConsultationsComponent implements OnInit {
   // Actions CRUD
   creerConsultation(): void {
     this.modeEdition = false;
+    this.consultationSelectionnee = null;
     this.formulaireConsultation.reset();
+    const maintenant = new Date();
+    maintenant.setMinutes(maintenant.getMinutes() - maintenant.getTimezoneOffset());
+    this.formulaireConsultation.patchValue({ date: maintenant.toISOString().slice(0, 16) });
+    if (!this.patients.length) this.chargerPatients();
+    if (!this.praticiens.length) this.chargerPraticiens();
     this.afficherFormulaire = true;
     this.animerEntreeModal();
   }
@@ -224,13 +294,20 @@ export class ConsultationsComponent implements OnInit {
       return;
     }
 
-    const raw = this.formulaireConsultation.value;
+    const raw = this.formulaireConsultation.getRawValue();
+    let dateIso = raw.date;
+    if (dateIso && !String(dateIso).includes('Z') && !String(dateIso).includes('+')) {
+      dateIso = new Date(dateIso).toISOString();
+    }
+    const patientId = raw.patient ? Number(raw.patient) : null;
+    const patient = this.patients.find((p) => p.id === patientId);
     const donnees = {
       ...raw,
-      patient: raw.patient ? Number(raw.patient) : null,
-      dossier: raw.dossier ? Number(raw.dossier) : undefined,
+      patient: patientId,
+      dossier: raw.dossier ? Number(raw.dossier) : patient?.dossier_id ?? undefined,
       praticien: raw.praticien ? Number(raw.praticien) : undefined,
       rendez_vous: raw.rendez_vous ? Number(raw.rendez_vous) : undefined,
+      date: dateIso,
     };
 
     const operation = this.modeEdition
@@ -366,33 +443,67 @@ export class ConsultationsComponent implements OnInit {
     });
   }
 
-  // Export
   exporterConsultations(format: 'csv' | 'excel' | 'pdf'): void {
     const filters = this.construireParamsRecherche();
-    
-    this.consultationsService.exporterConsultations(format, filters).subscribe({
-      next: (blob) => {
-        if (blob instanceof Blob) {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `consultations.${format}`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          
-          this.afficherNotificationSucces(`Export ${format} téléchargé avec succès`);
-        }
-      },
-      error: (error) => {
-        console.error('Erreur lors de l\'export:', error);
-        this.dialogueService.erreur({
-          titre: 'Erreur',
-          message: 'Impossible d\'exporter les consultations.'
-        });
-      }
-    });
+
+    if (format === 'csv') {
+      this.consultationsService.exporterCsv(filters).subscribe({
+        next: (blob) => this.telechargerBlob(blob, 'consultations.csv'),
+        error: () => this.exporterConsultationsLocalement('csv'),
+      });
+      return;
+    }
+
+    this.exporterConsultationsLocalement(format === 'excel' ? 'csv' : 'csv');
+    this.afficherNotificationSucces(
+      `Export ${format.toUpperCase()} : fichier CSV généré (ouvrez-le dans Excel si besoin).`
+    );
+  }
+
+  private exporterConsultationsLocalement(ext: string): void {
+    if (!this.consultations.length) {
+      this.dialogueService.erreur({
+        titre: 'Export',
+        message: 'Aucune consultation à exporter. Chargez ou créez des consultations d\'abord.',
+      });
+      return;
+    }
+    const entetes = ['ID', 'Patient', 'Date', 'Motif', 'Diagnostic', 'Observations'];
+    const lignes = this.consultations.map((c) =>
+      [
+        c.id,
+        `${c.patient_prenom} ${c.patient_nom}`,
+        c.date,
+        c.motif,
+        c.diagnostic,
+        (c.observations || '').replace(/"/g, '""'),
+      ]
+        .map((v) => `"${v}"`)
+        .join(';')
+    );
+    const csv = [entetes.join(';'), ...lignes].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    this.telechargerBlob(blob, `consultations.${ext}`);
+    this.afficherNotificationSucces('Export téléchargé');
+  }
+
+  private telechargerBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    this.afficherNotificationSucces(`Fichier ${filename} téléchargé`);
+  }
+
+  rafraichirTout(): void {
+    this.chargerPatients();
+    this.chargerPraticiens();
+    this.chargerRendezVous();
+    this.chargerConsultations();
   }
 
   // Navigation UI

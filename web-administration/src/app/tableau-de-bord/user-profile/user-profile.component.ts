@@ -35,30 +35,31 @@ export class UserProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.verifierConnexion();
-    // Observer le signal utilisateur
-    this.utilisateur.set(this.auth.utilisateur());
     this.estConnecte.set(this.auth.estConnecte());
-    
-    if (this.auth.utilisateur()) {
+    const profilCache = this.auth.utilisateur();
+    if (profilCache) {
+      this.utilisateur.set(profilCache);
       this.genererPhotoUrl();
+    }
+    if (this.auth.estConnecte()) {
+      this.chargerProfilUtilisateur();
     }
   }
 
-  private verifierConnexion(): void {
-    if (this.auth.estConnecte()) {
-      this.estConnecte.set(true);
-      this.auth.chargerProfil().subscribe({
-        next: (profil) => {
-          this.utilisateur.set(profil);
-          this.genererPhotoUrl();
-        },
-        error: (error) => {
-          console.error('Erreur chargement profil:', error);
-          this.estConnecte.set(false);
+  private chargerProfilUtilisateur(): void {
+    this.auth.chargerProfil().subscribe({
+      next: (profil) => {
+        this.estConnecte.set(true);
+        this.utilisateur.set(profil);
+        this.genererPhotoUrl();
+      },
+      error: (error) => {
+        console.error('Erreur chargement profil:', error);
+        if (this.auth.estConnecte()) {
+          this.estConnecte.set(true);
         }
-      });
-    }
+      },
+    });
   }
 
   private genererPhotoUrl(): void {

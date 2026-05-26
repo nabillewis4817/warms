@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 
@@ -26,12 +27,77 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     serializer_class = ConsultationSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        params = self.request.query_params
+        patient_id = params.get("patient")
+        praticien_id = params.get("praticien")
+        date_debut = params.get("date_debut")
+        date_fin = params.get("date_fin")
+        search = params.get("search")
+
+        if patient_id:
+            qs = qs.filter(patient_id=patient_id)
+        if praticien_id:
+            qs = qs.filter(praticien_id=praticien_id)
+        if date_debut:
+            qs = qs.filter(date__date__gte=date_debut)
+        if date_fin:
+            qs = qs.filter(date__date__lte=date_fin)
+        if search:
+            qs = qs.filter(
+                Q(motif__icontains=search)
+                | Q(diagnostic__icontains=search)
+                | Q(observations__icontains=search)
+                | Q(patient__prenom__icontains=search)
+                | Q(patient__nom__icontains=search)
+            )
+        return qs.order_by("-date")
+
     def perform_create(self, serializer):
         patient = serializer.validated_data.get("patient")
         dossier = serializer.validated_data.get("dossier")
         if not dossier and patient is not None:
             dossier = getattr(patient, "dossier", None)
         serializer.save(dossier=dossier)
+
+    @action(detail=False, methods=["get"], url_path="export")
+    def exporter(self, request):
+        """Export CSV des consultations (filtres identiques à la liste)."""
+        import csv
+        from django.http import HttpResponse
+
+        consultations = self.filter_queryset(self.get_queryset())
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="consultations.csv"'
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "ID",
+                "Patient",
+                "Date",
+                "Motif",
+                "Diagnostic",
+                "Praticien",
+                "Observations",
+            ]
+        )
+        for c in consultations:
+            praticien = ""
+            if c.praticien_id:
+                praticien = c.praticien.get_full_name() or c.praticien.username
+            writer.writerow(
+                [
+                    c.id,
+                    f"{c.patient.prenom} {c.patient.nom}",
+                    c.date.strftime("%Y-%m-%d %H:%M") if c.date else "",
+                    c.motif,
+                    c.diagnostic,
+                    praticien,
+                    c.observations,
+                ]
+            )
+        return response
 
 
 class ActeRealiseViewSet(viewsets.ModelViewSet):
@@ -260,12 +326,15 @@ class TauxAbsenteismeViewSet(viewsets.ModelViewSet):
         """Récupérer l'historique des taux"""
         type_periode = request.query_params.get('type_periode', 'mois')
         praticien_id = request.query_params.get('praticien_id')
-        limit = int(request.query_params.get('limit', 12))
-        
+        try:
+            limit = min(max(int(request.query_params.get('limit', 12)), 1), 100)
+        except (TypeError, ValueError):
+            limit = 12
+
         queryset = self.queryset.filter(type_periode=type_periode)
         if praticien_id:
             queryset = queryset.filter(praticien_id=praticien_id)
-        
+
         taux = queryset.order_by('-periode_debut')[:limit]
         serializer = self.get_serializer(taux, many=True)
         return Response(serializer.data)

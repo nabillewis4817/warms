@@ -27,7 +27,7 @@ export class AppelsComponent implements OnInit {
   message = '';
 
   form = this.fb.group({
-    patient: ['', Validators.required],
+    patient: [null as number | null, Validators.required],
     date_appel: ['', Validators.required],
     statut: ['present', Validators.required],
     motif_absence: [''],
@@ -77,7 +77,7 @@ export class AppelsComponent implements OnInit {
       });
     } else {
       this.form.reset({
-        patient: '',
+        patient: null,
         date_appel: '',
         statut: 'present',
         motif_absence: '',

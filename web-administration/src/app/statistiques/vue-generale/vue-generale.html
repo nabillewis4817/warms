@@ -36,7 +36,7 @@
           <h3>{{ stats.patients_total || 0 }}</h3>
           <p>Patients totaux</p>
           <span class="tendance {{ getTendance(stats.patients_tendance || 0) }}">
-            {{ stats.patients_tendance > 0 ? '+' : '' }}{{ stats.patients_tendance || 0 }}%
+            {{ (stats.patients_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.patients_tendance ?? 0 }}%
           </span>
         </div>
       </div>
@@ -49,7 +49,7 @@
           <h3>{{ stats.rendez_vous_30j || 0 }}</h3>
           <p>Rendez-vous (30j)</p>
           <span class="tendance {{ getTendance(stats.rendez_vous_tendance || 0) }}">
-            {{ stats.rendez_vous_tendance > 0 ? '+' : '' }}{{ stats.rendez_vous_tendance || 0 }}%
+            {{ (stats.rendez_vous_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.rendez_vous_tendance ?? 0 }}%
           </span>
         </div>
       </div>
@@ -62,7 +62,7 @@
           <h3>{{ stats.ordonnances_30j || 0 }}</h3>
           <p>Ordonnances (30j)</p>
           <span class="tendance {{ getTendance(stats.ordonnances_tendance || 0) }}">
-            {{ stats.ordonnances_tendance > 0 ? '+' : '' }}{{ stats.ordonnances_tendance || 0 }}%
+            {{ (stats.ordonnances_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.ordonnances_tendance ?? 0 }}%
           </span>
         </div>
       </div>
@@ -75,7 +75,7 @@
           <h3>{{ stats.chiffre_affaires_mois || 0 }}€</h3>
           <p>Chiffre d'affaires</p>
           <span class="tendance {{ getTendance(stats.ca_tendance || 0) }}">
-            {{ stats.ca_tendance > 0 ? '+' : '' }}{{ stats.ca_tendance || 0 }}%
+            {{ (stats.ca_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.ca_tendance ?? 0 }}%
           </span>
         </div>
       </div>

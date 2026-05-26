@@ -30,29 +30,32 @@ export interface CalculerTauxPayload {
   providedIn: 'root',
 })
 export class TauxAbsenteismeService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/taux-absenteisme`;
+  private readonly baseUrl = `${environment.apiBaseUrl}/taux-absenteisme/`;
 
   constructor(private readonly http: HttpClient) {}
 
   lister(): Observable<TauxAbsenteisme[]> {
-    return this.http.get<TauxAbsenteisme[]>(this.baseUrl);
+    return this.http.get<TauxAbsenteisme[] | { results: TauxAbsenteisme[] }>(this.baseUrl).pipe(
+      map((rows) => (Array.isArray(rows) ? rows : rows.results ?? []))
+    );
   }
 
   detail(id: number): Observable<TauxAbsenteisme> {
-    return this.http.get<TauxAbsenteisme>(`${this.baseUrl}/${id}/`);
+    return this.http.get<TauxAbsenteisme>(`${this.baseUrl}${id}/`);
   }
 
   calculer(payload: CalculerTauxPayload): Observable<TauxAbsenteisme> {
-    return this.http.post<TauxAbsenteisme>(`${this.baseUrl}/calculer/`, payload);
+    return this.http.post<TauxAbsenteisme>(`${this.baseUrl}calculer/`, payload);
   }
 
   historique(typePeriode = 'mois', limit = 12): Observable<TauxAbsenteisme[]> {
-    return this.http.get<TauxAbsenteisme[]>(`${this.baseUrl}/historique/`, {
-      params: { type_periode: typePeriode, limit: String(limit) },
-    });
+    return this.http.get<TauxAbsenteisme[] | { results: TauxAbsenteisme[] }>(
+      `${this.baseUrl}historique/`,
+      { params: { type_periode: typePeriode, limit: String(limit) } }
+    ).pipe(map((rows) => (Array.isArray(rows) ? rows : rows.results ?? [])));
   }
 
   getStatistiques(): Observable<Record<string, number>> {
-    return this.http.get<Record<string, number>>(`${this.baseUrl}/statistiques/`);
+    return this.http.get<Record<string, number>>(`${this.baseUrl}statistiques/`);
   }
 }

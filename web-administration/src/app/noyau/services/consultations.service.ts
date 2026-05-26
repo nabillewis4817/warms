@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
-import { catchError, tap, shareReplay } from 'rxjs/operators';
+import { catchError, map, tap, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface Consultation {
@@ -78,11 +78,10 @@ export interface ConsultationUpdate {
   providedIn: 'root'
 })
 export class ConsultationsService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/consultations`;
-  private readonly apiUrl = `${environment.apiBaseUrl}/consultations/consultations`;
-  private readonly actesUrl = `${environment.apiBaseUrl}/consultations/actes`;
-  private readonly schemasUrl = `${environment.apiBaseUrl}/consultations/schemas-dentaires`;
-  private readonly photosUrl = `${environment.apiBaseUrl}/consultations/photos-cliniques`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/consultations/`;
+  private readonly actesUrl = `${environment.apiBaseUrl}/actes/`;
+  private readonly schemasUrl = `${environment.apiBaseUrl}/schemas-dentaires/`;
+  private readonly photosUrl = `${environment.apiBaseUrl}/photos-cliniques/`;
 
   // Cache pour les consultations
   private consultationsCache = new BehaviorSubject<Consultation[]>([]);
@@ -108,10 +107,8 @@ export class ConsultationsService {
     if (params?.page) httpParams = httpParams.set('page', params.page);
     if (params?.page_size) httpParams = httpParams.set('page_size', params.page_size);
 
-    console.log('🔍 DEBUG - URL appelée:', this.apiUrl);
-    console.log('🔍 DEBUG - Params:', httpParams.toString());
-
-    return this.http.get<Consultation[]>(this.apiUrl, { params: httpParams }).pipe(
+    return this.http.get<Consultation[] | { results: Consultation[] }>(this.apiUrl, { params: httpParams }).pipe(
+      map((response) => (Array.isArray(response) ? response : response.results ?? [])),
       tap(consultations => this.consultationsCache.next(consultations)),
       shareReplay(1),
       catchError(this.handleError<Consultation[]>('getConsultations', []))
@@ -231,7 +228,7 @@ export class ConsultationsService {
     top_patients: Array<{ patient: string; count: number }>;
     top_actes: Array<{ acte: string; count: number }>;
   }> {
-    return this.http.get<any>(`${this.apiUrl}statistiques/`).pipe(
+    return this.http.get<any>(`${environment.apiBaseUrl}/statistiques/vue-generale/`).pipe(
       catchError(this.handleError<any>('getStatistiques', {
         total_consultations: 0,
         consultations_mois: 0,
@@ -245,9 +242,23 @@ export class ConsultationsService {
   // Recherche
   rechercherConsultations(query: string): Observable<Consultation[]> {
     const params = new HttpParams().set('search', query);
-    return this.http.get<Consultation[]>(`${this.apiUrl}search/`, { params }).pipe(
+    return this.http.get<Consultation[] | { results: Consultation[] }>(this.apiUrl, { params }).pipe(
+      map((response) => (Array.isArray(response) ? response : response.results ?? [])),
       catchError(this.handleError<Consultation[]>('rechercherConsultations', []))
     );
+  }
+
+  /** Export CSV via l'action backend /consultations/export/ */
+  exporterCsv(filters?: Record<string, unknown>): Observable<Blob> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, String(value));
+        }
+      });
+    }
+    return this.http.get(`${this.apiUrl}export/`, { params, responseType: 'blob' });
   }
 
   // Export
@@ -262,12 +273,9 @@ export class ConsultationsService {
       });
     }
 
-    console.log('URL appelée:', this.apiUrl);
-    console.log('Params:', params.toString());
-
-    return this.http.get(`${this.apiUrl}export/`, { 
-      params, 
-      responseType: 'blob' 
+    return this.http.get(`${this.apiUrl}export/`, {
+      params,
+      responseType: 'blob',
     }).pipe(
       catchError(this.handleError<Blob>('exporterConsultations'))
     );

@@ -319,9 +319,8 @@ def dashboard_stats(request):
     
     # Importer les modèles
     try:
-        from consultations.models import Consultation
+        from consultations.models import Appel, Consultation
         from rendez_vous.models import RendezVous
-        from journaux.models import LogActivite
         from patients.models import Patient
     except ImportError as e:
         return Response({"error": f"Modèle manquant: {e}"}, status=500)
@@ -368,41 +367,22 @@ def dashboard_stats(request):
     else:
         tendance_rendez_vous = 0.0
     
-    # Statistiques des appels (via les logs d'activité)
-    appels_total = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone') | Q(action__icontains='contact')
+    # Statistiques des appels (modèle Appel)
+    appels_qs = Appel.objects.all()
+    appels_total = appels_qs.count()
+    appels_aujourd_hui = appels_qs.filter(date_appel=today).count()
+    appels_semaine = appels_qs.filter(date_appel__gte=week_start).count()
+    appels_mois = appels_qs.filter(date_appel__gte=month_start).count()
+    appels_mois_dernier = appels_qs.filter(
+        date_appel__gte=last_month_start,
+        date_appel__lt=month_start,
     ).count()
-    appels_aujourd_hui = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone') | Q(action__icontains='contact'),
-        cree_le__date=today
+
+    appels_repondus = appels_qs.filter(statut=Appel.StatutAppel.PRESENT).count()
+    appels_non_repondus = appels_qs.filter(
+        statut__in=[Appel.StatutAppel.ABSENT_JUSTIFIE, Appel.StatutAppel.ABSENT_NON_JUSTIFIE]
     ).count()
-    appels_semaine = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone') | Q(action__icontains='contact'),
-        cree_le__date__gte=week_start
-    ).count()
-    appels_mois = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone') | Q(action__icontains='contact'),
-        cree_le__date__gte=month_start
-    ).count()
-    appels_mois_dernier = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone') | Q(action__icontains='contact'),
-        cree_le__date__gte=last_month_start,
-        cree_le__date__lt=month_start
-    ).count()
-    
-    # Statuts des appels (basés sur les métadonnées)
-    appels_repondus = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone'),
-        metadata__statut__icontains='repondu'
-    ).count()
-    appels_non_repondus = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone'),
-        metadata__statut__icontains='non_repondu'
-    ).count()
-    appels_en_attente = LogActivite.objects.filter(
-        Q(action__icontains='appel') | Q(action__icontains='telephone'),
-        metadata__statut__icontains='en_attente'
-    ).count()
+    appels_en_attente = appels_qs.filter(statut=Appel.StatutAppel.EN_ATTENTE).count()
     
     # Calcul tendance appels
     if appels_mois_dernier > 0:

@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, Chart } from 'chart.js';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { StatistiquesService, VueGeneraleStats } from '../../noyau/services/statistiques';
 import { Authentification } from '../../noyau/services/authentification';
@@ -15,91 +17,60 @@ import { UserProfileComponent } from '../user-profile/user-profile.component';
   templateUrl: './tableau-de-bord.html',
   styleUrls: ['./tableau-de-bord.scss'],
 })
-export class TableauDeBord implements OnInit {
+export class TableauDeBord implements OnInit, OnDestroy {
   private readonly statsService = inject(StatistiquesService);
   readonly dashboardService = inject(DashboardService);
   private readonly router = inject(Router);
   private readonly auth = inject(Authentification);
   private readonly cdr = inject(ChangeDetectorRef);
-  
+
   stats: VueGeneraleStats | null = null;
   dashboardStats: DashboardStats | null = null;
   chargement = false;
   erreurBackend = false;
+  erreurGraphiques = false;
   messageErreur = '';
-  
-  // Propriétés calculées pour éviter l'erreur NG0100
+
+  private refreshInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly REFRESH_INTERVAL_MS = 30000;
+
   get tendanceFormatted(): string {
-    const tendance = this.dashboardStats?.consultations?.tendance ?? 0;
-    return tendance.toFixed(1);
+    return (this.dashboardStats?.consultations?.tendance ?? 0).toFixed(1);
   }
 
   get rendezVousTendanceFormatted(): string {
-    const tendance = this.dashboardStats?.rendezVous?.tendance ?? 0;
-    return tendance.toFixed(1);
+    return (this.dashboardStats?.rendezVous?.tendance ?? 0).toFixed(1);
   }
 
   get appelsTendanceFormatted(): string {
-    const tendance = this.dashboardStats?.appels?.tendance ?? 0;
-    return tendance.toFixed(1);
+    return (this.dashboardStats?.appels?.tendance ?? 0).toFixed(1);
   }
 
   get tauxAbsenteeismeTendanceFormatted(): string {
-    const tendance = this.dashboardStats?.tauxAbsenteeisme?.tendance ?? 0;
-    return tendance.toFixed(1);
+    return (this.dashboardStats?.tauxAbsenteeisme?.tendance ?? 0).toFixed(1);
   }
 
   get tauxAbsenteeismeGlobalFormatted(): string {
-    const taux = this.dashboardStats?.tauxAbsenteeisme?.global ?? 0;
-    return taux.toFixed(1);
+    return (this.dashboardStats?.tauxAbsenteeisme?.global ?? 0).toFixed(1);
   }
-  
-  // Propriétés pour l'actualisation en temps réel
-  private refreshInterval: any = null;
-  private readonly REFRESH_INTERVAL_MS = 30000; // 30 secondes
-  
-  // Propriétés pour les graphiques
-  consultationsChart: Chart | null = null;
-  pathologiesChart: Chart | null = null;
-  
-  // Options des graphiques
+
   public chartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          font: {
-            size: 12
-          }
-        }
-      },
+      legend: { position: 'top', labels: { font: { size: 12 } } },
       tooltip: {
         mode: 'index',
         intersect: false,
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleFont: {
-          size: 14
-        },
-        bodyFont: {
-          size: 12
-        }
-      }
+        titleFont: { size: 14 },
+        bodyFont: { size: 12 },
+      },
     },
     scales: {
-      x: {
-        grid: {
-          display: false
-        }
-      },
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.05)'
-        }
-      }
-    }
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+    },
   };
 
   consultationsChartData: ChartConfiguration<'line'>['data'] = {
@@ -112,214 +83,203 @@ export class TableauDeBord implements OnInit {
     datasets: [{ data: [], label: 'Pathologies', backgroundColor: '#1A2E6B' }],
   };
 
+  consultationsChart: Chart | null = null;
+  pathologiesChart: Chart | null = null;
+
   ngOnInit(): void {
     this.charger();
-    this.demarrerActualisationTempsReel();
+    this.refreshInterval = setInterval(() => this.chargerSilencieux(), this.REFRESH_INTERVAL_MS);
   }
 
   ngOnDestroy(): void {
-    this.arreterActualisationTempsReel();
-  }
-
-  // Démarrer l'actualisation en temps réel
-  private demarrerActualisationTempsReel(): void {
-    this.refreshInterval = setInterval(() => {
-      this.chargerSilencieux();
-    }, this.REFRESH_INTERVAL_MS);
-  }
-
-  // Arrêter l'actualisation en temps réel
-  private arreterActualisationTempsReel(): void {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
     }
+    this.consultationsChart?.destroy();
+    this.pathologiesChart?.destroy();
   }
 
-  // Chargement silencieux pour l'actualisation en temps réel
   private chargerSilencieux(): void {
     if (!this.auth.estConnecte()) return;
-
     this.dashboardService.getDashboardStats().subscribe({
-      next: (data: DashboardStats) => {
-        setTimeout(() => {
-          this.dashboardStats = data;
-          this.erreurBackend = false;
-          this.cdr.detectChanges();
-        });
+      next: (data) => {
+        this.dashboardStats = data;
+        this.cdr.detectChanges();
       },
-      error: (error: any) => {
-        console.error('Erreur actualisation dashboard:', error);
-      }
     });
   }
 
   charger(): void {
-    // Vérifier si l'utilisateur est authentifié
     if (!this.auth.estConnecte()) {
       this.router.navigate(['/connexion']);
       return;
     }
 
     this.chargement = true;
-    
-    // Charger les statistiques du dashboard
-    this.dashboardService.getDashboardStats().subscribe({
-      next: (data: DashboardStats) => {
-        // Utiliser setTimeout pour éviter NG0100
-        setTimeout(() => {
-          this.dashboardStats = data;
-          this.erreurBackend = false;
-        });
-      },
-      error: (error: any) => {
-        console.error('Erreur dashboard stats:', error);
-        setTimeout(() => {
-          this.erreurBackend = true;
-          this.messageErreur = error.message || 'Le serveur n\'est pas accessible. Veuillez contacter l\'administrateur système.';
-          this.chargement = false;
-        });
-      }
-    });
+    this.erreurBackend = false;
+    this.erreurGraphiques = false;
+    this.messageErreur = '';
 
-    this.statsService.vueGenerale().subscribe({
-      next: (data) => {
-        this.stats = data;
-        this.consultationsChartData = {
-          labels: data.series.consultations_par_jour.map((x) => x.jour),
-          datasets: [{ data: data.series.consultations_par_jour.map((x) => x.total), label: 'Consultations', borderColor: '#1E4DB7', tension: 0.3 }],
-        };
-        this.pathologiesChartData = {
-          labels: data.series.pathologies_tendance.map((x) => x.diagnostic),
-          datasets: [{ data: data.series.pathologies_tendance.map((x) => x.total), label: 'Pathologies', backgroundColor: '#1A2E6B' }],
-        };
-        this.chargement = false;
-        
-        // Initialiser les graphiques après le chargement des données
-        this.initialiserGraphiques();
-      },
-      error: (error) => {
-        console.error('Erreur vue générale:', error);
+    forkJoin({
+      dashboard: this.dashboardService.getDashboardStats().pipe(
+        catchError((error) => {
+          console.error('Erreur dashboard stats:', error);
+          return of(null);
+        })
+      ),
+      vueGenerale: this.statsService.vueGenerale().pipe(
+        catchError((error) => {
+          console.error('Erreur vue générale:', error);
+          return of(null);
+        })
+      ),
+    }).subscribe(({ dashboard, vueGenerale }) => {
+      if (dashboard) {
+        this.dashboardStats = dashboard;
+      } else {
         this.erreurBackend = true;
-        this.messageErreur = "Impossible de charger les statistiques détaillées.";
-        this.chargement = false;
-      },
+        this.messageErreur =
+          "Impossible de charger les indicateurs du tableau de bord. Vérifiez que le serveur est démarré et que vous êtes connecté.";
+      }
+
+      if (vueGenerale?.series) {
+        this.stats = vueGenerale;
+        this.appliquerDonneesGraphiques(vueGenerale);
+      } else {
+        this.erreurGraphiques = true;
+        if (!dashboard) {
+          this.messageErreur =
+            "Impossible de charger les données. Démarrez le backend (python manage.py runserver) puis reconnectez-vous.";
+        }
+      }
+
+      this.chargement = false;
+      this.cdr.detectChanges();
+
+      if (vueGenerale?.series) {
+        this.initialiserGraphiques();
+      }
     });
   }
 
-  // Méthodes de navigation vers les différentes pages
+  private appliquerDonneesGraphiques(data: VueGeneraleStats): void {
+    const parJour = data.series?.consultations_par_jour ?? [];
+    const pathologies = data.series?.pathologies_tendance ?? [];
+
+    this.consultationsChartData = {
+      labels: parJour.map((x) => this.formaterJour(String(x.jour))),
+      datasets: [
+        {
+          data: parJour.map((x) => x.total),
+          label: 'Consultations',
+          borderColor: '#1E4DB7',
+          tension: 0.3,
+        },
+      ],
+    };
+
+    this.pathologiesChartData = {
+      labels: pathologies.map((x) => x.diagnostic || '—'),
+      datasets: [
+        {
+          data: pathologies.map((x) => x.total),
+          label: 'Pathologies',
+          backgroundColor: '#1A2E6B',
+        },
+      ],
+    };
+  }
+
+  private formaterJour(jour: string): string {
+    if (!jour) return '—';
+    const d = new Date(jour);
+    if (Number.isNaN(d.getTime())) return jour;
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  }
+
   naviguerVersConsultations(): void {
-    console.log('Navigation vers consultations demandée');
-    this.router.navigate(['/consultations']).then(
-      success => console.log('Navigation réussie:', success),
-      error => console.error('Erreur de navigation:', error)
-    );
+    this.router.navigate(['/consultations']);
   }
 
   naviguerVersRendezVous(): void {
-    console.log('Navigation vers rendez-vous');
     this.router.navigate(['/rendez-vous']);
   }
 
   naviguerVersAppels(): void {
-    console.log('Navigation vers appels');
     this.router.navigate(['/appels']);
   }
 
   naviguerVersTauxAbsenteisme(): void {
-    console.log('Navigation vers taux absentéisme');
     this.router.navigate(['/taux-absenteisme']);
   }
 
   showHelp(): void {
-    alert(`Instructions pour résoudre le problème de connexion au serveur :
+    alert(`Pour résoudre les problèmes de connexion :
 
-1. Vérifier que le serveur Django est démarré :
+1. Démarrer le backend :
    cd c:\\warms\\backend
    python manage.py runserver
 
-2. Vérifier que PostgreSQL est en cours d'exécution
+2. Se connecter sur /connexion avec un compte valide
 
-3. Vérifier la configuration dans .env :
-   - DB_HOST=localhost
-   - DB_PORT=5432
-   - DB_NAME=warms
-   - DB_USER=postgres
-   - DB_PASSWORD=votre_mot_de_passe
+3. Tester : http://127.0.0.1:8000/api/v1/personnel/ping/
 
-4. Tester l'accès à l'API :
-   Ouvrir http://127.0.0.1:8000/api/v1/personnel/ping/ dans le navigateur
-
-5. Si le problème persiste, contacter l'administrateur système.`);
+4. Si les cartes KPI sont vides mais sans erreur, créez des consultations / RDV / appels dans les onglets dédiés.`);
   }
 
-  // Exporter un graphique en PNG
   exporterGraphique(chartType: 'consultations' | 'pathologies'): void {
     const chart = chartType === 'consultations' ? this.consultationsChart : this.pathologiesChart;
     if (!chart) {
-      alert('Graphique non disponible pour l\'exportation');
+      alert("Graphique non disponible pour l'exportation");
       return;
     }
-
-    const url = chart.toBase64Image();
     const link = document.createElement('a');
     link.download = `graphique-${chartType}-${new Date().toISOString().split('T')[0]}.png`;
-    link.href = url;
+    link.href = chart.toBase64Image();
     link.click();
   }
 
-  // Mettre un graphique en plein écran
   pleinEcran(chartType: 'consultations' | 'pathologies'): void {
     const chartId = chartType === 'consultations' ? 'consultations-chart' : 'pathologies-chart';
     const chartElement = document.getElementById(chartId);
-    
-    if (!chartElement) {
-      alert('Graphique non trouvé pour le mode plein écran');
-      return;
-    }
-
-    if (chartElement.requestFullscreen) {
-      chartElement.requestFullscreen();
-    } else if ((chartElement as any).webkitRequestFullscreen) {
-      (chartElement as any).webkitRequestFullscreen();
-    } else if ((chartElement as any).msRequestFullscreen) {
-      (chartElement as any).msRequestFullscreen();
-    }
+    if (!chartElement?.requestFullscreen) return;
+    chartElement.requestFullscreen();
   }
 
-  // Actions rapides
   nouvelleConsultation(): void {
-    this.router.navigate(['/consultations/nouveau']);
+    this.router.navigate(['/consultations']);
   }
 
   prendreRendezVous(): void {
-    this.router.navigate(['/rendez-vous/nouveau']);
+    this.router.navigate(['/rendez-vous']);
   }
 
   contacterPatient(): void {
-    this.router.navigate(['/patients/contacter']);
+    this.router.navigate(['/patients']);
   }
 
-  // Initialiser les graphiques après le chargement des données
   private initialiserGraphiques(): void {
     setTimeout(() => {
-      // Références aux éléments canvas
+      this.consultationsChart?.destroy();
+      this.pathologiesChart?.destroy();
+
       const consultationsCanvas = document.getElementById('consultations-chart') as HTMLCanvasElement;
       const pathologiesCanvas = document.getElementById('pathologies-chart') as HTMLCanvasElement;
 
-      if (consultationsCanvas && this.consultationsChartData?.labels && this.consultationsChartData.labels.length > 0) {
+      if (consultationsCanvas && this.consultationsChartData.labels?.length) {
         this.consultationsChart = new Chart(consultationsCanvas, {
           type: 'line',
           data: this.consultationsChartData,
-          options: this.chartOptions
+          options: this.chartOptions,
         });
       }
 
-      if (pathologiesCanvas && this.pathologiesChartData?.labels && this.pathologiesChartData.labels.length > 0) {
+      if (pathologiesCanvas && this.pathologiesChartData.labels?.length) {
         this.pathologiesChart = new Chart(pathologiesCanvas, {
           type: 'bar',
           data: this.pathologiesChartData,
-          options: this.chartOptions
+          options: this.chartOptions,
         });
       }
     }, 100);

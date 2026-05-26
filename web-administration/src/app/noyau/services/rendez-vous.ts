@@ -33,7 +33,7 @@ interface RendezVousApi {
   providedIn: 'root',
 })
 export class RendezVousService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/rendez-vous`;
+  private readonly baseUrl = `${environment.apiBaseUrl}/rendez-vous/`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -75,13 +75,16 @@ export class RendezVousService {
   }
 
   lister(): Observable<RendezVous[]> {
-    return this.http.get<RendezVousApi[]>(this.baseUrl).pipe(
-      map((rows) => (Array.isArray(rows) ? rows : []).map((r) => this.mapFromApi(r)))
+    return this.http.get<RendezVousApi[] | { results: RendezVousApi[] }>(this.baseUrl).pipe(
+      map((rows) => {
+        const list = Array.isArray(rows) ? rows : rows.results ?? [];
+        return list.map((r) => this.mapFromApi(r));
+      })
     );
   }
 
   detail(id: number): Observable<RendezVous> {
-    return this.http.get<RendezVousApi>(`${this.baseUrl}/${id}/`).pipe(map((r) => this.mapFromApi(r)));
+    return this.http.get<RendezVousApi>(`${this.baseUrl}${id}/`).pipe(map((r) => this.mapFromApi(r)));
   }
 
   creer(data: Partial<RendezVous>): Observable<RendezVous> {
@@ -89,10 +92,10 @@ export class RendezVousService {
   }
 
   modifier(id: number, data: Partial<RendezVous>): Observable<RendezVous> {
-    return this.http.patch<RendezVousApi>(`${this.baseUrl}/${id}/`, this.mapToApi(data)).pipe(map((r) => this.mapFromApi(r)));
+    return this.http.patch<RendezVousApi>(`${this.baseUrl}${id}/`, this.mapToApi(data)).pipe(map((r) => this.mapFromApi(r)));
   }
 
   supprimer(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}/`);
+    return this.http.delete<void>(`${this.baseUrl}${id}/`);
   }
 }

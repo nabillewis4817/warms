@@ -23,8 +23,8 @@
         </div>
         
         <div class="action-buttons">
-          <button class="btn btn-secondary" (click)="chargerConsultationsSurDemande()" title="Rafraîchir">
-            <i class="bi bi-arrow-clockwise"></i>
+          <button class="btn btn-secondary" (click)="rafraichirTout()" title="Rafraîchir" [disabled]="chargement">
+            <i class="bi bi-arrow-clockwise" [class.rotating]="chargement"></i>
             Rafraîchir
           </button>
           <button class="btn btn-primary" (click)="creerConsultation()">
@@ -58,14 +58,20 @@
       <div class="filter-group">
         <label>Patient:</label>
         <select [(ngModel)]="filtrePatient" (change)="chargerConsultations()">
-          <option value="">Tous les patients</option>
+          <option [ngValue]="null">Tous les patients</option>
+          @for (patient of patients; track patient.id) {
+            <option [ngValue]="patient.id">{{ patient.prenom }} {{ patient.nom }}</option>
+          }
         </select>
       </div>
       
       <div class="filter-group">
         <label>Praticien:</label>
         <select [(ngModel)]="filtrePraticien" (change)="chargerConsultations()">
-          <option value="">Tous les praticiens</option>
+          <option [ngValue]="null">Tous les praticiens</option>
+          @for (p of praticiens; track p.id) {
+            <option [ngValue]="p.id">{{ libellePraticien(p) }}</option>
+          }
         </select>
       </div>
       
@@ -89,22 +95,6 @@
     </div>
   </header>
 
-  <!-- Bouton pour charger les consultations -->
-  @if (!chargement && consultations.length === 0) {
-    <div class="empty-state">
-      <div class="empty-icon">
-        <i class="bi bi-clipboard-plus"></i>
-      </div>
-      <h2>Aucune consultation chargée</h2>
-      <p>Cliquez sur le bouton ci-dessous pour charger les consultations</p>
-      <button class="btn btn-primary" (click)="chargerConsultationsSurDemande()">
-        <i class="bi bi-download"></i>
-        Charger les consultations
-      </button>
-    </div>
-  }
-
-  <!-- Loading -->
   @if (chargement) {
     <div class="loading-container">
       <div class="loading-spinner">
@@ -270,13 +260,8 @@
             </div>
             
             <div class="form-group">
-              <label for="dossier">Dossier (auto si lié au patient)</label>
-              <select id="dossier" formControlName="dossier" class="form-control">
-                <option value="">Sélectionner un dossier</option>
-              </select>
-              @if (f['dossier']?.invalid && f['dossier']?.touched) {
-                <small class="error-text">Le dossier est requis</small>
-              }
+              <label for="dossier">N° dossier (rempli automatiquement)</label>
+              <input id="dossier" type="text" class="form-control" formControlName="dossier" readonly placeholder="Choisir un patient" />
             </div>
           </div>
           

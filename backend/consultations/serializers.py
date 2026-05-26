@@ -144,9 +144,18 @@ class AppelCreateSerializer(serializers.ModelSerializer):
 
 class TauxAbsenteismeSerializer(serializers.ModelSerializer):
     """Serializer pour les taux d'absentéisme"""
-    
-    praticien_nom = serializers.CharField(source="praticien.get_full_name", read_only=True)
+
+    praticien_nom = serializers.SerializerMethodField()
     type_periode_display = serializers.CharField(source="get_type_periode_display", read_only=True)
+
+    def get_praticien_nom(self, obj) -> str | None:
+        if not obj.praticien_id:
+            return None
+        praticien = obj.praticien
+        nom = praticien.get_full_name() if hasattr(praticien, "get_full_name") else ""
+        if nom:
+            return nom
+        return getattr(praticien, "username", None)
     
     class Meta:
         model = TauxAbsenteisme

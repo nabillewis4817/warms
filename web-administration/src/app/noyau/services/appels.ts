@@ -34,7 +34,7 @@ interface AppelApi {
   providedIn: 'root',
 })
 export class AppelsService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/appels`;
+  private readonly baseUrl = `${environment.apiBaseUrl}/appels/`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -97,13 +97,16 @@ export class AppelsService {
   }
 
   lister(): Observable<Appel[]> {
-    return this.http.get<AppelApi[]>(this.baseUrl).pipe(
-      map((rows) => (Array.isArray(rows) ? rows : []).map((r) => this.mapFromApi(r)))
+    return this.http.get<AppelApi[] | { results: AppelApi[] }>(this.baseUrl).pipe(
+      map((rows) => {
+        const list = Array.isArray(rows) ? rows : rows.results ?? [];
+        return list.map((r) => this.mapFromApi(r));
+      })
     );
   }
 
   detail(id: number): Observable<Appel> {
-    return this.http.get<AppelApi>(`${this.baseUrl}/${id}/`).pipe(map((r) => this.mapFromApi(r)));
+    return this.http.get<AppelApi>(`${this.baseUrl}${id}/`).pipe(map((r) => this.mapFromApi(r)));
   }
 
   creer(data: Partial<Appel>): Observable<Appel> {
@@ -111,10 +114,10 @@ export class AppelsService {
   }
 
   modifier(id: number, data: Partial<Appel>): Observable<Appel> {
-    return this.http.patch<AppelApi>(`${this.baseUrl}/${id}/`, this.mapToApi(data)).pipe(map((r) => this.mapFromApi(r)));
+    return this.http.patch<AppelApi>(`${this.baseUrl}${id}/`, this.mapToApi(data)).pipe(map((r) => this.mapFromApi(r)));
   }
 
   supprimer(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}/`);
+    return this.http.delete<void>(`${this.baseUrl}${id}/`);
   }
 }

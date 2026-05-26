@@ -25,25 +25,39 @@
         </div>
       </div>
     </div>
-  } @else if (erreurBackend) {
-    <div class="error-section">
-      <div class="error-container">
-        <div class="error-content">
-          <i class="bi bi-exclamation-triangle"></i>
-          <h3>Connexion au serveur impossible</h3>
-          <p>{{ messageErreur }}</p>
-          <div class="error-actions">
-            <button class="retry-btn" (click)="charger()">
-              <i class="bi bi-arrow-clockwise"></i> Réessayer
-            </button>
-            <button class="help-btn" (click)="showHelp()">
-              <i class="bi bi-question-circle"></i> Aide
-            </button>
+  } @else {
+    @if (erreurBackend && !dashboardStats) {
+      <div class="error-section">
+        <div class="error-container">
+          <div class="error-content">
+            <i class="bi bi-exclamation-triangle"></i>
+            <h3>Connexion au serveur impossible</h3>
+            <p>{{ messageErreur }}</p>
+            <div class="error-actions">
+              <button class="retry-btn" (click)="charger()">
+                <i class="bi bi-arrow-clockwise"></i> Réessayer
+              </button>
+              <button class="help-btn" (click)="showHelp()">
+                <i class="bi bi-question-circle"></i> Aide
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  } @else {
+    }
+
+    @if (erreurGraphiques && dashboardStats) {
+      <div class="error-section" style="margin-bottom: 1rem;">
+        <div class="error-container">
+          <div class="error-content">
+            <i class="bi bi-info-circle"></i>
+            <p>Les graphiques détaillés sont indisponibles. Les indicateurs ci-dessous restent à jour.</p>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (dashboardStats) {
     <!-- Section KPI stylisée -->
     <section class="kpi-section">
       <div class="section-header">
@@ -165,6 +179,7 @@
         </article>
       </div>
     </section>
+    }
 
     <!-- Section Analytics stylisée -->
     @if (stats) {

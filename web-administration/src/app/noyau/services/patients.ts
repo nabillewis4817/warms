@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface Patient {
@@ -58,8 +59,15 @@ export class Patients {
 
   constructor(private readonly http: HttpClient) {}
 
-  lister(): Observable<Patient[]> {
-    return this.http.get<Patient[]>(`${this.baseUrl}/patients/`);
+  lister(actifsSeulement = true): Observable<Patient[]> {
+    return this.http
+      .get<Patient[] | { results: Patient[] }>(`${this.baseUrl}/patients/`)
+      .pipe(
+        map((response) => {
+          const rows = Array.isArray(response) ? response : response.results ?? [];
+          return actifsSeulement ? rows.filter((p) => p.actif !== false) : rows;
+        })
+      );
   }
 
   creer(payload: CreerPatientPayload): Observable<Patient> {
