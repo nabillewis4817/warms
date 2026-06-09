@@ -44,8 +44,8 @@ export class NouveauPatient {
     nom: ['', Validators.required],
     date_naissance: [''],
     age: [''],
-    telephone: ['', [Validators.pattern(/^\+237\d{9}$/)]],
-    email: [''],
+    telephone: ['', [Validators.pattern(/^\+?[0-9\s\-\(\)]{8,15}$/)]],
+    email: ['', [Validators.email]],
     adresse: [''],
     sexe: ['M'],
     taille_cm: [''],
@@ -75,9 +75,9 @@ export class NouveauPatient {
     
     const payload = this.form.getRawValue() as any;
     
-    // Validation supplémentaire côté client
-    if (payload.telephone && !/^\+237\d{9}$/.test(payload.telephone)) {
-      this.message = 'Le téléphone doit être au format +237XXXXXXXXX';
+    // Validation supplémentaire côté client (plus permissive)
+    if (payload.telephone && !/^\+?[0-9\s\-\(\)]{8,15}$/.test(payload.telephone)) {
+      this.message = 'Le téléphone doit contenir entre 8 et 15 chiffres';
       this.enCreation = false;
       return;
     }

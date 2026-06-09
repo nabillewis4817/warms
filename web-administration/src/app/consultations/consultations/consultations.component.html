@@ -270,6 +270,9 @@
               <label for="rendez_vous">Rendez-vous</label>
               <select id="rendez_vous" formControlName="rendez_vous" class="form-control">
                 <option value="">Aucun rendez-vous associé</option>
+                @for (rdv of rendezVousList; track rdv.id) {
+                  <option [value]="rdv.id">{{ libelleRendezVous(rdv) }}</option>
+                }
               </select>
             </div>
             
@@ -277,6 +280,9 @@
               <label for="praticien">Praticien</label>
               <select id="praticien" formControlName="praticien" class="form-control">
                 <option value="">Sélectionner un praticien</option>
+                @for (p of praticiens; track p.id) {
+                  <option [value]="p.id">{{ libellePraticien(p) }}</option>
+                }
               </select>
             </div>
           </div>

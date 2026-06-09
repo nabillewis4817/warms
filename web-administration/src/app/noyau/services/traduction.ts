@@ -4,7 +4,7 @@ type Langue = 'fr' | 'en';
 
 const DICTIONNAIRE: Record<Langue, Record<string, string>> = {
   fr: {
-    appTitle: "Warm's Cabinet",
+    appTitle: "Wam's Cabinet",
     dashboard: 'Tableau de bord',
     settings: 'Paramètres',
     profile: 'Profil utilisateur',

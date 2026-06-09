@@ -301,14 +301,34 @@ export class ConsultationsComponent implements OnInit {
     }
     const patientId = raw.patient ? Number(raw.patient) : null;
     const patient = this.patients.find((p) => p.id === patientId);
-    const donnees = {
-      ...raw,
+    
+    // Construire l'objet de données en filtrant les valeurs null/undefined
+    const donnees: any = {
       patient: patientId,
-      dossier: raw.dossier ? Number(raw.dossier) : patient?.dossier_id ?? undefined,
-      praticien: raw.praticien ? Number(raw.praticien) : undefined,
-      rendez_vous: raw.rendez_vous ? Number(raw.rendez_vous) : undefined,
       date: dateIso,
+      motif: raw.motif,
+      diagnostic: raw.diagnostic,
+      observations: raw.observations || '',
+      notes: raw.notes || ''
     };
+
+    // Dossier : utiliser celui du patient si non renseigné et si c'est un nombre valide
+    if (raw.dossier && !isNaN(Number(raw.dossier)) && Number(raw.dossier) < 1e10) {
+      donnees.dossier = Number(raw.dossier);
+    } else if (patient?.dossier_id && !isNaN(Number(patient.dossier_id)) && Number(patient.dossier_id) < 1e10) {
+      donnees.dossier = Number(patient.dossier_id);
+    }
+    // Si dossier invalide, ne pas l'envoyer du tout
+
+    // Champs optionnels : n'inclure que si présents
+    if (raw.praticien) {
+      donnees.praticien = Number(raw.praticien);
+    }
+    if (raw.rendez_vous) {
+      donnees.rendez_vous = Number(raw.rendez_vous);
+    }
+
+    console.log('DEBUG: Données envoyées pour consultation:', JSON.stringify(donnees, null, 2));
 
     const operation = this.modeEdition
       ? this.consultationsService.updateConsultation(this.consultationSelectionnee!.id, donnees)
@@ -323,9 +343,11 @@ export class ConsultationsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erreur lors de l\'enregistrement:', error);
+        console.error('Détail erreur:', JSON.stringify(error?.error, null, 2));
+        console.error('Status:', error?.status);
         this.dialogueService.erreur({
           titre: 'Erreur',
-          message: 'Impossible d\'enregistrer la consultation. Veuillez vérifier les données.'
+          message: `Impossible d'enregistrer la consultation. ${error?.error?.detail || JSON.stringify(error?.error) || 'Veuillez vérifier les données.'}`
         });
       }
     });

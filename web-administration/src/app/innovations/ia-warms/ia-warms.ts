@@ -34,7 +34,7 @@ export class IaWarms implements OnInit {
     // Message de bienvenue
     this.messages.push({
       role: 'assistant',
-      content: '👋 Bonjour ! Je suis WARMS, votre assistant médical intelligent. Je peux vous aider avec :\n\n• Questions médicales générales\n• Informations sur les traitements\n• Conseils de santé\n• Aide à l\'utilisation de l\'application\n\nComment puis-je vous aider aujourd\'hui ?',
+      content: ' Bonjour ! Je suis Wams, votre assistant médical intelligent. Je peux vous aider avec :\n\n• Questions médicales générales\n• Informations sur les traitements\n• Conseils de santé\n• Aide à l\'utilisation de l\'application\n\nComment puis-je vous aider aujourd\'hui ?',
       timestamp: new Date()
     });
   }

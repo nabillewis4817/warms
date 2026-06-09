@@ -31,7 +31,8 @@ export class AppelsComponent implements OnInit {
     date_appel: ['', Validators.required],
     statut: ['present', Validators.required],
     motif_absence: [''],
-    notes: ['']
+    notes: [''],
+    rendez_vous: [null]
   });
 
   ngOnInit(): void {
@@ -73,7 +74,8 @@ export class AppelsComponent implements OnInit {
         date_appel: item.date_appel,
         statut: item.statut,
         motif_absence: item.motif_absence,
-        notes: item.notes
+        notes: item.notes,
+        rendez_vous: null
       });
     } else {
       this.form.reset({
@@ -81,7 +83,8 @@ export class AppelsComponent implements OnInit {
         date_appel: '',
         statut: 'present',
         motif_absence: '',
-        notes: ''
+        notes: '',
+        rendez_vous: null
       });
     }
     this.showModal = true;
@@ -100,9 +103,29 @@ export class AppelsComponent implements OnInit {
     }
 
     const formData = this.form.value;
-    const cleanData = Object.fromEntries(
-      Object.entries(formData).filter(([_, value]) => value !== null && value !== '')
-    );
+    
+    // Construire l'objet de données avec le format correct
+    const cleanData: any = {
+      patient: Number(formData.patient),
+      statut: formData.statut,
+      notes_appel: formData.notes || ''
+    };
+
+    // Convertir la date au format YYYY-MM-DD
+    if (formData.date_appel) {
+      const date = new Date(formData.date_appel);
+      cleanData.date_appel = date.toISOString().split('T')[0];
+    }
+
+    // N'inclure motif_absence que si présent
+    if (formData.motif_absence) {
+      cleanData.motif_absence = formData.motif_absence;
+    }
+
+    // Envoyer rendez_vous avec la valeur du formulaire (null par défaut)
+    cleanData.rendez_vous = formData.rendez_vous;
+
+    console.log('DEBUG: Données envoyées pour appel:', JSON.stringify(cleanData, null, 2));
 
     const request = this.editingItem
       ? this.appelsService.modifier(this.editingItem.id, cleanData)
@@ -116,7 +139,8 @@ export class AppelsComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur lors de la sauvegarde:', err);
-        this.message = 'Erreur lors de la sauvegarde de l\'appel';
+        console.error('Détail erreur:', JSON.stringify(err?.error, null, 2));
+        this.message = `Erreur lors de la sauvegarde de l'appel: ${err?.error?.detail || 'Vérifiez les données'}`;
       }
     });
   }

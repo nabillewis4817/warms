@@ -52,7 +52,7 @@ export interface PhotoClinique {
 
 export interface ConsultationCreate {
   patient: number;
-  dossier: number;
+  dossier?: number;
   rendez_vous?: number;
   praticien?: number;
   date: string;

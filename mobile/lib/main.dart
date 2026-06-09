@@ -5,14 +5,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 
-// Import des écrans IA WARMS
+// Import des écrans IA WAM'S
 import 'config/api_config.dart';
 import 'screens/ia_chat_screen.dart';
 import 'screens/ia_recherche_screen.dart';
 import 'screens/enhanced_chat_screen.dart';
 import 'services/datetime_service.dart';
 
-// Import du thème WARMS et composants
+// Import du thème WAM'S et composants
 import 'themes/warms_theme.dart';
 import 'widgets/warms_card.dart';
 
