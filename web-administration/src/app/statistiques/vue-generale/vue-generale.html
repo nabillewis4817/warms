@@ -1,149 +1,238 @@
 <section class="statistiques">
-  <div class="header">
-    <h2>Statistiques du cabinet</h2>
-    <div class="actions">
-      <button class="btn-refresh" (click)="rafraichir()" [disabled]="loading">
-        <i class="bi bi-arrow-clockwise" [class.spinning]="loading"></i>
-        Rafraîchir
-      </button>
-      <div class="last-update">
-        @if (!loading && stats) {
-          <small>Dernière mise à jour: {{ stats.derniere_mise_a_jour || 'Maintenant' }}</small>
+  <!-- ========== EN-TÊTE ========== -->
+  <header class="stats-header">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="stats-header-content">
+      <div class="stats-header-title">
+        <span class="badge-clinique"><i class="bi bi-bar-chart-line"></i> Analyses du cabinet</span>
+        <h1>Statistiques</h1>
+        @if (stats) {
+          <p class="stats-header-subtitle">
+            <i class="bi bi-clock-history"></i>
+            Dernière mise à jour : {{ stats.derniere_mise_a_jour || 'Maintenant' }}
+          </p>
         }
       </div>
+      <button class="bouton-rafraichir" (click)="rafraichir()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise" [class.tourne]="loading"></i>
+        <span>{{ loading ? 'Chargement...' : 'Actualiser' }}</span>
+      </button>
     </div>
-  </div>
+  </header>
 
-  @if (loading) {
-    <div class="loading">
-      <div class="spinner"></div>
+  @if (loading && !stats) {
+    <div class="etat-chargement">
+      <div class="spinner-stats"></div>
       <p>Chargement des statistiques...</p>
     </div>
-  } @else if (error) {
-    <div class="error">
+  } @else if (error && !stats) {
+    <div class="etat-erreur">
       <i class="bi bi-exclamation-triangle"></i>
+      <h3>Connexion impossible</h3>
       <p>{{ error }}</p>
-      <button (click)="rafraichir()">Réessayer</button>
+      <button class="bouton-primaire" (click)="rafraichir()">
+        <i class="bi bi-arrow-clockwise"></i> Réessayer
+      </button>
     </div>
   } @else if (stats) {
-    <!-- KPIs principaux -->
-    <div class="kpis-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon">
-          <i class="bi bi-people-fill"></i>
-        </div>
-        <div class="kpi-content">
-          <h3>{{ stats.patients_total || 0 }}</h3>
-          <p>Patients totaux</p>
-          <span class="tendance {{ getTendance(stats.patients_tendance || 0) }}">
-            {{ (stats.patients_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.patients_tendance ?? 0 }}%
-          </span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon">
-          <i class="bi bi-calendar-check-fill"></i>
-        </div>
-        <div class="kpi-content">
-          <h3>{{ stats.rendez_vous_30j || 0 }}</h3>
-          <p>Rendez-vous (30j)</p>
-          <span class="tendance {{ getTendance(stats.rendez_vous_tendance || 0) }}">
-            {{ (stats.rendez_vous_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.rendez_vous_tendance ?? 0 }}%
-          </span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon">
-          <i class="bi bi-file-medical-fill"></i>
-        </div>
-        <div class="kpi-content">
-          <h3>{{ stats.ordonnances_30j || 0 }}</h3>
-          <p>Ordonnances (30j)</p>
-          <span class="tendance {{ getTendance(stats.ordonnances_tendance || 0) }}">
-            {{ (stats.ordonnances_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.ordonnances_tendance ?? 0 }}%
-          </span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon">
-          <i class="bi bi-currency-dollar"></i>
-        </div>
-        <div class="kpi-content">
-          <h3>{{ stats.chiffre_affaires_mois || 0 }}€</h3>
-          <p>Chiffre d'affaires</p>
-          <span class="tendance {{ getTendance(stats.ca_tendance || 0) }}">
-            {{ (stats.ca_tendance ?? 0) > 0 ? '+' : '' }}{{ stats.ca_tendance ?? 0 }}%
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Graphiques -->
-    <div class="charts-grid">
-      <!-- Graphique des rendez-vous -->
-      <div class="chart-card">
-        <h3>Évolution des rendez-vous</h3>
-        <div class="chart-container">
-          <div class="bar-chart">
-            @for (mois of stats.rendez_vois_mois || []; track mois.mois) {
-              <div class="bar-item">
-                <div class="bar" [style.height.%]="getPourcentage(mois.nombre, stats.max_rendez_vois || 1)"></div>
-                <span class="label">{{ mois.mois }}</span>
-                <span class="value">{{ mois.nombre }}</span>
-              </div>
-            }
+    <!-- ========== KPI ========== -->
+    <section class="kpi-grid">
+      <article
+        class="kpi-card kpi-bleu"
+        tabindex="0"
+        role="button"
+        aria-label="Voir la liste des patients"
+        (click)="naviguerVersPatients()"
+        (keyup.enter)="naviguerVersPatients()">
+        <div class="kpi-header">
+          <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="kpi-trend" [class.positive]="stats.patients_tendance > 0" [class.negative]="stats.patients_tendance < 0">
+            <i class="bi" [class]="stats.patients_tendance > 0 ? 'bi-arrow-up-short' : stats.patients_tendance < 0 ? 'bi-arrow-down-short' : 'bi-dash'"></i>
+            <span>{{ stats.patients_tendance > 0 ? '+' : '' }}{{ stats.patients_tendance }}%</span>
           </div>
         </div>
-      </div>
+        <h3>{{ stats.patients_total }}</h3>
+        <p>Patients actifs</p>
+        <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
+      </article>
 
-      <!-- Répartition des patients -->
-      <div class="chart-card">
-        <h3>Répartition des patients</h3>
-        <div class="chart-container">
-          <div class="pie-chart">
-            <div class="pie-legend">
-              @for (categorie of stats.patient_categories || []; track categorie.nom) {
-                <div class="legend-item">
-                  <div class="legend-color" [style.background-color]="categorie.couleur"></div>
-                  <span>{{ categorie.nom }}: {{ categorie.nombre }}</span>
-                </div>
-              }
-            </div>
+      <article
+        class="kpi-card kpi-mint"
+        tabindex="0"
+        role="button"
+        aria-label="Voir les consultations"
+        (click)="naviguerVersConsultations()"
+        (keyup.enter)="naviguerVersConsultations()">
+        <div class="kpi-header">
+          <div class="kpi-icon"><i class="bi bi-stethoscope"></i></div>
+          <div class="kpi-trend" [class.positive]="stats.consultations_tendance > 0" [class.negative]="stats.consultations_tendance < 0">
+            <i class="bi" [class]="stats.consultations_tendance > 0 ? 'bi-arrow-up-short' : stats.consultations_tendance < 0 ? 'bi-arrow-down-short' : 'bi-dash'"></i>
+            <span>{{ stats.consultations_tendance > 0 ? '+' : '' }}{{ stats.consultations_tendance }}%</span>
           </div>
         </div>
-      </div>
-    </div>
+        <h3>{{ stats.consultations_30j }}</h3>
+        <p>Consultations (30j)</p>
+        <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
+      </article>
 
-    <!-- Tableau détaillé -->
-    <div class="stats-table">
-      <h3>Statistiques détaillées</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Métrique</th>
-            <th>Valeur</th>
-            <th>Période</th>
-            <th>Tendance</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (metrique of stats.metriques_detaillees || []; track metrique.nom) {
-            <tr>
-              <td>{{ metrique.nom }}</td>
-              <td>{{ metrique.valeur }}</td>
-              <td>{{ metrique.periode }}</td>
-              <td>
-                <span class="tendance {{ getTendance(metrique.tendance || 0) }}">
-                  {{ metrique.tendance > 0 ? '+' : '' }}{{ metrique.tendance || 0 }}%
-                </span>
-              </td>
-            </tr>
+      <article
+        class="kpi-card kpi-ambre"
+        tabindex="0"
+        role="button"
+        aria-label="Voir les rendez-vous"
+        (click)="naviguerVersRendezVous()"
+        (keyup.enter)="naviguerVersRendezVous()">
+        <div class="kpi-header">
+          <div class="kpi-icon"><i class="bi bi-calendar-check-fill"></i></div>
+          <div class="kpi-trend" [class.positive]="stats.rendez_vous_tendance > 0" [class.negative]="stats.rendez_vous_tendance < 0">
+            <i class="bi" [class]="stats.rendez_vous_tendance > 0 ? 'bi-arrow-up-short' : stats.rendez_vous_tendance < 0 ? 'bi-arrow-down-short' : 'bi-dash'"></i>
+            <span>{{ stats.rendez_vous_tendance > 0 ? '+' : '' }}{{ stats.rendez_vous_tendance }}%</span>
+          </div>
+        </div>
+        <h3>{{ stats.rendez_vous_30j }}</h3>
+        <p>Rendez-vous (30j)</p>
+        <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
+      </article>
+
+      <article
+        class="kpi-card kpi-rose"
+        tabindex="0"
+        role="button"
+        aria-label="Voir le taux d'absentéisme"
+        (click)="naviguerVersTauxAbsenteisme()"
+        (keyup.enter)="naviguerVersTauxAbsenteisme()">
+        <div class="kpi-header">
+          <div class="kpi-icon"><i class="bi bi-pie-chart-fill"></i></div>
+          <div class="kpi-trend" [class.positive]="stats.taux_absenteisme_tendance < 0" [class.negative]="stats.taux_absenteisme_tendance > 0">
+            <i class="bi" [class]="stats.taux_absenteisme_tendance > 0 ? 'bi-arrow-up-short' : stats.taux_absenteisme_tendance < 0 ? 'bi-arrow-down-short' : 'bi-dash'"></i>
+            <span>{{ stats.taux_absenteisme_tendance > 0 ? '+' : '' }}{{ stats.taux_absenteisme_tendance }}%</span>
+          </div>
+        </div>
+        <h3>{{ stats.taux_absenteisme_30j }}%</h3>
+        <p>Taux d'absentéisme (30j)</p>
+        <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
+      </article>
+
+      <article
+        class="kpi-card kpi-violet"
+        tabindex="0"
+        role="button"
+        aria-label="Voir les actes réalisés"
+        (click)="naviguerVersActes()"
+        (keyup.enter)="naviguerVersActes()">
+        <div class="kpi-header">
+          <div class="kpi-icon"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+          <div class="kpi-trend" [class.positive]="stats.actes_tendance > 0" [class.negative]="stats.actes_tendance < 0">
+            <i class="bi" [class]="stats.actes_tendance > 0 ? 'bi-arrow-up-short' : stats.actes_tendance < 0 ? 'bi-arrow-down-short' : 'bi-dash'"></i>
+            <span>{{ stats.actes_tendance > 0 ? '+' : '' }}{{ stats.actes_tendance }}%</span>
+          </div>
+        </div>
+        <h3>{{ stats.actes_30j }}</h3>
+        <p>Actes réalisés (30j)</p>
+        <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
+      </article>
+    </section>
+
+    <!-- ========== GRAPHIQUES ========== -->
+    <section class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-graph-up"></i> Évolution des rendez-vous</h3>
+          <button class="chart-action-btn" title="Exporter" (click)="exporterGraphique('evolution')">
+            <i class="bi bi-download"></i>
+          </button>
+        </div>
+        <div class="chart-content">
+          @if (stats.rendez_vois_mois.length === 0) {
+            <div class="chart-vide"><i class="bi bi-graph-up"></i><p>Pas encore de données sur 6 mois.</p></div>
+          } @else {
+            <canvas baseChart #evolutionChartDirective="base-chart" [data]="evolutionChartData" [type]="'line'" [options]="optionsLigne"></canvas>
           }
-        </tbody>
-      </table>
-    </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-pie-chart"></i> Répartition des patients</h3>
+          <button class="chart-action-btn" title="Exporter" (click)="exporterGraphique('repartition')">
+            <i class="bi bi-download"></i>
+          </button>
+        </div>
+        <div class="chart-content">
+          @if (stats.patient_categories.length === 0) {
+            <div class="chart-vide"><i class="bi bi-pie-chart"></i><p>Aucun patient enregistré.</p></div>
+          } @else {
+            <canvas baseChart #repartitionChartDirective="base-chart" [data]="repartitionChartData" [type]="'doughnut'" [options]="optionsDoughnut"></canvas>
+          }
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-clipboard2-pulse"></i> Actes les plus fréquents</h3>
+          <button class="chart-action-btn" title="Exporter" (click)="exporterGraphique('actes')">
+            <i class="bi bi-download"></i>
+          </button>
+        </div>
+        <div class="chart-content">
+          @if (stats.series.actes_frequents.length === 0) {
+            <div class="chart-vide"><i class="bi bi-clipboard2-pulse"></i><p>Aucun acte enregistré sur 30 jours.</p></div>
+          } @else {
+            <canvas baseChart #actesChartDirective="base-chart" [data]="actesChartData" [type]="'bar'" [options]="optionsBarreHorizontale"></canvas>
+          }
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-person-badge"></i> Consultations par praticien</h3>
+          <button class="chart-action-btn" title="Exporter" (click)="exporterGraphique('praticiens')">
+            <i class="bi bi-download"></i>
+          </button>
+        </div>
+        <div class="chart-content">
+          @if (stats.series.consultations_par_praticien.length === 0) {
+            <div class="chart-vide"><i class="bi bi-person-badge"></i><p>Aucune consultation sur 30 jours.</p></div>
+          } @else {
+            <canvas baseChart #praticiensChartDirective="base-chart" [data]="praticiensChartData" [type]="'bar'" [options]="optionsBarreHorizontale"></canvas>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TABLEAU DÉTAILLÉ ========== -->
+    <section class="stats-table-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-table"></i> Statistiques détaillées</h3>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Métrique</th>
+              <th>Valeur</th>
+              <th>Période</th>
+              <th>Tendance</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (metrique of stats.metriques_detaillees; track metrique.nom) {
+              <tr>
+                <td>{{ metrique.nom }}</td>
+                <td class="valeur">{{ metrique.valeur }}</td>
+                <td class="periode">{{ metrique.periode }}</td>
+                <td>
+                  <span class="tendance-pill {{ getTendance(metrique.tendance || 0) }}">
+                    {{ metrique.tendance > 0 ? '+' : '' }}{{ metrique.tendance || 0 }}%
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
   }
 </section>

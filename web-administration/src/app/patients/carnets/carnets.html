@@ -2,19 +2,28 @@
      SECTION PRINCIPALE DES CARNETS PATIENTS
      ======================================== -->
 <section class="section-carnets">
-  <!-- En-tête avec titre, recherche et boutons -->
+  <!-- En-tête organique avec titre, recherche et boutons -->
   <header class="en-tete-carnets">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
     <div class="titre-avec-icone-carnets">
-      <img src="assets/folder.png" alt="Carnets" class="icone-titre-carnets">
-      <h2 class="titre-carnets">Mes Carnets Patients</h2>
+      <div class="icone-titre-conteneur">
+        <img src="assets/folder.png" alt="Carnets" class="icone-titre-carnets">
+      </div>
+      <div>
+        <h2 class="titre-carnets">Carnets Patients</h2>
+        <p class="sous-titre-carnets">{{ patientsFiltres.length }} dossier{{ patientsFiltres.length === 1 ? '' : 's' }} numérique{{ patientsFiltres.length === 1 ? '' : 's' }}</p>
+      </div>
     </div>
+
     <div class="controles-carnets">
       <!-- Barre de recherche -->
       <div class="controle-recherche">
         <div class="input-groupe">
           <i class="bi bi-search"></i>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Rechercher par nom, prénom, dossier, téléphone, email..."
             [(ngModel)]="termeRecherche"
             (input)="onRechercheChange()"
@@ -22,10 +31,10 @@
             [attr.aria-label]="termeRecherche ? 'Recherche: ' + termeRecherche : 'Rechercher un patient'">
         </div>
       </div>
-      
+
       <!-- Boutons de tri -->
       <div class="controles-tri">
-        <button 
+        <button
           class="bouton-tri"
           (click)="changerCritereTri('nom')"
           [class.actif]="critereTri === 'nom'"
@@ -33,7 +42,7 @@
           <i [class]="getIconeTri('nom')"></i>
           <span>Nom</span>
         </button>
-        <button 
+        <button
           class="bouton-tri"
           (click)="changerCritereTri('prenom')"
           [class.actif]="critereTri === 'prenom'"
@@ -41,7 +50,7 @@
           <i [class]="getIconeTri('prenom')"></i>
           <span>Prénom</span>
         </button>
-        <button 
+        <button
           class="bouton-tri"
           (click)="changerCritereTri('dossier')"
           [class.actif]="critereTri === 'dossier'"
@@ -50,98 +59,94 @@
           <span>Dossier</span>
         </button>
       </div>
-      
+
       <!-- Bouton de rafraîchissement -->
-      <button 
-        class="bouton-rafraichir" 
-        (click)="chargerLesCarnets()" 
+      <button
+        class="bouton-rafraichir"
+        (click)="chargerLesCarnets()"
         [disabled]="enChargement"
         [attr.aria-label]="enChargement ? 'Chargement en cours' : 'Rafraîchir la liste'">
-        <i class="bi bi-arrow-clockwise"></i> 
+        <i class="bi bi-arrow-clockwise" [class.tourne]="enChargement"></i>
         <span>{{ enChargement ? 'Chargement...' : 'Actualiser' }}</span>
       </button>
     </div>
   </header>
 
   <!-- Indicateur de chargement animé -->
-  <div *ngIf="enChargement" class="indicateur-chargement">
-    <i class="bi bi-arrow-clockwise"></i>
-    <p>Récupération de vos carnets patients...</p>
-  </div>
+  @if (enChargement && patientsFiltres.length === 0) {
+    <div class="indicateur-chargement">
+      <div class="spinner-carnet"></div>
+      <p>Récupération de vos carnets patients...</p>
+    </div>
+  }
 
-  <!-- Grille des carnets patients avec style personnel -->
-  <main class="personnel-grid">
-    <article 
-      *ngFor="let patient of patientsFiltres; trackBy: suivreParIdPatient" 
-      class="personnel-card"
-      (click)="ouvrirDossierPatient(patient)"
-      [attr.aria-label]="'Carnet du patient ' + patient.prenom + ' ' + patient.nom + ', cliquer pour ouvrir'">
-      
-      <!-- Header avec avatar et informations -->
-      <div class="card-header">
-        <!-- Avatar avec initiales -->
-        <div class="personnel-avatar">
-          <div class="cercle-initiales" 
-               [attr.aria-label]="obtenirInitialePatient(patient) + ' initiales de ' + patient.prenom + ' ' + patient.nom">
+  <!-- Grille des carnets patients -->
+  <main class="grille-carnets">
+    @for (patient of patientsFiltres; track patient.id) {
+      <article
+        class="carte-carnet"
+        (click)="ouvrirDossierPatient(patient)"
+        tabindex="0"
+        (keyup.enter)="ouvrirDossierPatient(patient)"
+        [attr.aria-label]="'Carnet du patient ' + patient.prenom + ' ' + patient.nom + ', cliquer pour ouvrir'">
+
+        <!-- Onglet "dossier" en haut de la carte -->
+        <div class="onglet-dossier">
+          <img src="assets/folder.png" alt="" class="icone-dossier-mini">
+          <span class="numero-dossier-badge">{{ patient.numero_dossier || 'N/A' }}</span>
+        </div>
+
+        <!-- QR code centré, façon tampon -->
+        <div class="zone-qr">
+          @if (qrDataUrls[patient.id]) {
+            <div class="plaque-qr">
+              <img [src]="qrDataUrls[patient.id]" [alt]="'QR code de ' + patient.prenom + ' ' + patient.nom" class="image-qr">
+            </div>
+          } @else {
+            <div class="plaque-qr plaque-qr-attente">
+              <i class="bi bi-qr-code"></i>
+            </div>
+          }
+          <div class="avatar-flottant">
             {{ obtenirInitialePatient(patient) }}
           </div>
         </div>
-        
+
         <!-- Informations du patient -->
-        <div class="personnel-info">
+        <div class="info-carnet">
           <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
-          <p class="numero-dossier">
-            <strong>N° Dossier:</strong> {{ patient.numero_dossier || 'Non assigné' }}
-          </p>
-          
-          <!-- Informations de contact -->
-          <p *ngIf="patient.telephone" class="telephone">
-            <i class="bi bi-telephone"></i>
-            {{ patient.telephone }}
-          </p>
-          <p *ngIf="patient.email" class="email">
-            <i class="bi bi-envelope"></i>
-            {{ patient.email }}
-          </p>
+
+          <div class="contacts-carnet">
+            @if (patient.telephone) {
+              <span class="puce-contact"><i class="bi bi-telephone"></i>{{ patient.telephone }}</span>
+            }
+            @if (patient.email) {
+              <span class="puce-contact"><i class="bi bi-envelope"></i>{{ patient.email }}</span>
+            }
+          </div>
         </div>
-      </div>
-      
-      <!-- Footer avec actions et QR -->
-      <div class="card-footer">
-        <!-- Code QR du patient si disponible -->
-        <div *ngIf="patient.qr_token" class="conteneur-qr">
-          <img 
-            [src]="'https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=' + patient.qr_token" 
-            [alt]="'Code QR pour ' + patient.prenom + ' ' + patient.nom"
-            class="code-qr"
-            loading="lazy" />
-          <small class="legende-qr">QR Accès</small>
-        </div>
-        
-        <!-- Actions -->
-        <div class="card-actions">
-          <button class="btn-edit" (click)="ouvrirDossierPatient(patient); $event.stopPropagation()">
-            <i class="bi bi-folder-open"></i>
-            Dossier
-          </button>
-        </div>
-      </div>
-    </article>
-    
+
+        <!-- Action d'ouverture -->
+        <button class="bouton-ouvrir" (click)="ouvrirDossierPatient(patient); $event.stopPropagation()">
+          <i class="bi bi-journal-bookmark-fill"></i>
+          Ouvrir le carnet
+          <i class="bi bi-arrow-right fleche"></i>
+        </button>
+      </article>
+    }
+
     <!-- Message si aucun carnet trouvé -->
-    <div *ngIf="!enChargement && patientsFiltres.length === 0" class="message-aucun-carnet">
-      <img src="assets/folder.png" alt="Aucun carnet" class="icone-aucun-carnet">
-      <h3 *ngIf="termeRecherche">Aucun résultat pour "{{ termeRecherche }}"</h3>
-      <h3 *ngIf="!termeRecherche">Aucun carnet trouvé</h3>
-      <p *ngIf="termeRecherche">Essayez avec d'autres termes de recherche.</p>
-      <p *ngIf="!termeRecherche">Commencez par créer des patients pour voir leurs carnets ici.</p>
-    </div>
-    
-    <!-- Message si la recherche ne retourne rien -->
-    <div *ngIf="!enChargement && patients.length > 0 && patientsFiltres.length === 0" class="message-aucun-carnet">
-      <i class="bi bi-search"></i>
-      <h3>Aucun résultat pour "{{ termeRecherche }}"</h3>
-      <p>Essayez avec d'autres termes de recherche ou vérifiez l'orthographe.</p>
-    </div>
+    @if (!enChargement && patientsFiltres.length === 0) {
+      <div class="message-aucun-carnet">
+        <img src="assets/folder.png" alt="Aucun carnet" class="icone-aucun-carnet">
+        @if (termeRecherche) {
+          <h3>Aucun résultat pour "{{ termeRecherche }}"</h3>
+          <p>Essayez avec d'autres termes de recherche ou vérifiez l'orthographe.</p>
+        } @else {
+          <h3>Aucun carnet trouvé</h3>
+          <p>Commencez par créer des patients pour voir leurs carnets ici.</p>
+        }
+      </div>
+    }
   </main>
 </section>

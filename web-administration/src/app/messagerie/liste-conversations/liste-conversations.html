@@ -1,114 +1,177 @@
 <section class="messagerie-container">
-  <!-- Header moderne -->
-  <div class="header-section">
-    <div class="header-content">
-      <div class="header-icon">
-        <i class="bi bi-chat-dots-fill"></i>
+  <!-- ========== EN-TÊTE ========== -->
+  <header class="entete-messagerie">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="entete-contenu">
+      <div class="entete-titre">
+        <span class="badge-clinique"><i class="bi bi-chat-dots-fill"></i> Cabinet WARMS</span>
+        <h1>Messagerie</h1>
+        <p class="sous-titre">{{ conversations.length }} conversation{{ conversations.length === 1 ? '' : 's' }}</p>
       </div>
-      <div class="header-text">
-        <h2>Messagerie</h2>
-        <p class="subtitle">Gérez vos conversations avec les patients et l'équipe</p>
+      <div class="actions-entete">
+        <button class="bouton-nouveau bouton-secondaire-creation" (click)="ouvrirPanneauCreation('equipe')">
+          <i class="bi bi-people-fill"></i> Discussion d'équipe
+        </button>
+        <button class="bouton-nouveau" (click)="ouvrirPanneauCreation('patient')">
+          <i class="bi bi-chat-heart-fill"></i> Discuter avec un patient
+        </button>
       </div>
     </div>
+  </header>
+
+  <!-- ========== RECHERCHE ========== -->
+  <div class="barre-recherche">
+    <div class="input-groupe">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Rechercher une conversation, un patient, un collègue..."
+        [(ngModel)]="termeRecherche"
+        (input)="onRechercheChange()"
+        class="input-recherche">
+    </div>
+    <button class="bouton-rafraichir" (click)="charger()" [disabled]="chargement">
+      <i class="bi bi-arrow-clockwise" [class.tourne]="chargement"></i>
+    </button>
   </div>
 
-  <!-- Section de création de conversation -->
-  <div class="creation-section">
-    <div class="section-header">
-      <i class="bi bi-plus-circle"></i>
-      <h3>Nouvelle conversation</h3>
+  <!-- ========== LISTE DES CONVERSATIONS ========== -->
+  @if (chargement && conversationsFiltrees.length === 0) {
+    <div class="etat-chargement">
+      <div class="spinner-messagerie"></div>
+      <p>Chargement des conversations...</p>
     </div>
-    <div class="creation-form">
-      <div class="form-group">
-        <label for="patient-select" class="form-label">
-          <i class="bi bi-person-fill"></i>
-          Sélectionner un patient
-        </label>
-        <select [(ngModel)]="patientSelectionne" id="patient-select" class="form-select">
-          <option value="">Choisir un patient...</option>
-          @for (patient of listePatients; track patient.id) {
-            <option [value]="patient">{{ patient.prenom }} {{ patient.nom }}</option>
-          }
-        </select>
-      </div>
-      <button (click)="demarrerChatPatient()" 
-              [disabled]="!patientSelectionne" 
-              class="btn-primary">
-        <i class="bi bi-chat-dots-fill"></i>
-        Démarrer la conversation
-      </button>
-    </div>
-  </div>
-
-  <!-- Liste des conversations -->
-  <div class="conversations-section">
-    <div class="section-header">
-      <i class="bi bi-chat-left-text"></i>
-      <h3>Conversations récentes</h3>
-      <span class="conversation-count">{{ conversations.length }} conversation(s)</span>
-    </div>
-    
-    <div class="conversations-list">
-      @for (conversation of conversations; track conversation.id) {
-        <div class="conversation-card" 
-             [class.patient-conversation]="conversation.type_conversation === 'patient'"
-             [class.internal-conversation]="conversation.type_conversation !== 'patient'">
-          <div class="conversation-main">
-            <a [routerLink]="['/messagerie/conversation', conversation.id]" class="conversation-link">
-              <div class="conversation-header-info">
-                <div class="conversation-title">
-                  <i class="bi" 
-                     [ngClass]="conversation.type_conversation === 'patient' ? 'bi-chat-heart' : 'bi-chat-dots'"></i>
-                  {{ conversation.titre || ('Conversation #' + conversation.id) }}
-                </div>
-                <div class="conversation-meta">
-                  @if (conversation.type_conversation === 'patient' && conversation.patient) {
-                    <span class="meta-tag patient">
-                      <i class="bi bi-person-fill"></i>
-                      {{ conversation.patient }}
-                    </span>
-                  }
-                  <span class="meta-tag type">
-                    @if (conversation.type_conversation === 'patient') {
-                      Patient
-                    } @else {
-                      Interne
-                    }
-                  </span>
-                  <span class="meta-tag date">
-                    <i class="bi bi-clock"></i>
-                    {{ conversation.modifie_le | date:'dd/MM HH:mm' }}
-                  </span>
-                </div>
-              </div>
-            </a>
-          </div>
-          <div class="conversation-actions">
-            <button (click)="editerConversation(conversation)" 
-                    class="btn-action btn-edit" 
-                    title="Modifier la conversation">
-              <i class="bi bi-pencil"></i>
-            </button>
-            @if (conversation.type_conversation === 'patient') {
-              <button (click)="voirHistoriquePatient(conversation)" 
-                      class="btn-action btn-history" 
-                      title="Voir l'historique patient">
-                <i class="bi bi-clock-history"></i>
-              </button>
+  } @else {
+    <div class="liste-conversations">
+      @for (conversation of conversationsFiltrees; track conversation.id) {
+        <article class="carte-conversation" (click)="ouvrirConversation(conversation)">
+          <div class="avatar-conversation" [class.en-ligne]="conversation.en_ligne">
+            {{ obtenirInitiale(conversation) }}
+            @if (conversation.en_ligne) {
+              <span class="pastille-en-ligne" title="En ligne"></span>
             }
           </div>
-        </div>
-      }
-      
-      @if (conversations.length === 0) {
-        <div class="empty-state">
-          <div class="empty-icon">
-            <i class="bi bi-chat-dots"></i>
+
+          <div class="corps-conversation">
+            <div class="ligne-titre">
+              <h3>{{ conversation.titre || ('Conversation #' + conversation.id) }}</h3>
+              <span class="date-conversation">{{ conversation.modifie_le | date:'dd/MM HH:mm' }}</span>
+            </div>
+
+            <p class="apercu-message" [class.non-lu]="(conversation.non_lus ?? 0) > 0">
+              {{ obtenirApercu(conversation) }}
+            </p>
+
+            <div class="puces-meta">
+              <span class="puce-type" [class.puce-patient]="conversation.type_conversation === 'patient'">
+                <i class="bi" [class]="conversation.type_conversation === 'patient' ? 'bi-chat-heart' : 'bi-people'"></i>
+                {{ conversation.type_conversation === 'patient' ? (conversation.patient_nom || 'Patient') : 'Équipe interne' }}
+              </span>
+              @if ((conversation.non_lus ?? 0) > 0) {
+                <span class="puce-non-lus">{{ conversation.non_lus }} nouveau{{ conversation.non_lus === 1 ? '' : 'x' }}</span>
+              }
+            </div>
           </div>
-          <h4>Aucune conversation</h4>
-          <p>Commencez une nouvelle conversation en sélectionnant un patient ci-dessus</p>
+
+          <div class="actions-conversation">
+            @if (conversation.type_conversation === 'patient' && conversation.patient) {
+              <button class="bouton-icone" title="Voir le dossier patient" (click)="voirDossierPatient(conversation, $event)">
+                <i class="bi bi-journal-bookmark"></i>
+              </button>
+            }
+            <button class="bouton-ouvrir-chat" (click)="ouvrirConversation(conversation)">
+              <i class="bi bi-chat-dots-fill"></i> Ouvrir
+            </button>
+          </div>
+        </article>
+      }
+
+      @if (!chargement && conversationsFiltrees.length === 0) {
+        <div class="etat-vide">
+          <i class="bi bi-chat-dots"></i>
+          @if (termeRecherche) {
+            <h3>Aucun résultat pour "{{ termeRecherche }}"</h3>
+            <p>Essayez avec d'autres termes de recherche.</p>
+          } @else {
+            <h3>Aucune conversation</h3>
+            <p>Démarrez une discussion avec un patient ou votre équipe.</p>
+          }
         </div>
       }
     </div>
-  </div>
+  }
+
+  <!-- ========== PANNEAU DE CRÉATION ========== -->
+  @if (afficherCreation) {
+    <div class="overlay-creation" (click)="fermerPanneauCreation()">
+      <div class="panneau-creation" (click)="$event.stopPropagation()">
+        <div class="panneau-entete">
+          <h3>
+            <i class="bi" [class]="modeCreation === 'patient' ? 'bi-chat-heart-fill' : 'bi-people-fill'"></i>
+            {{ modeCreation === 'patient' ? 'Discuter avec un patient' : "Nouvelle discussion d'équipe" }}
+          </h3>
+          <button class="bouton-fermer" (click)="fermerPanneauCreation()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="panneau-onglets">
+          <button class="onglet-panneau" [class.actif]="modeCreation === 'patient'" (click)="ouvrirPanneauCreation('patient')">
+            <i class="bi bi-chat-heart"></i> Patient
+          </button>
+          <button class="onglet-panneau" [class.actif]="modeCreation === 'equipe'" (click)="ouvrirPanneauCreation('equipe')">
+            <i class="bi bi-people"></i> Équipe interne
+          </button>
+        </div>
+
+        <div class="panneau-corps">
+          @if (modeCreation === 'patient') {
+            <label class="champ-panneau">
+              <span>Sélectionner un patient</span>
+              <select [(ngModel)]="patientSelectionne" class="select-panneau">
+                <option [ngValue]="null">Choisir un patient...</option>
+                @for (patient of listePatients; track patient.id) {
+                  <option [ngValue]="patient">{{ patient.prenom }} {{ patient.nom }}</option>
+                }
+              </select>
+            </label>
+          } @else {
+            <label class="champ-panneau">
+              <span>Titre de la discussion (optionnel)</span>
+              <input type="text" [(ngModel)]="titrePersonnalise" placeholder="Ex: Coordination planning" class="input-panneau">
+            </label>
+            <div class="champ-panneau">
+              <span>Sélectionner les membres de l'équipe</span>
+              <div class="liste-selection-personnel">
+                @for (membre of listePersonnel; track membre.id) {
+                  <label class="option-personnel" [class.selectionne]="participantsSelectionnes.includes(membre.id)">
+                    <input
+                      type="checkbox"
+                      [checked]="participantsSelectionnes.includes(membre.id)"
+                      (change)="toggleParticipant(membre.id)">
+                    <span class="avatar-mini">{{ membre.prenom.charAt(0) }}{{ membre.nom.charAt(0) }}</span>
+                    <span class="nom-membre">{{ membre.prenom }} {{ membre.nom }}</span>
+                    <span class="role-membre">{{ membre.role }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="panneau-pied">
+          <button class="bouton-secondaire" (click)="fermerPanneauCreation()">Annuler</button>
+          <button class="bouton-primaire" [disabled]="!peutCreer || creationEnCours" (click)="creerConversation()">
+            @if (creationEnCours) {
+              <i class="bi bi-arrow-clockwise tourne"></i> Création...
+            } @else {
+              <i class="bi bi-chat-dots-fill"></i> Démarrer la conversation
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </section>

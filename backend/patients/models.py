@@ -73,6 +73,9 @@ class Patient(models.Model):
     )
 
     actif = models.BooleanField(default=True, help_text="Archivé = inactif.")
+    supprime_le = models.DateTimeField(
+        null=True, blank=True, help_text="Date de mise à la corbeille (suppression douce)."
+    )
     cree_le = models.DateTimeField(auto_now_add=True)
     modifie_le = models.DateTimeField(auto_now=True)
 

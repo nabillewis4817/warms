@@ -1,13 +1,223 @@
-<section>
-  <h2>Avis patients</h2>
-  <div class="list">
-    @for (a of avis; track a.id) {
-      <article class="item">
-        <strong>{{ a.patient_prenom }} {{ a.patient_nom }}</strong>
-        <p>Note: {{ a.note }}/5</p>
-        <p>{{ a.commentaire || '-' }}</p>
-        <small>{{ a.cree_le }}</small>
-      </article>
-    }
+<section class="avis-section">
+  <header class="section-header">
+    <div class="header-content">
+      <div class="header-title">
+        <h1><i class="bi bi-star-half"></i> Avis Patients</h1>
+        <p>Consultation et gestion des avis et retours patients</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Statistiques rapides -->
+  @if (statistiques) {
+    <div class="stats-grid">
+      <div class="stat-card">
+        <i class="bi bi-chat-square-text"></i>
+        <div class="stat-info">
+          <span class="stat-value">{{ statistiques.total_avis }}</span>
+          <span class="stat-label">Total avis</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="bi bi-star-fill" style="color:#ffc107"></i>
+        <div class="stat-info">
+          <span class="stat-value">{{ statistiques.note_moyenne | number:'1.1-1' }}</span>
+          <span class="stat-label">Note moyenne</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="bi bi-clock-history"></i>
+        <div class="stat-info">
+          <span class="stat-value">{{ statistiques.avis_recents }}</span>
+          <span class="stat-label">Ce mois-ci</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="bi bi-reply-fill" style="color:#0d6efd"></i>
+        <div class="stat-info">
+          <span class="stat-value">{{ statistiques.avec_reponse }}</span>
+          <span class="stat-label">Avec réponse</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Filtres -->
+  <div class="filters-card">
+    <form [formGroup]="filtresForm" (ngSubmit)="appliquerFiltres()" class="filters-grid">
+      <div class="filter-group">
+        <label>Recherche</label>
+        <div class="search-input">
+          <i class="bi bi-search"></i>
+          <input type="text" formControlName="recherche" placeholder="Titre, commentaire, patient..." />
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Type</label>
+        <select formControlName="type_avis">
+          <option value="">Tous les types</option>
+          @for (t of typesAvis; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Statut</label>
+        <select formControlName="statut">
+          <option value="">Tous les statuts</option>
+          @for (s of statuts; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Note min.</label>
+        <select formControlName="note_min">
+          <option value="">—</option>
+          <option value="1">1 ★</option>
+          <option value="2">2 ★★</option>
+          <option value="3">3 ★★★</option>
+          <option value="4">4 ★★★★</option>
+          <option value="5">5 ★★★★★</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn-primary"><i class="bi bi-funnel"></i> Filtrer</button>
+        <button type="button" class="btn-secondary" (click)="reinitialiserFiltres()"><i class="bi bi-x-circle"></i> Réinitialiser</button>
+      </div>
+    </form>
   </div>
+
+  <!-- Message retour -->
+  @if (message) {
+    <div class="message" [class.success]="!message.includes('Erreur')" [class.error]="message.includes('Erreur')">
+      <i [class]="message.includes('Erreur') ? 'bi bi-exclamation-triangle' : 'bi bi-check-circle'"></i>
+      <span>{{ message }}</span>
+    </div>
+  }
+
+  <!-- Liste des avis -->
+  @if (loading) {
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <i class="bi bi-arrow-clockwise rotating"></i>
+        <p>Chargement des avis...</p>
+      </div>
+    </div>
+  } @else if (erreur) {
+    <div class="error-container">
+      <i class="bi bi-exclamation-circle"></i>
+      <p>{{ erreur }}</p>
+      <button class="btn-primary" (click)="chargerAvis()">Réessayer</button>
+    </div>
+  } @else {
+    <div class="avis-grid">
+      @for (a of avis; track a.id) {
+        <article class="avis-card">
+          <div class="avis-header">
+            <div class="avis-meta">
+              <span class="patient-name"><i class="bi bi-person-circle"></i> {{ a.patient_nom || 'Patient anonyme' }}</span>
+              <span class="badge" [class]="getStatutBadge(a.statut)">{{ getStatutLabel(a.statut) }}</span>
+            </div>
+            <div class="avis-type">{{ getTypeLabel(a.type_avis) }}</div>
+          </div>
+
+          <div class="avis-note">
+            @for (e of etoiles(a.note); track e) {
+              <i class="bi" [class]="e <= a.note ? 'bi-star-fill' : 'bi-star'" [style.color]="e <= a.note ? getNoteColor(a.note) : '#dee2e6'"></i>
+            }
+            <span class="note-value" [style.color]="getNoteColor(a.note)">{{ a.note }}/5</span>
+          </div>
+
+          @if (a.titre) {
+            <h4 class="avis-titre">{{ a.titre }}</h4>
+          }
+
+          @if (a.commentaire) {
+            <p class="avis-commentaire">{{ a.commentaire }}</p>
+          }
+
+          @if (a.points_positifs) {
+            <div class="avis-points positifs">
+              <i class="bi bi-plus-circle-fill"></i>
+              <span>{{ a.points_positifs }}</span>
+            </div>
+          }
+
+          @if (a.points_negatifs) {
+            <div class="avis-points negatifs">
+              <i class="bi bi-dash-circle-fill"></i>
+              <span>{{ a.points_negatifs }}</span>
+            </div>
+          }
+
+          @if (a.reponse_personnel) {
+            <div class="reponse-bloc">
+              <div class="reponse-header">
+                <i class="bi bi-reply-fill"></i>
+                <strong>Réponse du cabinet</strong>
+                @if (a.reponse_par_nom) { <small>— {{ a.reponse_par_nom }}</small> }
+              </div>
+              <p>{{ a.reponse_personnel }}</p>
+            </div>
+          }
+
+          <div class="avis-footer">
+            <small class="avis-date"><i class="bi bi-calendar3"></i> {{ a.cree_le | date:'dd/MM/yyyy' }}</small>
+            <div class="avis-actions">
+              <button class="btn-icon btn-reply" title="Répondre" (click)="ouvrirReponse(a)">
+                <i class="bi bi-reply"></i>
+              </button>
+              @if (a.statut !== 'masque') {
+                <button class="btn-icon btn-moderate" title="Masquer" (click)="moderer(a, 'masque')">
+                  <i class="bi bi-eye-slash"></i>
+                </button>
+              }
+              @if (a.statut === 'masque') {
+                <button class="btn-icon btn-publish" title="Publier" (click)="moderer(a, 'publie')">
+                  <i class="bi bi-eye"></i>
+                </button>
+              }
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <div class="empty-state">
+          <i class="bi bi-star"></i>
+          <p>Aucun avis trouvé</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal réponse -->
+  @if (showReponseModal && avisSelectionne) {
+    <div class="modal-overlay" (click)="fermerReponse()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3><i class="bi bi-reply"></i> Répondre à l'avis</h3>
+          <button class="btn-close" (click)="fermerReponse()"><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="avis-resume">
+            <strong>{{ avisSelectionne.patient_nom }}</strong> — Note : {{ avisSelectionne.note }}/5
+            @if (avisSelectionne.commentaire) {
+              <p>{{ avisSelectionne.commentaire }}</p>
+            }
+          </div>
+          <div class="form-group">
+            <label>Votre réponse *</label>
+            <textarea [(ngModel)]="reponseEnCours" [ngModelOptions]="{standalone: true}" rows="5"
+              placeholder="Rédigez votre réponse au patient..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="fermerReponse()">Annuler</button>
+          <button class="btn-primary" (click)="envoyerReponse()" [disabled]="!reponseEnCours.trim()">
+            <i class="bi bi-send"></i> Envoyer
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </section>

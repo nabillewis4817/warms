@@ -1,168 +1,800 @@
 /* ========================================
-   STYLES POUR LE COMPOSANT DOSSIER PATIENT
+   CARNET PATIENT — couverture + pages dynamiques, CRUD, fluide
    ======================================== */
 
-/* Section principale du dossier patient */
-.section-dossier-patient {
-  max-width: 1200px;
+@keyframes tourner {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes apparition {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.carnet-page {
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 1.5rem 1.75rem 3rem;
 }
 
-/* En-tête avec icône et titre */
-.en-tete-dossier {
-  margin-bottom: 2rem;
-}
-
-.titre-avec-icone {
+/* ----------------------------------------
+   ÉTATS CHARGEMENT / ERREUR
+   ---------------------------------------- */
+.etat-chargement,
+.etat-erreur {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 5rem 1rem;
+  color: #7c6a4f;
+  text-align: center;
 }
 
-.icone-dossier {
+.spinner-carnet {
   width: 48px;
   height: 48px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  border-radius: 50%;
+  border: 4px solid #eaf1ff;
+  border-top-color: #1e4db7;
+  animation: tourner 0.9s linear infinite;
 }
 
-.titre-dossier {
+.spinner-carnet.petit {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+}
+
+.carte-erreur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  padding: 2.5rem;
+  border-radius: 24px;
+  box-shadow: 0 16px 40px -16px rgba(30, 77, 183, 0.2);
+
+  i {
+    font-size: 2.5rem;
+    color: #f59e0b;
+  }
+
+  h3 {
+    margin: 0;
+    color: #16327a;
+  }
+}
+
+.btn-reessayer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lien-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #7c6a4f;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+
+  &:hover {
+    color: #1e4db7;
+  }
+}
+
+/* ----------------------------------------
+   COUVERTURE DU CARNET
+   ---------------------------------------- */
+.couverture {
+  position: relative;
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #fff9f0 0%, #fef0db 55%, #eaf1ff 100%);
+  overflow: hidden;
+  isolation: isolate;
+  animation: apparition 0.5s ease;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob-cover-1 {
+  width: 320px;
+  height: 320px;
+  top: -120px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
+}
+
+.blob-cover-2 {
+  width: 360px;
+  height: 360px;
+  bottom: -160px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(30, 77, 183, 0.16) 0%, transparent 70%);
+}
+
+.couverture .lien-retour {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 2;
+}
+
+.couverture-carte {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  background: white;
+  padding: 3rem 2.5rem 2.5rem;
+  border-radius: 28px;
+  box-shadow: 0 24px 60px -20px rgba(30, 77, 183, 0.32);
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+.couverture-folder-icon {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-6deg);
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(30, 77, 183, 0.25));
+}
+
+.couverture-qr-zone {
+  position: relative;
+  margin-top: 0.5rem;
+}
+
+.plaque-qr-grande {
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 24px;
+  border: 2px dashed #cdd9f5;
+  box-shadow: 0 12px 28px -8px rgba(30, 77, 183, 0.22);
+}
+
+.plaque-qr-attente {
+  color: #cdd9f5;
+  font-size: 3.5rem;
+}
+
+.image-qr-grande {
+  width: 168px;
+  height: 168px;
+  object-fit: contain;
+}
+
+.avatar-grand {
+  position: absolute;
+  bottom: -14px;
+  right: -14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e4db7 0%, #163a8a 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 1.3rem;
+  border: 4px solid white;
+  box-shadow: 0 6px 14px rgba(30, 77, 183, 0.35);
+}
+
+.couverture-carte h1 {
+  margin: 0.5rem 0 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #16327a;
+}
+
+.dossier-numero {
   margin: 0;
-  font-size: 2rem;
-  color: #1a2e6b;
+  color: #8a7654;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.badge-statut {
+  display: inline-flex;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.alerte-allergie {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 14px;
+  background: #fff1ec;
+  color: #c2410c;
+  font-size: 0.82rem;
   font-weight: 700;
 }
 
-/* Contenu principal du dossier */
-.contenu-dossier {
+.bouton-ouvrir-carnet {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  padding: 0.9rem 2rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 10px 24px -6px rgba(30, 77, 183, 0.45);
+}
+
+.bouton-ouvrir-carnet:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px -6px rgba(30, 77, 183, 0.55);
+}
+
+/* ----------------------------------------
+   CARNET OUVERT
+   ---------------------------------------- */
+.carnet-ouvert {
+  animation: apparition 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.entete-carnet-ouvert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.bouton-fermer {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: #fdf6ec;
+  color: #8a7654;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bouton-fermer:hover {
+  background: #fef0db;
+  color: #16327a;
+}
+
+.mini-identite {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: right;
+
+  strong {
+    display: block;
+    color: #16327a;
+    font-size: 0.95rem;
+  }
+
+  small {
+    color: #8a7654;
+    font-size: 0.78rem;
+  }
+}
+
+.mini-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e4db7 0%, #163a8a 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* Onglets de pages */
+.onglets-pages {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  background: #fdf6ec;
+  border-radius: 999px;
+  margin-bottom: 1.75rem;
+  overflow-x: auto;
+}
+
+.onglet-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #8a7654;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.onglet-page:hover {
+  color: #16327a;
+}
+
+.onglet-page.actif {
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  box-shadow: 0 6px 16px rgba(30, 77, 183, 0.35);
+}
+
+/* Contenu de page */
+.contenu-page {
+  min-height: 360px;
+}
+
+.section-carnet {
+  background: white;
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 10px 28px -12px rgba(30, 77, 183, 0.16);
+  animation: apparition 0.35s ease;
+}
+
+.section-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: #16327a;
+    font-size: 1.15rem;
+    font-weight: 800;
+
+    i {
+      color: #1e4db7;
+    }
+  }
+}
+
+.bouton-modifier {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: #eaf1ff;
+  color: #1e4db7;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bouton-modifier:hover {
+  background: #1e4db7;
+  color: white;
+}
+
+/* Grille d'informations en lecture */
+.grille-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.champ-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #b3a489;
+  }
+
+  span {
+    font-size: 0.96rem;
+    color: #2c3a5c;
+    font-weight: 600;
+  }
+
+  &.pleine-largeur {
+    grid-column: 1 / -1;
+  }
+
+  &.alerte span {
+    color: #c2410c;
+  }
+
+  &.alerte.vide span {
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  &.alerte label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #f59e0b;
+  }
+}
+
+/* Formulaire d'édition */
+.formulaire-carnet {
+  animation: apparition 0.3s ease;
+}
+
+.grille-formulaire {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.1rem;
+}
+
+.champ-formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  span {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #5a6b8a;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+
+    i {
+      color: #f59e0b;
+    }
+  }
+
+  input,
+  select,
+  textarea {
+    border: 1.5px solid #e2e8f7;
+    border-radius: 12px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.92rem;
+    font-family: inherit;
+    background: white;
+    color: #2c3a5c;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &::placeholder {
+      color: #94a3b8;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #1e4db7;
+      box-shadow: 0 0 0 3px rgba(30, 77, 183, 0.1);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  &.pleine-largeur {
+    grid-column: 1 / -1;
+  }
+}
+
+.actions-formulaire {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.bouton-secondaire {
+  padding: 0.65rem 1.3rem;
+  border: none;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: #e2e8f0;
+  }
+}
+
+.bouton-primaire {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.4rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 18px -6px rgba(30, 77, 183, 0.4);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+/* Page Carte & QR */
+.section-carte {
   display: flex;
   justify-content: center;
 }
 
-.carte-dossier {
-  background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 2px solid #f0f4ff;
-  overflow: hidden;
-  max-width: 800px;
-  width: 100%;
-}
-
-.en-tete-carte {
-  background: linear-gradient(135deg, #1e4db7, #163a8a);
-  color: white;
-  padding: 2rem;
+.carte-qr-conteneur {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-}
-
-.icone-dossier-carte {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-  background: rgba(255, 255, 255, 0.1);
-  padding: 8px;
-  border-radius: 12px;
-}
-
-.en-tete-carte h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.contenu-carte {
-  padding: 2rem;
-}
-
-.contenu-carte p {
-  color: #64748b;
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin-bottom: 2rem;
+  gap: 0.6rem;
   text-align: center;
+  padding: 1rem 0;
 }
 
-/* Grille d'actions du dossier */
-.actions-dossier {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+.legende-qr {
+  max-width: 320px;
+  color: #8a7654;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
 }
 
-.action-dossier {
+/* Historique des consultations */
+.etat-chargement-mini,
+.etat-vide-mini {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  color: #1a2e6b;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
+  padding: 3rem 1rem;
+  color: #8a7654;
+  text-align: center;
+
+  i {
+    font-size: 2.2rem;
+    color: #cdd9f5;
+  }
 }
 
-.action-dossier:hover {
-  background: #1e4db7;
-  color: white;
-  border-color: #1e4db7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.2);
+.liste-consultations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.action-dossier i {
-  font-size: 1.25rem;
+.ligne-consultation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 16px;
+  background: #fafbff;
+  border: 1px solid #eef2fb;
+  transition: all 0.2s ease;
+  animation: apparition 0.3s ease;
+}
+
+.ligne-consultation:hover {
+  background: #f3f6fe;
+  border-color: #dbe6ff;
+}
+
+.puce-date {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e4db7;
+  background: #eaf1ff;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.details-consultation {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+
+  strong {
+    color: #2c3a5c;
+    font-size: 0.92rem;
+  }
+
+  .diagnostic {
+    color: #8a7654;
+    font-size: 0.8rem;
+  }
+}
+
+.bouton-supprimer {
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fff1ec;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* Styles responsives pour mobile */
-@media (max-width: 768px) {
-  .section-dossier-patient {
-    padding: 1rem 0.5rem;
+.bouton-supprimer:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.08);
+}
+
+/* Navigation bas de page */
+.navigation-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.75rem;
+}
+
+.bouton-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background: white;
+  color: #1e4db7;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.12);
+  transition: all 0.2s ease;
+}
+
+.bouton-nav:hover:not(:disabled) {
+  background: #eaf1ff;
+}
+
+.bouton-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.puces-pages {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.puce {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #dbe6ff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.puce.actif {
+  background: #1e4db7;
+  width: 22px;
+  border-radius: 999px;
+}
+
+/* ----------------------------------------
+   RESPONSIVE
+   ---------------------------------------- */
+@media (max-width: 640px) {
+  .carnet-page {
+    padding: 1rem 0.85rem 2rem;
   }
-  
-  .titre-avec-icone {
+
+  .couverture-carte {
+    padding: 2.5rem 1.5rem 2rem;
+  }
+
+  .entete-carnet-ouvert {
     flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
+    align-items: flex-start;
   }
-  
-  .icone-dossier {
-    width: 40px;
-    height: 40px;
+
+  .mini-identite {
+    text-align: left;
   }
-  
-  .titre-dossier {
-    font-size: 1.5rem;
-  }
-  
-  .en-tete-carte {
-    flex-direction: column;
-    text-align: center;
+
+  .section-carnet {
     padding: 1.5rem;
   }
-  
-  .icone-dossier-carte {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .contenu-carte {
-    padding: 1.5rem;
-  }
-  
-  .actions-dossier {
-    grid-template-columns: 1fr;
-  }
-  
-  .action-dossier {
-    justify-content: center;
+
+  .ligne-consultation {
+    flex-wrap: wrap;
   }
 }

@@ -37,7 +37,10 @@
               <span class="datetime-text">{{ formattedDateTime$ | async }}</span>
             </div>
             <div class="datetime-extended" *ngIf="showExtendedDateTime">
-              <span class="datetime-greeting">{{ timeBasedGreeting }}</span>
+              <span class="datetime-greeting">
+                <i class="bi" [ngClass]="dateTimeService.getTimeBasedIcon()"></i>
+                {{ timeBasedGreeting }}
+              </span>
               <span class="datetime-full">{{ formattedDateExtended$ | async }}</span>
             </div>
           </div>

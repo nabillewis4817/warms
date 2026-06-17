@@ -28,7 +28,7 @@
         <div class="profile-dropdown" @click.stop>
           <div class="dropdown-header">
             <div class="header-avatar">
-              <img [src]="photoUrl()" [alt]="nomAffiche()" />
+              <img [src]="photoUrl()" [alt]="nomAffiche()" (error)="photoUrl.set('/assets/images/default-avatar.png')" />
             </div>
             <div class="header-info">
               <div class="header-name">{{ nomAffiche() }}</div>

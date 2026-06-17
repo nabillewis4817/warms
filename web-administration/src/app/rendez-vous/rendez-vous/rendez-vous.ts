@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 
 import { RendezVousService, RendezVous } from '../../noyau/services/rendez-vous';
 import { Patients } from '../../noyau/services/patients';
@@ -16,7 +15,6 @@ export class RendezVousComponent implements OnInit {
   private readonly rendezVousService = inject(RendezVousService);
   private readonly patientsService = inject(Patients);
   private readonly fb = inject(FormBuilder);
-  private readonly router = inject(Router);
 
   rendezVousList: RendezVous[] = [];
   patientsList: any[] = [];
@@ -29,7 +27,7 @@ export class RendezVousComponent implements OnInit {
     patient: [null as number | null, Validators.required],
     date_heure: ['', Validators.required],
     duree: [30, [Validators.required, Validators.min(15), Validators.max(180)]],
-    motif: ['', Validators.required],
+    motif: [''],
     statut: ['programme', Validators.required],
     notes: ['']
   });
@@ -144,9 +142,11 @@ export class RendezVousComponent implements OnInit {
 
   getStatutColor(statut: string): string {
     switch (statut) {
-      case 'programme': return '#28a745';
-      case 'en_cours': return '#ffc107';
-      case 'termine': return '#6c757d';
+      case 'programme': return '#0d6efd';
+      case 'confirme': return '#28a745';
+      case 'reporte': return '#ffc107';
+      case 'effectue': return '#6c757d';
+      case 'absent': return '#fd7e14';
       case 'annule': return '#dc3545';
       default: return '#6c757d';
     }
@@ -155,8 +155,10 @@ export class RendezVousComponent implements OnInit {
   getStatutLabel(statut: string): string {
     switch (statut) {
       case 'programme': return 'Programmé';
-      case 'en_cours': return 'En cours';
-      case 'termine': return 'Terminé';
+      case 'confirme': return 'Confirmé';
+      case 'reporte': return 'Reporté';
+      case 'effectue': return 'Effectué';
+      case 'absent': return 'Absent';
       case 'annule': return 'Annulé';
       default: return statut;
     }

@@ -73,7 +73,7 @@ export class IaWarms implements OnInit {
         console.error('Erreur WARMS IA:', error);
         
         // Afficher un message d'erreur clair sans fallback statique
-        let errorMessage = '❌ Une erreur est survenue. ';
+        let errorMessage = 'Une erreur est survenue. ';
         
         if (error.status === 401) {
           errorMessage += 'Veuillez vous reconnecter et réessayer.';

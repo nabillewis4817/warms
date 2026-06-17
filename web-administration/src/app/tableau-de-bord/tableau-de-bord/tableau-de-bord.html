@@ -1,26 +1,36 @@
 <section class="dashboard-section">
-  <!-- Header stylisé -->
+  <!-- ========== EN-TÊTE ========== -->
   <header class="dashboard-header">
+    <div class="header-blob header-blob-1"></div>
+    <div class="header-blob header-blob-2"></div>
+
     <div class="header-content">
       <div class="header-title">
-        <h1>Tableau de bord Wam's</h1>
-        <p class="header-subtitle">Gestion dentaire optimisée pour professionnels</p>
+        <span class="badge-clinique"><i class="bi bi-clipboard2-pulse"></i> WARMS Cabinet Dentaire</span>
+        <h1>
+          <i class="bi salutation-icone" [ngClass]="dateTimeService.getTimeBasedIcon()"></i>
+          {{ salutation }}{{ auth.utilisateur()?.prenom ? ', ' + auth.utilisateur()?.prenom : '' }}
+        </h1>
+        <p class="header-subtitle">
+          <i class="bi bi-calendar3"></i>
+          {{ dateTimeService.formattedDateExtended$ | async }}
+        </p>
       </div>
       <div class="header-actions">
-        <button class="refresh-btn" (click)="charger()">
-          <i class="bi bi-arrow-clockwise"></i> 
+        <button class="refresh-btn" (click)="charger()" [class.tourne]="chargement">
+          <i class="bi bi-arrow-clockwise"></i>
           <span>Actualiser</span>
         </button>
         <app-user-profile></app-user-profile>
       </div>
     </div>
   </header>
-  
+
   @if (chargement) {
     <div class="loading-section">
       <div class="loading-container">
         <div class="loading-spinner">
-          <i class="bi bi-arrow-clockwise rotating"></i>
+          <div class="spinner-ring"></div>
           <p>Chargement des statistiques...</p>
         </div>
       </div>
@@ -47,148 +57,136 @@
     }
 
     @if (erreurGraphiques && dashboardStats) {
-      <div class="error-section" style="margin-bottom: 1rem;">
-        <div class="error-container">
-          <div class="error-content">
-            <i class="bi bi-info-circle"></i>
-            <p>Les graphiques détaillés sont indisponibles. Les indicateurs ci-dessous restent à jour.</p>
-          </div>
-        </div>
+      <div class="info-banner">
+        <i class="bi bi-info-circle"></i>
+        <p>Les graphiques détaillés sont indisponibles. Les indicateurs ci-dessous restent à jour.</p>
       </div>
     }
 
     @if (dashboardStats) {
-    <!-- Section KPI stylisée -->
-    <section class="kpi-section">
-      <div class="section-header">
-        <h2><i class="bi bi-graph-up"></i> Vue d'ensemble</h2>
-        <p>Indicateurs clés de performance des 30 derniers jours</p>
-      </div>
-      
-      <div class="kpi-grid">
-        <!-- Card Consultations -->
-        <article class="kpi-card consultations-card" (click)="naviguerVersConsultations()">
-          <div class="kpi-header">
-            <div class="kpi-icon">
-              <i class="bi bi-stethoscope"></i>
-            </div>
-            <div class="kpi-trend" [class.positive]="(dashboardStats?.consultations?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.consultations?.tendance ?? 0) < 0">
-              <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.consultations?.tendance ?? 0)"></i>
-              <span>{{ (dashboardStats?.consultations?.tendance ?? 0) > 0 ? '+' : '' }}{{ tendanceFormatted }}%</span>
-            </div>
-          </div>
-          <div class="kpi-content">
-            <h3>Consultations</h3>
-            <div class="kpi-value">
-              <strong>{{ dashboardStats?.consultations?.aujourdHui ?? '0' }}</strong>
-              <span class="kpi-period">Aujourd'hui</span>
-            </div>
-            <div class="kpi-details">
-              <span>{{ dashboardStats?.consultations?.semaine ?? '0' }} cette semaine</span>
-              <span>{{ dashboardStats?.consultations?.mois ?? '0' }} ce mois</span>
-            </div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-action">Accéder aux consultations</span>
-            <i class="bi bi-arrow-right"></i>
-          </div>
-        </article>
+      <!-- ========== KPI ========== -->
+      <section class="kpi-section">
+        <div class="section-header">
+          <h2><i class="bi bi-graph-up-arrow"></i> Vue d'ensemble</h2>
+          <p>Indicateurs clés des 30 derniers jours</p>
+        </div>
 
-        <!-- Card Rendez-vous -->
-        <article class="kpi-card rdv-card" (click)="naviguerVersRendezVous()">
-          <div class="kpi-header">
-            <div class="kpi-icon">
-              <i class="bi bi-calendar-check"></i>
+        <div class="kpi-grid">
+          <!-- Consultations -->
+          <article class="kpi-card kpi-bleu" (click)="naviguerVersConsultations()">
+            <div class="kpi-header">
+              <div class="kpi-icon"><i class="bi bi-stethoscope"></i></div>
+              <div class="kpi-trend" [class.positive]="(dashboardStats?.consultations?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.consultations?.tendance ?? 0) < 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.consultations?.tendance ?? 0)"></i>
+                <span>{{ (dashboardStats?.consultations?.tendance ?? 0) > 0 ? '+' : '' }}{{ tendanceFormatted }}%</span>
+              </div>
             </div>
-            <div class="kpi-trend" [class.positive]="(dashboardStats?.rendezVous?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.rendezVous?.tendance ?? 0) < 0">
-              <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.rendezVous?.tendance ?? 0)"></i>
-              <span>{{ (dashboardStats?.rendezVous?.tendance ?? 0) > 0 ? '+' : '' }}{{ rendezVousTendanceFormatted }}%</span>
+            <div class="kpi-content">
+              <h3>Consultations</h3>
+              <div class="kpi-value">
+                <strong>{{ dashboardStats?.consultations?.aujourdHui ?? '0' }}</strong>
+                <span class="kpi-period">Aujourd'hui</span>
+              </div>
+              <div class="kpi-details">
+                <span>{{ dashboardStats?.consultations?.semaine ?? '0' }} cette semaine</span>
+                <span>{{ dashboardStats?.consultations?.mois ?? '0' }} ce mois</span>
+              </div>
             </div>
-          </div>
-          <div class="kpi-content">
-            <h3>Rendez-vous</h3>
-            <div class="kpi-value">
-              <strong>{{ dashboardStats?.rendezVous?.aujourdHui ?? '0' }}</strong>
-              <span class="kpi-period">Aujourd'hui</span>
+            <div class="kpi-footer">
+              <span class="kpi-action">Accéder aux consultations</span>
+              <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
             </div>
-            <div class="kpi-details">
-              <span>{{ dashboardStats?.rendezVous?.confirms ?? '0' }} confirmés</span>
-              <span>{{ dashboardStats?.rendezVous?.enAttente ?? '0' }} en attente</span>
-            </div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-action">Gérer le planning</span>
-            <i class="bi bi-arrow-right"></i>
-          </div>
-        </article>
+          </article>
 
-        <!-- Card Appels -->
-        <article class="kpi-card absences-card" (click)="naviguerVersAppels()">
-          <div class="kpi-header">
-            <div class="kpi-icon">
-              <i class="bi bi-telephone"></i>
+          <!-- Rendez-vous -->
+          <article class="kpi-card kpi-mint" (click)="naviguerVersRendezVous()">
+            <div class="kpi-header">
+              <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
+              <div class="kpi-trend" [class.positive]="(dashboardStats?.rendezVous?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.rendezVous?.tendance ?? 0) < 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.rendezVous?.tendance ?? 0)"></i>
+                <span>{{ (dashboardStats?.rendezVous?.tendance ?? 0) > 0 ? '+' : '' }}{{ rendezVousTendanceFormatted }}%</span>
+              </div>
             </div>
-            <div class="kpi-trend" [class.positive]="(dashboardStats?.appels?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.appels?.tendance ?? 0) < 0">
-              <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.appels?.tendance ?? 0)"></i>
-              <span>{{ (dashboardStats?.appels?.tendance ?? 0) > 0 ? '+' : '' }}{{ appelsTendanceFormatted }}%</span>
+            <div class="kpi-content">
+              <h3>Rendez-vous</h3>
+              <div class="kpi-value">
+                <strong>{{ dashboardStats?.rendezVous?.aujourdHui ?? '0' }}</strong>
+                <span class="kpi-period">Aujourd'hui</span>
+              </div>
+              <div class="kpi-details">
+                <span>{{ dashboardStats?.rendezVous?.confirms ?? '0' }} confirmés</span>
+                <span>{{ dashboardStats?.rendezVous?.enAttente ?? '0' }} en attente</span>
+              </div>
             </div>
-          </div>
-          <div class="kpi-content">
-            <h3>Appels</h3>
-            <div class="kpi-value">
-              <strong>{{ dashboardStats?.appels?.aujourdHui ?? '0' }}</strong>
-              <span class="kpi-period">Aujourd'hui</span>
+            <div class="kpi-footer">
+              <span class="kpi-action">Gérer le planning</span>
+              <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
             </div>
-            <div class="kpi-details">
-              <span>{{ dashboardStats?.appels?.repondus ?? '0' }} répondus</span>
-              <span>{{ dashboardStats?.appels?.nonRepondus ?? '0' }} non répondus</span>
-            </div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-action">Gérer les appels</span>
-            <i class="bi bi-arrow-right"></i>
-          </div>
-        </article>
+          </article>
 
-        <!-- Card Taux d'absentéisme -->
-        <article class="kpi-card taux-card" (click)="naviguerVersTauxAbsenteisme()">
-          <div class="kpi-header">
-            <div class="kpi-icon">
-              <i class="bi bi-pie-chart"></i>
+          <!-- Appels -->
+          <article class="kpi-card kpi-ambre" (click)="naviguerVersAppels()">
+            <div class="kpi-header">
+              <div class="kpi-icon"><i class="bi bi-telephone"></i></div>
+              <div class="kpi-trend" [class.positive]="(dashboardStats?.appels?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.appels?.tendance ?? 0) < 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.appels?.tendance ?? 0)"></i>
+                <span>{{ (dashboardStats?.appels?.tendance ?? 0) > 0 ? '+' : '' }}{{ appelsTendanceFormatted }}%</span>
+              </div>
             </div>
-            <div class="kpi-trend" [class.positive]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) < 0" [class.negative]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0">
-              <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0)"></i>
-              <span>{{ (dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0 ? '+' : '' }}{{ tauxAbsenteeismeTendanceFormatted }}%</span>
+            <div class="kpi-content">
+              <h3>Appels</h3>
+              <div class="kpi-value">
+                <strong>{{ dashboardStats?.appels?.aujourdHui ?? '0' }}</strong>
+                <span class="kpi-period">Aujourd'hui</span>
+              </div>
+              <div class="kpi-details">
+                <span>{{ dashboardStats?.appels?.repondus ?? '0' }} répondus</span>
+                <span>{{ dashboardStats?.appels?.nonRepondus ?? '0' }} non répondus</span>
+              </div>
             </div>
-          </div>
-          <div class="kpi-content">
-            <h3>Taux absentéisme</h3>
-            <div class="kpi-value">
-              <strong>{{ tauxAbsenteeismeGlobalFormatted }}%</strong>
-              <span class="kpi-period">Global</span>
+            <div class="kpi-footer">
+              <span class="kpi-action">Gérer les appels</span>
+              <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
             </div>
-            <div class="kpi-details">
-              <span>{{ dashboardStats?.tauxAbsenteeisme?.absences ?? '0' }} absences</span>
-              <span>{{ dashboardStats?.tauxAbsenteeisme?.presences ?? '0' }} présences</span>
+          </article>
+
+          <!-- Taux d'absentéisme -->
+          <article class="kpi-card kpi-rose" (click)="naviguerVersTauxAbsenteisme()">
+            <div class="kpi-header">
+              <div class="kpi-icon"><i class="bi bi-pie-chart"></i></div>
+              <div class="kpi-trend" [class.positive]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) < 0" [class.negative]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0)"></i>
+                <span>{{ (dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0 ? '+' : '' }}{{ tauxAbsenteeismeTendanceFormatted }}%</span>
+              </div>
             </div>
-          </div>
-          <div class="kpi-footer">
-            <span class="kpi-action">Voir les statistiques</span>
-            <i class="bi bi-arrow-right"></i>
-          </div>
-        </article>
-      </div>
-    </section>
+            <div class="kpi-content">
+              <h3>Taux absentéisme</h3>
+              <div class="kpi-value">
+                <strong>{{ tauxAbsenteeismeGlobalFormatted }}%</strong>
+                <span class="kpi-period">Global</span>
+              </div>
+              <div class="kpi-details">
+                <span>{{ dashboardStats?.tauxAbsenteeisme?.absences ?? '0' }} absences</span>
+                <span>{{ dashboardStats?.tauxAbsenteeisme?.presences ?? '0' }} présences</span>
+              </div>
+            </div>
+            <div class="kpi-footer">
+              <span class="kpi-action">Voir les statistiques</span>
+              <span class="kpi-fleche"><i class="bi bi-arrow-right"></i></span>
+            </div>
+          </article>
+        </div>
+      </section>
     }
 
-    <!-- Section Analytics stylisée -->
+    <!-- ========== ANALYTICS ========== -->
     @if (stats) {
       <section class="analytics-section">
         <div class="section-header">
-          <h2><i class="bi bi-bar-chart"></i> Analyses et tendances</h2>
+          <h2><i class="bi bi-bar-chart-line"></i> Analyses et tendances</h2>
           <p>Visualisation des données cliniques et opérationnelles</p>
         </div>
-        
+
         <div class="charts-grid">
           <div class="chart-card">
             <div class="chart-header">
@@ -203,10 +201,17 @@
               </div>
             </div>
             <div class="chart-content">
-              <canvas id="consultations-chart" baseChart [data]="consultationsChartData" [type]="'line'" [options]="chartOptions"></canvas>
+              <canvas
+                id="consultations-chart"
+                baseChart
+                #consultationsChartDirective="base-chart"
+                [data]="consultationsChartData"
+                [type]="'line'"
+                [options]="chartOptions">
+              </canvas>
             </div>
           </div>
-          
+
           <div class="chart-card">
             <div class="chart-header">
               <h3><i class="bi bi-heart-pulse"></i> Pathologies fréquentes</h3>
@@ -220,32 +225,50 @@
               </div>
             </div>
             <div class="chart-content">
-              <canvas id="pathologies-chart" baseChart [data]="pathologiesChartData" [type]="'bar'" [options]="chartOptions"></canvas>
+              <canvas
+                id="pathologies-chart"
+                baseChart
+                #pathologiesChartDirective="base-chart"
+                [data]="pathologiesChartData"
+                [type]="'bar'"
+                [options]="chartOptions">
+              </canvas>
             </div>
           </div>
         </div>
       </section>
     }
 
-    <!-- Section Actions rapides -->
+    <!-- ========== ACTIONS RAPIDES ========== -->
     <section class="quick-actions-section">
       <div class="section-header">
-        <h2><i class="bi bi-lightning"></i> Actions rapides</h2>
-        <p>Accès direct aux fonctionnalités principales</p>
+        <h2><i class="bi bi-lightning-charge"></i> Actions rapides</h2>
+        <p>Accès direct aux fonctionnalités principales du cabinet</p>
       </div>
-      
+
       <div class="actions-grid">
-        <button class="action-btn primary" (click)="nouvelleConsultation()">
-          <i class="bi bi-plus-circle"></i>
-          <span>Nouvelle consultation</span>
+        <button class="action-tile" (click)="nouvelleConsultation()">
+          <div class="action-icone"><i class="bi bi-clipboard2-plus"></i></div>
+          <span class="action-titre">Nouvelle consultation</span>
+          <span class="action-fleche"><i class="bi bi-arrow-up-right"></i></span>
         </button>
-        <button class="action-btn secondary" (click)="prendreRendezVous()">
-          <i class="bi bi-calendar-plus"></i>
-          <span>Prendre rendez-vous</span>
+
+        <button class="action-tile" (click)="prendreRendezVous()">
+          <div class="action-icone"><i class="bi bi-calendar-plus"></i></div>
+          <span class="action-titre">Prendre rendez-vous</span>
+          <span class="action-fleche"><i class="bi bi-arrow-up-right"></i></span>
         </button>
-        <button class="action-btn tertiary" (click)="contacterPatient()">
-          <i class="bi bi-telephone"></i>
-          <span>Contacter patient</span>
+
+        <button class="action-tile" (click)="contacterPatient()">
+          <div class="action-icone"><i class="bi bi-telephone-outbound"></i></div>
+          <span class="action-titre">Contacter un patient</span>
+          <span class="action-fleche"><i class="bi bi-arrow-up-right"></i></span>
+        </button>
+
+        <button class="action-tile action-tile-sombre" (click)="voirCarnets()">
+          <div class="action-icone"><i class="bi bi-journal-bookmark"></i></div>
+          <span class="action-titre">Carnets patients</span>
+          <span class="action-fleche"><i class="bi bi-arrow-up-right"></i></span>
         </button>
       </div>
     </section>

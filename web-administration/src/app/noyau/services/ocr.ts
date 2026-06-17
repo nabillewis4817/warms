@@ -13,7 +13,7 @@ export interface OCRResult {
     email?: string;
     adresse?: string;
   };
-  symotomes?: string[];
+  symptomes?: string[];
   traitements?: string[];
   confiance?: number;
 }

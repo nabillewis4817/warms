@@ -312,13 +312,12 @@ export class ConsultationsComponent implements OnInit {
       notes: raw.notes || ''
     };
 
-    // Dossier : utiliser celui du patient si non renseigné et si c'est un nombre valide
-    if (raw.dossier && !isNaN(Number(raw.dossier)) && Number(raw.dossier) < 1e10) {
-      donnees.dossier = Number(raw.dossier);
-    } else if (patient?.dossier_id && !isNaN(Number(patient.dossier_id)) && Number(patient.dossier_id) < 1e10) {
-      donnees.dossier = Number(patient.dossier_id);
+    // Dossier : utiliser celui du formulaire, sinon celui du patient (UUID ou number)
+    const dossierVal = raw.dossier || patient?.dossier_id;
+    if (dossierVal) {
+      donnees.dossier = dossierVal;
     }
-    // Si dossier invalide, ne pas l'envoyer du tout
+    // Si dossier absent, le backend le déduit du patient via perform_create
 
     // Champs optionnels : n'inclure que si présents
     if (raw.praticien) {

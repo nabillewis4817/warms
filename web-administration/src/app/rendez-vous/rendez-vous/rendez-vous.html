@@ -52,12 +52,12 @@
                   <td>
                     <div class="patient-info">
                       <i class="bi bi-person-circle"></i>
-                      <span>{{ item.patient }}</span>
+                      <span>{{ item.patient_prenom || '' }} {{ item.patient_nom || item.patient }}</span>
                     </div>
                   </td>
-                  <td>{{ item.date_heure }}</td>
+                  <td>{{ item.date_heure | date:'dd/MM/yyyy HH:mm' }}</td>
                   <td>{{ item.duree }} min</td>
-                  <td>{{ item.motif }}</td>
+                  <td>{{ item.motif || '—' }}</td>
                   <td>
                     <span class="status-badge" [style.background-color]="getStatutColor(item.statut)">
                       {{ getStatutLabel(item.statut) }}
@@ -137,8 +137,10 @@
               <label for="statut">Statut *</label>
               <select id="statut" formControlName="statut" [class.error]="form.get('statut')?.invalid && form.get('statut')?.touched">
                 <option value="programme">Programmé</option>
-                <option value="en_cours">En cours</option>
-                <option value="termine">Terminé</option>
+                <option value="confirme">Confirmé</option>
+                <option value="reporte">Reporté</option>
+                <option value="effectue">Effectué</option>
+                <option value="absent">Absent</option>
                 <option value="annule">Annulé</option>
               </select>
               @if (form.get('statut')?.invalid && form.get('statut')?.touched) {

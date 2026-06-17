@@ -1,58 +1,498 @@
-h2 {
-  margin-top: 0;
-  color: var(--warms-blue);
-  font-family: var(--warms-font-title);
+/* ========================================
+   PATIENTS — style chaleureux et organique (cohérent avec Carnets)
+   ======================================== */
+
+@keyframes apparition {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.head-title {
+@keyframes tourner {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.section-patients {
+  padding: 1.5rem 2rem 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ----------------------------------------
+   EN-TÊTE
+   ---------------------------------------- */
+.en-tete-patients {
+  position: relative;
+  padding: 2rem 2.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #fff9f0 0%, #fef0db 55%, #eaf1ff 100%);
+  box-shadow: 0 16px 40px -16px rgba(30, 77, 183, 0.18);
+  overflow: hidden;
+  isolation: isolate;
+  animation: apparition 0.4s ease;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob-1 {
+  width: 260px;
+  height: 260px;
+  top: -110px;
+  right: -70px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
+}
+
+.blob-2 {
+  width: 220px;
+  height: 220px;
+  bottom: -110px;
+  left: 12%;
+  background: radial-gradient(circle, rgba(30, 77, 183, 0.16) 0%, transparent 70%);
+}
+
+.en-tete-contenu {
+  position: relative;
+  z-index: 1;
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.badge-clinique {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: white;
+  color: #1e4db7;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(30, 77, 183, 0.12);
+  margin-bottom: 0.6rem;
+}
+
+.en-tete-titre h1 {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #16327a;
+  letter-spacing: -0.01em;
+}
+
+.sous-titre {
+  margin: 0.4rem 0 0;
+  color: #8a7654;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.bouton-nouveau {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 10px 22px -6px rgba(30, 77, 183, 0.45);
+  white-space: nowrap;
+}
+
+.bouton-nouveau:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -6px rgba(30, 77, 183, 0.55);
+}
+
+/* ----------------------------------------
+   ONGLETS
+   ---------------------------------------- */
+.onglets-vues {
+  display: flex;
+  gap: 0.4rem;
+  background: white;
+  padding: 0.4rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(30, 77, 183, 0.1);
+  margin-bottom: 1.25rem;
+  width: fit-content;
+}
+
+.onglet {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #8a7654;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.onglet:hover {
+  color: #16327a;
+  background: #fdf6ec;
+}
+
+.onglet.actif {
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  box-shadow: 0 6px 16px rgba(30, 77, 183, 0.35);
+}
+
+.compteur {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.75rem;
+}
+
+.onglet.actif .compteur {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ----------------------------------------
+   RECHERCHE
+   ---------------------------------------- */
+.barre-recherche {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.input-groupe {
+  position: relative;
+  flex: 1;
+  display: flex;
   align-items: center;
 }
 
-.refresh-btn {
+.input-groupe i {
+  position: absolute;
+  left: 1.1rem;
+  color: #b08a4e;
+}
+
+.input-recherche {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 2.75rem;
   border: none;
-  border-radius: 10px;
-  padding: 8px 12px;
-  background: #16a34a;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.table {
-  display: grid;
-  gap: 8px;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 2fr 1fr 1fr;
-  gap: 10px;
-  background: #f7f9ff;
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-
-.head {
-  background: #e8efff;
-  font-weight: 700;
-}
-
-.actions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.etat {
   border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 12px;
-  font-weight: 700;
-}
-.etat-nouveau { background: #dbeafe; color: #1d4ed8; }
-.etat-en_cours { background: #fef3c7; color: #92400e; }
-.etat-opere { background: #fee2e2; color: #b91c1c; }
-.etat-termine { background: #dcfce7; color: #166534; }
+  font-size: 0.92rem;
+  background: white;
+  color: #2c3a5c;
+  box-shadow: 0 2px 10px rgba(30, 77, 183, 0.08), inset 0 0 0 1.5px rgba(30, 77, 183, 0.08);
+  transition: all 0.25s ease;
 
-// #EbaJioloLewis
+  &::placeholder {
+    color: #94a3b8;
+  }
+}
+
+.input-recherche:focus {
+  outline: none;
+  box-shadow: 0 2px 14px rgba(30, 77, 183, 0.16), inset 0 0 0 2px #1e4db7;
+}
+
+.bouton-rafraichir {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: white;
+  color: #1e4db7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(30, 77, 183, 0.08);
+  transition: all 0.2s ease;
+}
+
+.bouton-rafraichir:hover:not(:disabled) {
+  background: #eaf1ff;
+}
+
+.bouton-rafraichir i.tourne {
+  animation: tourner 1s linear infinite;
+}
+
+/* ----------------------------------------
+   ÉTAT CHARGEMENT / VIDE
+   ---------------------------------------- */
+.etat-chargement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  color: #8a7654;
+}
+
+.spinner-patients {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 4px solid #eaf1ff;
+  border-top-color: #1e4db7;
+  animation: tourner 0.9s linear infinite;
+}
+
+.etat-vide {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4rem 1.5rem;
+  text-align: center;
+  color: #8a7654;
+
+  i {
+    font-size: 3rem;
+    color: #cdd9f5;
+    margin-bottom: 0.5rem;
+  }
+
+  h3 {
+    margin: 0;
+    color: #16327a;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+/* ----------------------------------------
+   GRILLE DES CARTES PATIENT
+   ---------------------------------------- */
+.grille-patients {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.carte-patient {
+  background: white;
+  border-radius: 22px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 26px -12px rgba(22, 50, 122, 0.16);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  animation: apparition 0.35s ease;
+}
+
+.carte-patient:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 36px -16px rgba(22, 50, 122, 0.24);
+}
+
+.carte-entete {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.avatar-patient {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e4db7 0%, #163a8a 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.infos-principales {
+  flex: 1;
+  min-width: 0;
+
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #16327a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.numero-dossier {
+  font-size: 0.78rem;
+  color: #8a7654;
+  font-weight: 600;
+}
+
+.badge-statut {
+  flex-shrink: 0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.badge-statut-nouveau { background: #dbeafe; color: #1d4ed8; }
+.badge-statut-en_cours { background: #fef3c7; color: #92400e; }
+.badge-statut-opere { background: #fee2e2; color: #b91c1c; }
+.badge-statut-termine { background: #dcfce7; color: #166534; }
+
+.contacts-patient {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.puce-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #fdf6ec;
+  color: #8a7654;
+  font-size: 0.76rem;
+  font-weight: 600;
+
+  i {
+    color: #d99b3f;
+    font-size: 0.72rem;
+  }
+}
+
+.puce-vide {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.info-corbeille {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: #fff1ec;
+  color: #c2410c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.carte-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f8fafc;
+}
+
+.bouton-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 40px;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.bouton-principal {
+  flex: 1;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 8px 18px -6px rgba(30, 77, 183, 0.45);
+  }
+}
+
+.bouton-danger {
+  background: #fff1ec;
+  color: #ef4444;
+
+  &:hover:not(:disabled) {
+    background: #ef4444;
+    color: white;
+  }
+}
+
+/* ----------------------------------------
+   RESPONSIVE
+   ---------------------------------------- */
+@media (max-width: 768px) {
+  .section-patients {
+    padding: 1rem 1.1rem 2rem;
+  }
+
+  .en-tete-patients {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .en-tete-contenu {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bouton-nouveau {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .onglets-vues {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .grille-patients {
+    grid-template-columns: 1fr;
+  }
+}

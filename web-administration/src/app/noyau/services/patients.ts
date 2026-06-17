@@ -11,10 +11,11 @@ export interface Patient {
   telephone: string;
   email: string;
   numero_dossier?: string;
-  dossier_id?: number;
+  dossier_id?: string;
   qr_token?: string;
   statut_parcours?: string;
   actif: boolean;
+  supprime_le?: string | null;
   date_naissance?: string;
   sexe?: string;
   groupe_sanguin?: string;
@@ -82,10 +83,6 @@ export class Patients {
     return this.http.patch<Patient>(`${this.baseUrl}/patients/${id}/`, payload);
   }
 
-  supprimer(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/patients/${id}/`);
-  }
-
   archiver(id: number): Observable<Patient> {
     return this.http.post<Patient>(`${this.baseUrl}/patients/${id}/archiver/`, {});
   }
@@ -94,8 +91,28 @@ export class Patients {
     return this.http.post<Patient>(`${this.baseUrl}/patients/${id}/desarchiver/`, {});
   }
 
-  supprimerAmeliore(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.baseUrl}/patients/${id}/supprimer-ameliore/`);
+  /** Liste des patients mis à la corbeille (suppression douce). */
+  listerCorbeille(): Observable<Patient[]> {
+    return this.http
+      .get<Patient[] | { results: Patient[] }>(`${this.baseUrl}/patients/corbeille/`)
+      .pipe(map((response) => (Array.isArray(response) ? response : response.results ?? [])));
+  }
+
+  /** Déplace un patient vers la corbeille (réversible). */
+  mettreCorbeille(id: number): Observable<{ id: number; detail: string }> {
+    return this.http.post<{ id: number; detail: string }>(`${this.baseUrl}/patients/${id}/corbeille/`, {});
+  }
+
+  /** Restaure un patient depuis la corbeille. */
+  restaurerDeCorbeille(id: number): Observable<Patient> {
+    return this.http.post<Patient>(`${this.baseUrl}/patients/${id}/restaurer-corbeille/`, {});
+  }
+
+  /** Supprime définitivement un patient (depuis la corbeille). Action irréversible. */
+  supprimerDefinitivement(id: number): Observable<{ id: number; detail: string }> {
+    return this.http.delete<{ id: number; detail: string }>(
+      `${this.baseUrl}/patients/${id}/supprimer-definitivement/`
+    );
   }
 
   exporter(filters?: any): Observable<Blob> {

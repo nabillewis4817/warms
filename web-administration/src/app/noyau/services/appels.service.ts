@@ -103,9 +103,6 @@ export class AppelsService {
     if (params?.page) httpParams = httpParams.set('page', params.page);
     if (params?.page_size) httpParams = httpParams.set('page_size', params.page_size);
 
-    console.log('🔍 DEBUG - Appels URL appelée:', this.appelsUrl);
-    console.log('🔍 DEBUG - Appels Params:', httpParams.toString());
-
     return this.http.get<Appel[]>(this.appelsUrl, { params: httpParams }).pipe(
       tap(appels => this.appelsCache.next(appels)),
       shareReplay(1),
@@ -172,9 +169,6 @@ export class AppelsService {
     if (params?.date) httpParams = httpParams.set('date', params.date);
     if (params?.page) httpParams = httpParams.set('page', params.page);
     if (params?.page_size) httpParams = httpParams.set('page_size', params.page_size);
-
-    console.log('🔍 DEBUG - Absences URL appelée:', this.absencesUrl);
-    console.log('🔍 DEBUG - Absences Params:', httpParams.toString());
 
     return this.http.get<Absence[]>(this.absencesUrl, { params: httpParams }).pipe(
       tap(absences => this.absencesCache.next(absences)),

@@ -39,7 +39,7 @@ interface JournalApiRow {
   providedIn: 'root'
 })
 export class JournauxService {
-  private readonly apiUrl = `${environment.apiBaseUrl}/personnel/journaux`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/journaux`;
 
   constructor(private http: HttpClient) {}
 
@@ -98,7 +98,7 @@ export class JournauxService {
       });
       params = `?${queryParams.toString()}`;
     }
-    const url = params ? `${this.apiUrl}/export/${params}` : `${this.apiUrl}/export/`;
+    const url = params ? `${this.apiUrl}/exporter/${params}` : `${this.apiUrl}/exporter/`;
     return this.http.get(url, { responseType: 'blob' });
   }
 
@@ -112,7 +112,7 @@ export class JournauxService {
 
   getStatistiques(): Observable<{ total: number; par_type: Record<string, number> }> {
     return this.http.get<{ total: number; par_type: Record<string, number> }>(
-      `${environment.apiBaseUrl}/journaux/statistiques/`
+      `${this.apiUrl}/statistiques/`
     );
   }
 }

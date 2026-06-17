@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,7 +6,7 @@ import { AlerteService } from '../noyau/services/alerte.service';
 
 @Component({
   selector: 'app-personnel',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './personnel.component.html',
   styleUrl: './personnel.component.scss'
 })

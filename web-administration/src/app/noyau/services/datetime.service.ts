@@ -175,13 +175,28 @@ export class DateTimeService {
    */
   public getTimeBasedGreeting(): string {
     const currentHour = new Date().getHours();
-    
+
     if (currentHour < 12) {
-      return '☀️ Bonjour';
+      return 'Bonjour';
     } else if (currentHour < 18) {
-      return '🌤️ Bon après-midi';
+      return 'Bon après-midi';
     } else {
-      return '🌙 Bonsoir';
+      return 'Bonsoir';
+    }
+  }
+
+  /**
+   * Retourne une icône (Bootstrap Icons) correspondant au moment de la journée
+   */
+  public getTimeBasedIcon(): string {
+    const currentHour = new Date().getHours();
+
+    if (currentHour < 12) {
+      return 'bi-sunrise';
+    } else if (currentHour < 18) {
+      return 'bi-sun';
+    } else {
+      return 'bi-moon-stars';
     }
   }
 

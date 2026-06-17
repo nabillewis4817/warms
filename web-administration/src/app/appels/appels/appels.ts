@@ -122,8 +122,10 @@ export class AppelsComponent implements OnInit {
       cleanData.motif_absence = formData.motif_absence;
     }
 
-    // Envoyer rendez_vous avec la valeur du formulaire (null par défaut)
-    cleanData.rendez_vous = formData.rendez_vous;
+    // N'inclure rendez_vous que si une valeur est présente
+    if (formData.rendez_vous) {
+      cleanData.rendez_vous = Number(formData.rendez_vous);
+    }
 
     console.log('DEBUG: Données envoyées pour appel:', JSON.stringify(cleanData, null, 2));
 

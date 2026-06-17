@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from patients.models import DossierPatient
 from .models import ActeRealise, Appel, Consultation, PhotoClinique, SchemaDentaire, TauxAbsenteisme
 
 
@@ -31,6 +32,13 @@ class ConsultationSerializer(serializers.ModelSerializer):
 
     patient_nom = serializers.CharField(source="patient.nom", read_only=True)
     patient_prenom = serializers.CharField(source="patient.prenom", read_only=True)
+
+    # dossier est optionnel : perform_create le récupère automatiquement depuis le patient
+    dossier = serializers.PrimaryKeyRelatedField(
+        queryset=DossierPatient.objects.all(),
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = Consultation

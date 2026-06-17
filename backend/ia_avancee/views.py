@@ -396,7 +396,7 @@ def chat_medical(request):
         
         # Générer une réponse
         if niveau_urgence == 'eleve':
-            reponse = "⚠️ URGENCE: Veuillez contacter immédiatement les services d'urgence ou composer le 15. Ne tardez pas à consulter un professionnel de santé."
+            reponse = "URGENCE : Veuillez contacter immédiatement les services d'urgence ou composer le 15. Ne tardez pas à consulter un professionnel de santé."
             suggestions = ['Appeler le 15', 'Se rendre aux urgences', 'Ne pas prendre de médicament sans avis médical']
         else:
             # Rechercher des informations pertinentes

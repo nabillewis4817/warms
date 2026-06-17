@@ -1,63 +1,84 @@
 <section class="chat-container">
   <!-- Header de conversation -->
   <header class="chat-header">
+    <button class="btn-retour" (click)="retour()" title="Retour aux conversations">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+
+    <div class="avatar-chat" [class.en-ligne]="conversation?.en_ligne">
+      {{ obtenirInitiale() }}
+      @if (conversation?.en_ligne) {
+        <span class="pastille-en-ligne"></span>
+      }
+    </div>
+
     <div class="header-info">
       <div class="conversation-title">
-        <i class="bi bi-chat-dots-fill"></i>
-        <h2>Conversation</h2>
+        <h2>{{ obtenirNomConversation() }}</h2>
       </div>
       <div class="chat-status">
-        @if (chargement) {
-          <span class="status-indicator loading">
-            <i class="bi bi-arrow-clockwise"></i>
-            Chargement...
-          </span>
-        } @else {
+        @if (conversation?.en_ligne) {
           <span class="status-indicator online">
             <i class="bi bi-circle-fill"></i>
             En ligne
           </span>
+        } @else {
+          <span class="status-indicator offline">
+            <i class="bi bi-circle-fill"></i>
+            Hors ligne
+          </span>
         }
       </div>
     </div>
+
     <div class="header-actions">
-      <button class="btn-icon" title="Rafraîchir">
-        <i class="bi bi-arrow-clockwise"></i>
-      </button>
-      <button class="btn-icon" title="Informations">
-        <i class="bi bi-info-circle"></i>
+      @if (conversation?.type_conversation === 'patient' && conversation?.patient) {
+        <button class="btn-icon" title="Voir le dossier patient" (click)="voirDossierPatient()">
+          <i class="bi bi-journal-bookmark"></i>
+        </button>
+      }
+      <button class="btn-icon" title="Rafraîchir" (click)="charger()">
+        <i class="bi bi-arrow-clockwise" [class.tourne]="chargement"></i>
       </button>
     </div>
   </header>
 
   <!-- Conteneur des messages -->
   <div class="messages-container">
-    @if (messages.length === 0 && !chargement) {
+    @if (chargement && messages.length === 0) {
+      <div class="etat-chargement-chat">
+        <div class="spinner-chat"></div>
+        <p>Chargement de la conversation...</p>
+      </div>
+    } @else if (messages.length === 0) {
       <div class="empty-state">
         <div class="empty-icon">
           <i class="bi bi-chat-dots"></i>
         </div>
         <h3>Aucun message</h3>
-        <p>Soyez le premier à démarrer la conversation!</p>
+        <p>Soyez le premier à démarrer la conversation !</p>
         <div class="suggestions">
-          <button class="suggestion-btn">
+          <button class="suggestion-btn" (click)="envoyerSuggestion('Bonjour !')">
             <i class="bi bi-hand-wave"></i>
             Bonjour !
           </button>
-          <button class="suggestion-btn">
+          <button class="suggestion-btn" (click)="envoyerSuggestion('Comment allez-vous ?')">
             <i class="bi bi-question-circle"></i>
             Comment allez-vous ?
           </button>
         </div>
       </div>
-    }
-    
-    @if (messages.length > 0 || chargement) {
+    } @else {
       <div class="messages-list">
-        @for (message of messages; track message.id) {
-          <article class="message" 
-                   [class.own]="message.auteur_username === 'current_user'"
-                   [class.other]="message.auteur_username !== 'current_user'">
+        @for (message of messages; track message.id; let i = $index) {
+          @if (afficherSeparateurDate(i)) {
+            <div class="separateur-date">
+              <span>{{ obtenirLibelleDate(message.cree_le) }}</span>
+            </div>
+          }
+          <article class="message"
+                   [class.own]="message.auteur_username === username"
+                   [class.other]="message.auteur_username !== username">
             <div class="message-avatar">
               <div class="avatar-circle">
                 {{ (message.auteur_username || 'U').charAt(0).toUpperCase() }}
@@ -71,14 +92,15 @@
               <div class="message-bubble">
                 <p class="message-text">{{ message.contenu }}</p>
               </div>
-              <div class="message-actions">
-                <button class="btn-action" title="Répondre">
-                  <i class="bi bi-reply"></i>
-                </button>
-                <button class="btn-action" title="Copier">
-                  <i class="bi bi-clipboard"></i>
-                </button>
-              </div>
+              @if (message.auteur_username === username) {
+                <span class="accuse-reception">
+                  @if (message.est_lu) {
+                    <i class="bi bi-check2-all vu"></i> Vu
+                  } @else {
+                    <i class="bi bi-check2"></i> Envoyé
+                  }
+                </span>
+              }
             </div>
           </article>
         }
@@ -90,31 +112,22 @@
   <form class="message-form" [formGroup]="form" (ngSubmit)="envoyer()">
     <div class="form-container">
       <div class="input-wrapper">
-        <input 
-          type="text" 
-          formControlName="contenu" 
-          placeholder="Écrire un message..." 
+        <input
+          type="text"
+          formControlName="contenu"
+          placeholder="Écrire un message..."
           class="message-input"
-          [disabled]="chargement"
           autocomplete="off"
         />
-        <div class="input-actions">
-          <button type="button" class="btn-icon" title="Pièce jointe">
-            <i class="bi bi-paperclip"></i>
-          </button>
-          <button type="button" class="btn-icon" title="Émoji">
-            <i class="bi bi-emoji-smile"></i>
-          </button>
-        </div>
       </div>
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         class="send-button"
-        [disabled]="form.invalid || chargement"
-        [class.sending]="chargement"
+        [disabled]="form.invalid || envoiEnCours"
+        [class.sending]="envoiEnCours"
       >
-        @if (chargement) {
-          <i class="bi bi-arrow-clockwise loading"></i>
+        @if (envoiEnCours) {
+          <i class="bi bi-arrow-clockwise tourne"></i>
         } @else {
           <i class="bi bi-send-fill"></i>
         }

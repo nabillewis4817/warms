@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, Chart } from 'chart.js';
+import { ChartConfiguration } from 'chart.js';
 import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -9,6 +9,7 @@ import { catchError } from 'rxjs/operators';
 import { StatistiquesService, VueGeneraleStats } from '../../noyau/services/statistiques';
 import { Authentification } from '../../noyau/services/authentification';
 import { DashboardService, DashboardStats } from '../../noyau/services/dashboard';
+import { DateTimeService } from '../../noyau/services/datetime.service';
 import { UserProfileComponent } from '../user-profile/user-profile.component';
 
 @Component({
@@ -21,8 +22,9 @@ export class TableauDeBord implements OnInit, OnDestroy {
   private readonly statsService = inject(StatistiquesService);
   readonly dashboardService = inject(DashboardService);
   private readonly router = inject(Router);
-  private readonly auth = inject(Authentification);
+  readonly auth = inject(Authentification);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly dateTimeService = inject(DateTimeService);
 
   stats: VueGeneraleStats | null = null;
   dashboardStats: DashboardStats | null = null;
@@ -33,6 +35,10 @@ export class TableauDeBord implements OnInit, OnDestroy {
 
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
   private readonly REFRESH_INTERVAL_MS = 30000;
+
+  get salutation(): string {
+    return this.dateTimeService.getTimeBasedGreeting();
+  }
 
   get tendanceFormatted(): string {
     return (this.dashboardStats?.consultations?.tendance ?? 0).toFixed(1);
@@ -83,8 +89,8 @@ export class TableauDeBord implements OnInit, OnDestroy {
     datasets: [{ data: [], label: 'Pathologies', backgroundColor: '#1A2E6B' }],
   };
 
-  consultationsChart: Chart | null = null;
-  pathologiesChart: Chart | null = null;
+  @ViewChild('consultationsChartDirective') consultationsChartDirective?: BaseChartDirective;
+  @ViewChild('pathologiesChartDirective') pathologiesChartDirective?: BaseChartDirective;
 
   ngOnInit(): void {
     this.charger();
@@ -96,8 +102,6 @@ export class TableauDeBord implements OnInit, OnDestroy {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
     }
-    this.consultationsChart?.destroy();
-    this.pathologiesChart?.destroy();
   }
 
   private chargerSilencieux(): void {
@@ -156,10 +160,6 @@ export class TableauDeBord implements OnInit, OnDestroy {
 
       this.chargement = false;
       this.cdr.detectChanges();
-
-      if (vueGenerale?.series) {
-        this.initialiserGraphiques();
-      }
     });
   }
 
@@ -229,14 +229,16 @@ export class TableauDeBord implements OnInit, OnDestroy {
   }
 
   exporterGraphique(chartType: 'consultations' | 'pathologies'): void {
-    const chart = chartType === 'consultations' ? this.consultationsChart : this.pathologiesChart;
-    if (!chart) {
+    const directive =
+      chartType === 'consultations' ? this.consultationsChartDirective : this.pathologiesChartDirective;
+    const image = directive?.toBase64Image();
+    if (!image) {
       alert("Graphique non disponible pour l'exportation");
       return;
     }
     const link = document.createElement('a');
     link.download = `graphique-${chartType}-${new Date().toISOString().split('T')[0]}.png`;
-    link.href = chart.toBase64Image();
+    link.href = image;
     link.click();
   }
 
@@ -259,29 +261,7 @@ export class TableauDeBord implements OnInit, OnDestroy {
     this.router.navigate(['/patients']);
   }
 
-  private initialiserGraphiques(): void {
-    setTimeout(() => {
-      this.consultationsChart?.destroy();
-      this.pathologiesChart?.destroy();
-
-      const consultationsCanvas = document.getElementById('consultations-chart') as HTMLCanvasElement;
-      const pathologiesCanvas = document.getElementById('pathologies-chart') as HTMLCanvasElement;
-
-      if (consultationsCanvas && this.consultationsChartData.labels?.length) {
-        this.consultationsChart = new Chart(consultationsCanvas, {
-          type: 'line',
-          data: this.consultationsChartData,
-          options: this.chartOptions,
-        });
-      }
-
-      if (pathologiesCanvas && this.pathologiesChartData.labels?.length) {
-        this.pathologiesChart = new Chart(pathologiesCanvas, {
-          type: 'bar',
-          data: this.pathologiesChartData,
-          options: this.chartOptions,
-        });
-      }
-    }, 100);
+  voirCarnets(): void {
+    this.router.navigate(['/carnets']);
   }
 }

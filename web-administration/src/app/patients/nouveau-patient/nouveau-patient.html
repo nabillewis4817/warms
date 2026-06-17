@@ -1,180 +1,221 @@
 <section class="patient-creation">
-  <div class="header-section">
-    <div class="header-content">
-      <img src="../../assets/patient.png" alt="Patient" class="header-icon" />
-      <div class="header-text">
-        <h2>Création d'un nouveau patient</h2>
-        <p class="subtitle">Remplissez les informations ci-dessous pour créer le dossier patient</p>
-      </div>
-    </div>
-  </div>
+  <!-- ========== EN-TÊTE ========== -->
+  <header class="entete-creation">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
 
-  <form [formGroup]="form" (ngSubmit)="creer()" class="patient-form">
-    <!-- Informations principales -->
-    <div class="form-section">
-      <div class="section-header">
-        <img src="../../assets/folder.png" alt="Dossier" class="section-icon" />
-        <h3>Informations principales</h3>
+    <div class="entete-contenu">
+      <div class="entete-titre">
+        <span class="badge-clinique"><i class="bi bi-person-plus-fill"></i> Cabinet WARMS</span>
+        <h1>Nouveau patient</h1>
+        <p class="sous-titre">Créez un dossier complet en quelques étapes simples</p>
       </div>
-      <div class="form-grid">
-        <label class="form-field">
-          <span>Prénom *</span>
-          <input type="text" formControlName="prenom" placeholder="Lewis" required />
-        </label>
-        <label class="form-field">
-          <span>Nom *</span>
-          <input type="text" formControlName="nom" placeholder="Shelby" required />
-        </label>
-        <label class="form-field">
-          <span>Date de naissance</span>
-          <input type="date" formControlName="date_naissance" />
-        </label>
-        <label class="form-field">
-          <span>Âge</span>
-          <input type="number" formControlName="age" placeholder="Ex: 35" min="0" max="150" />
-        </label>
-      </div>
-    </div>
-
-    <!-- Contact -->
-    <div class="form-section">
-      <div class="section-header">
-        <img src="../../assets/contact.png" alt="Contact" class="section-icon" />
-        <h3>Contact</h3>
-      </div>
-      <div class="form-grid">
-        <label class="form-field">
-          <span>Téléphone</span>
-          <input type="text" formControlName="telephone" placeholder="+2376XXXXXXXX ou 6XXXXXXXX" />
-        </label>
-        <label class="form-field">
-          <span>Email</span>
-          <input type="email" formControlName="email" placeholder="exemple@email.com" />
-        </label>
-        <label class="form-field full-width">
-          <span>Adresse</span>
-          <input type="text" formControlName="adresse" placeholder="Ex: Rue de la Santé 123, 75001 Paris" />
-        </label>
-      </div>
-    </div>
-
-    <!-- Informations médicales -->
-    <div class="form-section">
-      <div class="section-header">
-        <img src="../../assets/medical.png" alt="Médical" class="section-icon" />
-        <h3>Informations médicales</h3>
-      </div>
-      <div class="form-grid">
-        <label class="form-field">
-          <span>Sexe</span>
-          <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" formControlName="sexe" [value]="'M'" />
-              <span class="radio-label"><i class="bi bi-person"></i> Homme</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" formControlName="sexe" [value]="'F'" />
-              <span class="radio-label"><i class="bi bi-person-fill"></i> Femme</span>
-            </label>
-          </div>
-        </label>
-        <label class="form-field">
-          <span>Groupe sanguin</span>
-          <div class="radio-group">
-            <label class="radio-option" *ngFor="let groupe of groupesSanguins">
-              <input type="radio" formControlName="groupe_sanguin" [value]="groupe.value" />
-              <span class="radio-label">{{ groupe.label }}</span>
-            </label>
-          </div>
-        </label>
-        <label class="form-field">
-          <span>Taille (cm)</span>
-          <input type="number" formControlName="taille_cm" placeholder="Ex: 175" min="50" max="250" step="0.1" />
-        </label>
-        <label class="form-field">
-          <span>Poids (kg)</span>
-          <input type="number" formControlName="poids_kg" placeholder="Ex: 70" min="10" max="300" step="0.1" />
-        </label>
-      </div>
-    </div>
-
-    <!-- Dernière consultation -->
-    <div class="form-section">
-      <div class="section-header">
-        <i class="bi bi-calendar-date section-icon"></i>
-        <h3>Dernière consultation</h3>
-      </div>
-      <div class="form-grid">
-        <label class="form-field">
-          <span>Date</span>
-          <input type="date" formControlName="derniere_consultation_date" />
-        </label>
-        <label class="form-field">
-          <span>Lieu</span>
-          <input type="text" formControlName="derniere_consultation_lieu" placeholder="Ex: Cabinet dentaire du Centre" />
-        </label>
-        <label class="form-field full-width">
-          <span>Détails</span>
-          <textarea formControlName="derniere_consultation_details" placeholder="Décrivez les détails de la dernière consultation..." rows="3"></textarea>
-        </label>
-      </div>
-    </div>
-
-    <!-- Informations médicales détaillées -->
-    <div class="form-section">
-      <div class="section-header">
-        <i class="bi bi-clipboard-data section-icon"></i>
-        <h3>Historique médical</h3>
-      </div>
-      <div class="form-grid">
-        <label class="form-field full-width">
-          <span>Symptômes actuels</span>
-          <textarea formControlName="symptomes" placeholder="Décrivez les symptômes actuels du patient..." rows="3"></textarea>
-        </label>
-        <label class="form-field full-width">
-          <span>Consultations précédentes</span>
-          <textarea formControlName="consultations_precedentes" placeholder="Historique des consultations précédentes..." rows="3"></textarea>
-        </label>
-        <label class="form-field full-width">
-          <span>Allergies</span>
-          <textarea formControlName="allergies" placeholder="Allergies connues du patient..." rows="2"></textarea>
-        </label>
-      </div>
-    </div>
-
-    <!-- Compte patient -->
-    <div class="form-section">
-      <div class="section-header">
-        <i class="bi bi-shield-lock section-icon"></i>
-        <h3>Compte patient</h3>
-      </div>
-      <div class="form-grid">
-        <label class="form-field">
-          <span>Username patient *</span>
-          <input type="text" formControlName="username_patient" placeholder="Ex: Lewis Eba" required />
-        </label>
-        <label class="form-field">
-          <span>Password patient *</span>
-          <div class="password-input-wrapper">
-            <input [type]="showPassword ? 'text' : 'password'" formControlName="password_patient" placeholder="Mot de passe" required />
-            <button type="button" class="password-toggle" (click)="togglePassword()" [title]="showPassword ? 'Masquer' : 'Afficher'">
-              <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-            </button>
-          </div>
-        </label>
-      </div>
-    </div>
-
-    <!-- Boutons d'action -->
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary" [disabled]="enCreation || form.invalid">
-        <i class="bi bi-person-plus"></i>
-        {{ enCreation ? 'Création en cours...' : 'Créer le patient' }}
+      <button class="bouton-retour" (click)="allerListe()">
+        <i class="bi bi-arrow-left"></i> Retour à la liste
       </button>
-      <button type="button" class="btn btn-secondary" (click)="resetForm()">
-        <i class="bi bi-arrow-clockwise"></i>
-        Réinitialiser
+    </div>
+  </header>
+
+  <!-- ========== STEPPER ========== -->
+  <nav class="stepper">
+    @for (etape of etapes; track etape.cle; let i = $index; let dernier = $last) {
+      <button
+        type="button"
+        class="etape-stepper"
+        [class.actif]="i === etapeActive"
+        [class.complete]="i < etapeActive"
+        (click)="allerEtape(i)">
+        <span class="cercle-etape">
+          @if (i < etapeActive) {
+            <i class="bi bi-check-lg"></i>
+          } @else {
+            <i class="bi" [class]="etape.icone"></i>
+          }
+        </span>
+        <span class="label-etape">{{ etape.label }}</span>
       </button>
+      @if (!dernier) {
+        <span class="trait-etape" [class.complete]="i < etapeActive"></span>
+      }
+    }
+  </nav>
+
+  <!-- ========== FORMULAIRE ========== -->
+  <form [formGroup]="form" (ngSubmit)="creer()" class="carte-formulaire">
+    <!-- ÉTAPE 1 : IDENTITÉ -->
+    @if (etapeCourante.cle === 'identite') {
+      <div class="contenu-etape">
+        <div class="etape-entete">
+          <h2><i class="bi bi-person-vcard"></i> Identité</h2>
+          <p>Les informations de base du patient</p>
+        </div>
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Prénom *</span>
+            <input type="text" formControlName="prenom" placeholder="Lewis">
+            @if (champTouche('prenom')) {
+              <small class="erreur-champ">Le prénom est requis</small>
+            }
+          </label>
+          <label class="form-field">
+            <span>Nom *</span>
+            <input type="text" formControlName="nom" placeholder="Shelby">
+            @if (champTouche('nom')) {
+              <small class="erreur-champ">Le nom est requis</small>
+            }
+          </label>
+          <label class="form-field">
+            <span>Date de naissance</span>
+            <input type="date" formControlName="date_naissance">
+          </label>
+          <label class="form-field">
+            <span>Âge</span>
+            <input type="number" formControlName="age" placeholder="Ex: 35" min="0" max="150">
+          </label>
+          <label class="form-field">
+            <span>Sexe</span>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" formControlName="sexe" [value]="'M'">
+                <span class="radio-label"><i class="bi bi-person"></i> Homme</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" formControlName="sexe" [value]="'F'">
+                <span class="radio-label"><i class="bi bi-person-fill"></i> Femme</span>
+              </label>
+            </div>
+          </label>
+        </div>
+      </div>
+    }
+
+    <!-- ÉTAPE 2 : CONTACT -->
+    @if (etapeCourante.cle === 'contact') {
+      <div class="contenu-etape">
+        <div class="etape-entete">
+          <h2><i class="bi bi-telephone"></i> Contact</h2>
+          <p>Comment joindre le patient</p>
+        </div>
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Téléphone</span>
+            <input type="text" formControlName="telephone" placeholder="+237 6XX XXX XXX">
+            @if (champTouche('telephone')) {
+              <small class="erreur-champ">Numéro de téléphone invalide (8 à 15 chiffres)</small>
+            }
+          </label>
+          <label class="form-field">
+            <span>Email</span>
+            <input type="email" formControlName="email" placeholder="exemple@email.com">
+            @if (champTouche('email')) {
+              <small class="erreur-champ">Adresse email invalide</small>
+            }
+          </label>
+          <label class="form-field pleine-largeur">
+            <span>Adresse</span>
+            <input type="text" formControlName="adresse" placeholder="Ex: Rue de la Santé 123, Yaoundé">
+          </label>
+        </div>
+      </div>
+    }
+
+    <!-- ÉTAPE 3 : MÉDICAL -->
+    @if (etapeCourante.cle === 'medical') {
+      <div class="contenu-etape">
+        <div class="etape-entete">
+          <h2><i class="bi bi-heart-pulse"></i> Informations médicales</h2>
+          <p>Données cliniques utiles au suivi (facultatif)</p>
+        </div>
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Groupe sanguin</span>
+            <div class="radio-group radio-group-wrap">
+              @for (groupe of groupesSanguins; track groupe.value) {
+                <label class="radio-option">
+                  <input type="radio" formControlName="groupe_sanguin" [value]="groupe.value">
+                  <span class="radio-label">{{ groupe.label }}</span>
+                </label>
+              }
+            </div>
+          </label>
+          <label class="form-field">
+            <span>Taille (cm)</span>
+            <input type="number" formControlName="taille_cm" placeholder="Ex: 175" min="50" max="250" step="0.1">
+          </label>
+          <label class="form-field">
+            <span>Poids (kg)</span>
+            <input type="number" formControlName="poids_kg" placeholder="Ex: 70" min="10" max="300" step="0.1">
+          </label>
+          <label class="form-field pleine-largeur">
+            <span><i class="bi bi-exclamation-triangle-fill"></i> Allergies</span>
+            <textarea formControlName="allergies" placeholder="Allergies connues du patient (pénicilline, latex...)" rows="2"></textarea>
+          </label>
+          <label class="form-field pleine-largeur">
+            <span>Symptômes actuels</span>
+            <textarea formControlName="symptomes" placeholder="Décrivez les symptômes actuels du patient..." rows="2"></textarea>
+          </label>
+          <label class="form-field pleine-largeur">
+            <span>Antécédents / consultations précédentes</span>
+            <textarea formControlName="consultations_precedentes" placeholder="Historique médical pertinent..." rows="2"></textarea>
+          </label>
+        </div>
+      </div>
+    }
+
+    <!-- ÉTAPE 4 : COMPTE -->
+    @if (etapeCourante.cle === 'compte') {
+      <div class="contenu-etape">
+        <div class="etape-entete">
+          <h2><i class="bi bi-shield-lock"></i> Compte d'accès patient</h2>
+          <p>Permet au patient de se connecter à l'application pour suivre son dossier</p>
+        </div>
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Nom d'utilisateur *</span>
+            <input type="text" formControlName="username_patient" placeholder="Ex: lewis.shelby">
+            @if (champTouche('username_patient')) {
+              <small class="erreur-champ">Le nom d'utilisateur est requis</small>
+            }
+          </label>
+          <label class="form-field">
+            <span>Mot de passe *</span>
+            <div class="password-input-wrapper">
+              <input [type]="showPassword ? 'text' : 'password'" formControlName="password_patient" placeholder="Min. 6 caractères">
+              <button type="button" class="password-toggle" (click)="togglePassword()" [title]="showPassword ? 'Masquer' : 'Afficher'">
+                <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+              </button>
+            </div>
+            @if (champTouche('password_patient')) {
+              <small class="erreur-champ">Le mot de passe doit contenir au moins 6 caractères</small>
+            }
+          </label>
+        </div>
+      </div>
+    }
+
+    <!-- Navigation -->
+    <div class="navigation-etapes">
+      <button type="button" class="bouton-secondaire" (click)="etapePrecedente()" [disabled]="etapeActive === 0">
+        <i class="bi bi-chevron-left"></i> Précédent
+      </button>
+
+      <button type="button" class="bouton-reinitialiser" (click)="resetForm()">
+        <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+      </button>
+
+      @if (!estDernierEtape) {
+        <button type="button" class="bouton-primaire" (click)="etapeSuivante()">
+          Suivant <i class="bi bi-chevron-right"></i>
+        </button>
+      } @else {
+        <button type="submit" class="bouton-primaire" [disabled]="enCreation">
+          @if (enCreation) {
+            <i class="bi bi-arrow-clockwise tourne"></i> Création en cours...
+          } @else {
+            <i class="bi bi-person-plus"></i> Créer le patient
+          }
+        </button>
+      }
     </div>
   </form>
 
@@ -199,7 +240,7 @@
             <i class="bi bi-x"></i>
           </button>
         </div>
-        
+
         <div class="modal-content">
           <!-- QR Code Section -->
           @if (qrImageData) {
@@ -284,9 +325,11 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-primary btn-ok" (click)="goToListeCarnets()">
-            <i class="bi bi-check-circle"></i>
-            OK
+          <button class="btn-secondaire-modal" (click)="creerAutrePatient()">
+            <i class="bi bi-person-plus"></i> Créer un autre patient
+          </button>
+          <button class="btn-primaire-modal" (click)="goToListeCarnets()">
+            <i class="bi bi-check-circle"></i> OK
           </button>
         </div>
       </div>

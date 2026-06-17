@@ -8,7 +8,8 @@ from .models import AvisPatient, DossierPatient, PageCarnet, Patient, PieceJoint
 class PatientSerializer(serializers.ModelSerializer):
     numero_dossier = serializers.CharField(source="dossier.numero_dossier", read_only=True)
     qr_token = serializers.CharField(source="dossier.qr.token", read_only=True)
-    dossier_id = serializers.IntegerField(source="dossier.id", read_only=True)
+    dossier_id = serializers.CharField(source="dossier.id", read_only=True)
+    allergies = serializers.CharField(source="dossier.allergies", read_only=True, default="")
 
     class Meta:
         model = Patient
@@ -35,14 +36,19 @@ class PatientSerializer(serializers.ModelSerializer):
             "numero_dossier",
             "dossier_id",
             "qr_token",
+            "allergies",
             "actif",
+            "supprime_le",
             "cree_le",
             "modifie_le",
         ]
+        read_only_fields = ["supprime_le"]
 
     def validate_telephone(self, value):
-        if value and not re.match(r"^\+237\d{9}$", value):
-            raise serializers.ValidationError("Le téléphone doit respecter le format +237 suivi de 9 chiffres.")
+        if value:
+            cleaned = re.sub(r"[\s\-\(\)]", "", value)
+            if not re.match(r"^\+?[0-9]{8,15}$", cleaned):
+                raise serializers.ValidationError("Le numéro de téléphone doit contenir entre 8 et 15 chiffres.")
         return value
 
 

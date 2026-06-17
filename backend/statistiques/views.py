@@ -28,6 +28,18 @@ def vue_generale(request):
 
     taux_absenteisme = round((absents_30j / rdv_30j) * 100, 2) if rdv_30j else 0.0
 
+    start_60 = now - timedelta(days=60)
+    rdv_prev_periode = RendezVous.objects.filter(debut__gte=start_60, debut__lt=start_30).count()
+    absents_prev_periode = RendezVous.objects.filter(
+        debut__gte=start_60, debut__lt=start_30, statut=RendezVous.Statut.ABSENT
+    ).count()
+    taux_absenteisme_prev = (
+        round((absents_prev_periode / rdv_prev_periode) * 100, 2) if rdv_prev_periode else 0.0
+    )
+    taux_absenteisme_tendance = (
+        round(taux_absenteisme - taux_absenteisme_prev, 1) if rdv_prev_periode else 0.0
+    )
+
     consultations_par_jour = (
         Consultation.objects.filter(date__gte=start_30)
         .annotate(jour=TruncDate("date"))
@@ -36,12 +48,21 @@ def vue_generale(request):
         .order_by("jour")
     )
 
-    consultations_par_praticien = (
-        Consultation.objects.filter(date__gte=start_30)
+    consultations_par_praticien = [
+        {
+            "praticien_id": row["praticien_id"],
+            "praticien_nom": (
+                f"{row['praticien__first_name']} {row['praticien__last_name']}".strip()
+                if row["praticien_id"]
+                else "Non assigné"
+            ),
+            "total": row["total"],
+        }
+        for row in Consultation.objects.filter(date__gte=start_30)
         .values("praticien_id", "praticien__first_name", "praticien__last_name")
         .annotate(total=Count("id"))
         .order_by("-total")
-    )
+    ]
 
     pathologies_tendance = (
         Consultation.objects.filter(date__gte=start_30)
@@ -60,7 +81,6 @@ def vue_generale(request):
 
     patients_total = Patient.objects.filter(actif=True).count()
     patients_30j = Patient.objects.filter(cree_le__gte=start_30, actif=True).count()
-    start_60 = now - timedelta(days=60)
     patients_prev = Patient.objects.filter(cree_le__gte=start_60, cree_le__lt=start_30, actif=True).count()
     patients_tendance = round(((patients_30j - patients_prev) / patients_prev) * 100, 1) if patients_prev else 0.0
 
@@ -79,9 +99,13 @@ def vue_generale(request):
     consultations_prev = Consultation.objects.filter(date__gte=start_60, date__lt=start_30).count()
     consultations_tendance = round(((consultations_30j - consultations_prev) / consultations_prev) * 100, 1) if consultations_prev else 0.0
 
+    actes_30j = ActeRealise.objects.filter(consultation__date__gte=start_30).count()
+    actes_prev = ActeRealise.objects.filter(consultation__date__gte=start_60, consultation__date__lt=start_30).count()
+    actes_tendance = round(((actes_30j - actes_prev) / actes_prev) * 100, 1) if actes_prev else 0.0
+
     # Chiffre d'affaires estimé : 45 € par acte sur la période (ajustable)
-    ca_mois = (ActeRealise.objects.filter(consultation__date__gte=start_30).count() * 45)
-    ca_prev = (ActeRealise.objects.filter(consultation__date__gte=start_60, consultation__date__lt=start_30).count() * 45)
+    ca_mois = actes_30j * 45
+    ca_prev = actes_prev * 45
     ca_tendance = round(((ca_mois - ca_prev) / ca_prev) * 100, 1) if ca_prev else 0.0
 
     rdv_par_mois = (
@@ -120,7 +144,8 @@ def vue_generale(request):
         {"nom": "Consultations (30j)", "valeur": consultations_30j, "periode": "30 jours", "tendance": consultations_tendance},
         {"nom": "Rendez-vous (30j)", "valeur": rdv_30j, "periode": "30 jours", "tendance": rendez_vous_tendance},
         {"nom": "Patients actifs", "valeur": patients_total, "periode": "Total", "tendance": patients_tendance},
-        {"nom": "Taux d'absentéisme", "valeur": f"{taux_absenteisme}%", "periode": "30 jours", "tendance": 0},
+        {"nom": "Taux d'absentéisme", "valeur": f"{taux_absenteisme}%", "periode": "30 jours", "tendance": taux_absenteisme_tendance},
+        {"nom": "Actes réalisés (30j)", "valeur": actes_30j, "periode": "30 jours", "tendance": actes_tendance},
         {"nom": "Ordonnances (30j)", "valeur": ordonnances_30j, "periode": "30 jours", "tendance": ordonnances_tendance},
     ]
 
@@ -136,8 +161,14 @@ def vue_generale(request):
             },
             "patients_total": patients_total,
             "patients_tendance": patients_tendance,
+            "consultations_30j": consultations_30j,
+            "consultations_tendance": consultations_tendance,
             "rendez_vous_30j": rdv_30j,
             "rendez_vous_tendance": rendez_vous_tendance,
+            "taux_absenteisme_30j": taux_absenteisme,
+            "taux_absenteisme_tendance": taux_absenteisme_tendance,
+            "actes_30j": actes_30j,
+            "actes_tendance": actes_tendance,
             "ordonnances_30j": ordonnances_30j,
             "ordonnances_tendance": ordonnances_tendance,
             "chiffre_affaires_mois": ca_mois,
@@ -148,7 +179,7 @@ def vue_generale(request):
             "metriques_detaillees": metriques_detaillees,
             "series": {
                 "consultations_par_jour": list(consultations_par_jour),
-                "consultations_par_praticien": list(consultations_par_praticien),
+                "consultations_par_praticien": consultations_par_praticien,
                 "pathologies_tendance": list(pathologies_tendance),
                 "actes_frequents": list(actes_frequents),
             },

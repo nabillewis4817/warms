@@ -3,12 +3,25 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface ParticipantInfo {
+  id: number;
+  nom: string;
+  role: string;
+  en_ligne: boolean;
+}
+
 export interface Conversation {
   id: number;
   titre: string;
   type_conversation: string;
   patient: number | null;
+  patient_nom?: string | null;
   participants: number[];
+  participants_info?: ParticipantInfo[];
+  en_ligne?: boolean;
+  dernier_message?: string | null;
+  dernier_message_le?: string | null;
+  non_lus?: number;
   cree_par: number;
   cree_le: string;
   modifie_le: string;
@@ -20,6 +33,7 @@ export interface MessageConversation {
   auteur_username: string;
   contenu: string;
   cree_le: string;
+  est_lu?: boolean;
 }
 
 export interface BadgesNotifications {
@@ -40,17 +54,27 @@ export class Messagerie {
     return this.http.get<Conversation[]>(`${this.baseUrl}/conversations/`);
   }
 
+  detailConversation(id: number): Observable<Conversation> {
+    return this.http.get<Conversation>(`${this.baseUrl}/conversations/${id}/`);
+  }
+
   listerMessages(conversationId: number): Observable<MessageConversation[]> {
     return this.http.get<MessageConversation[]>(
       `${this.baseUrl}/conversations/${conversationId}/messages/`
     );
   }
 
-  creerConversation(titre: string, typeConversation: 'interne' | 'patient' = 'interne', patientId?: number): Observable<Conversation> {
+  creerConversation(
+    titre: string,
+    typeConversation: 'interne' | 'patient' = 'interne',
+    patientId?: number,
+    participantsIds?: number[]
+  ): Observable<Conversation> {
     return this.http.post<Conversation>(`${this.baseUrl}/conversations/`, {
       titre,
       type_conversation: typeConversation,
       ...(patientId ? { patient: patientId } : {}),
+      ...(participantsIds?.length ? { participants_ids: participantsIds } : {}),
     });
   }
 
@@ -58,6 +82,13 @@ export class Messagerie {
     return this.http.post<MessageConversation>(
       `${this.baseUrl}/conversations/${conversationId}/envoyer_message/`,
       { contenu }
+    );
+  }
+
+  marquerLus(conversationId: number): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(
+      `${this.baseUrl}/conversations/${conversationId}/marquer_lus/`,
+      {}
     );
   }
 

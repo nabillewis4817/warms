@@ -5,17 +5,17 @@
 // Auto-rafraîchissement toutes les 30 secondes
 // Gestion des erreurs de chargement d'images
 
-import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { interval, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import QRCode from 'qrcode';
 
 import { Patient, Patients } from '../../noyau/services/patients';
 
 @Component({
   selector: 'app-carnets',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './carnets.html',
   styleUrl: './carnets.scss',
 })
@@ -31,48 +31,38 @@ export class Carnets implements OnInit, OnDestroy {
   // ========================================
   /** Liste des patients avec carnets */
   patients: Patient[] = [];
-  
+
   /** Liste filtrée des patients pour la recherche */
   patientsFiltres: Patient[] = [];
-  
+
   /** Indicateur de chargement pour l'interface */
   enChargement: boolean = false;
-  
+
   /** Abonnement pour l'auto-rafraîchissement */
   private abonnementRafraichissement: Subscription | null = null;
-  
-  /** Chemin vers l'image du dossier */
-  private readonly cheminImageDossier: string = 'assets/folder.png';
-  
+
+  /** QR codes générés localement, indexés par identifiant patient */
+  qrDataUrls: Record<number, string> = {};
+
   /** Terme de recherche */
   termeRecherche: string = '';
-  
+
   /** Critère de tri actuel */
   critereTri: string = 'nom';
-  
+
   /** Ordre de tri (ascendant/descendant) */
   ordreTri: 'asc' | 'desc' = 'asc';
 
   // ========================================
   // MÉTHODES DU CYCLE DE VIE
   // ========================================
-  
-  /**
-   * Initialisation du composant
-   * Démarre le chargement initial et l'auto-rafraîchissement
-   */
+
   ngOnInit(): void {
-    console.log('🚀 Initialisation du composant Carnets Patients');
     this.chargerLesCarnets();
     this.demarrerAutoRafraichissement();
   }
 
-  /**
-   * Nettoyage lors de la destruction du composant
-   * Annule l'abonnement d'auto-rafraîchissement
-   */
   ngOnDestroy(): void {
-    console.log('🧹 Nettoyage du composant Carnets Patients');
     this.arreterAutoRafraichissement();
   }
 
@@ -85,7 +75,6 @@ export class Carnets implements OnInit, OnDestroy {
    * Filtre uniquement les patients ayant un numéro de dossier
    */
   chargerLesCarnets(): void {
-    console.log('📂 Chargement des carnets patients...');
     this.enChargement = true;
 
     this.servicePatients.lister().subscribe({
@@ -93,23 +82,34 @@ export class Carnets implements OnInit, OnDestroy {
         // Filtrer uniquement les patients avec un numéro de dossier
         this.patients = patientsRecus.filter((patient) => !!patient.numero_dossier);
         this.appliquerFiltreEtTri();
+        this.genererQrCodes(this.patients);
         this.enChargement = false;
-        console.log(`✅ ${this.patients.length} carnets patients chargés`);
       },
       error: (erreur) => {
-        console.error('❌ Erreur lors du chargement des carnets:', erreur);
+        console.error('Erreur lors du chargement des carnets:', erreur);
         this.enChargement = false;
       }
     });
   }
 
   /**
-   * Ouvre les détails du patient (dossier)
-   * @param patient Le patient dont on veut voir le dossier
+   * Génère localement (sans appel externe) le QR code de chaque patient
+   */
+  private genererQrCodes(patients: Patient[]): void {
+    patients.forEach((patient) => {
+      if (!patient.qr_token || this.qrDataUrls[patient.id]) return;
+      QRCode.toDataURL(patient.qr_token, { width: 180, margin: 1 })
+        .then((dataUrl) => (this.qrDataUrls[patient.id] = dataUrl))
+        .catch(() => undefined);
+    });
+  }
+
+  /**
+   * Ouvre le carnet détaillé du patient (pages dynamiques + CRUD)
+   * @param patient Le patient dont on veut voir le carnet
    */
   ouvrirDossierPatient(patient: Patient): void {
-    console.log(`📁 Ouverture du dossier du patient: ${patient.prenom} ${patient.nom}`);
-    this.router.navigate(['/patients', patient.id, 'parametres-carnet']);
+    this.router.navigate(['/patients', patient.id, 'dossier']);
   }
 
   /**
@@ -200,36 +200,11 @@ export class Carnets implements OnInit, OnDestroy {
   obtenirInitialePatient(patient: Patient): string {
     const initialeNom = patient.nom?.[0];
     const initialePrenom = patient.prenom?.[0];
-    
+
     // Priorité au nom, sinon prénom, sinon '?' par défaut
     const initiale = initialeNom || initialePrenom || '?';
-    
+
     return initiale.toUpperCase();
-  }
-
-  /**
-   * Fonction de tracking pour optimiser le rendu de la boucle ngFor
-   * @param index Index de l'élément
-   * @param patient Objet patient
-   * @returns L'identifiant unique du patient
-   */
-  suivreParIdPatient(index: number, patient: Patient): number {
-    return patient.id;
-  }
-
-  /**
-   * Gère les erreurs de chargement de l'image du dossier
-   * @param evenement Événement d'erreur de l'image
-   */
-  gererErreurImage(evenement: Event): void {
-    const image = evenement.target as HTMLImageElement;
-    console.error('❌ Erreur de chargement de l\'image folder.png:', this.cheminImageDossier);
-    
-    // Masquer l'image en erreur et afficher un message
-    image.style.display = 'none';
-    
-    // Optionnel: utiliser une image de secours avec une icône SVG
-    image.parentElement?.classList.add('image-erreur');
   }
 
   // ========================================
@@ -240,9 +215,7 @@ export class Carnets implements OnInit, OnDestroy {
    * Démarre l'auto-rafraîchissement toutes les 30 secondes
    */
   private demarrerAutoRafraichissement(): void {
-    console.log('Démarrage de l\'auto-rafraîchissement (30 secondes)');
     this.abonnementRafraichissement = interval(30000).subscribe(() => {
-      console.log('Auto-rafraîchissement des carnets...');
       this.chargerLesCarnets();
     });
   }
@@ -254,17 +227,7 @@ export class Carnets implements OnInit, OnDestroy {
     if (this.abonnementRafraichissement) {
       this.abonnementRafraichissement.unsubscribe();
       this.abonnementRafraichissement = null;
-      console.log('Auto-rafraîchissement arrêté');
     }
-  }
-
-  // ========================================
-  // GETTERS POUR LE TEMPLATE
-  // ========================================
-  
-  /** Retourne le chemin de l'image du dossier pour le template */
-  get cheminImageDossierPourTemplate(): string {
-    return this.cheminImageDossier;
   }
 }
 

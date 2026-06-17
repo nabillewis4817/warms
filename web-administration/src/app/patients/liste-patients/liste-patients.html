@@ -1,49 +1,175 @@
-<section>
-  <div class="head-title">
-    <h2>Liste des patients</h2>
-    <button class="refresh-btn" (click)="charger()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-  </div>
-  @if (chargement) {
-    <p>Chargement...</p>
-  } @else {
-    <div class="table">
-      <div class="head row">
-        <span>Nom complet</span>
-        <span>Téléphone</span>
-        <span>Email</span>
-        <span>Statut</span>
-        <span>Actions</span>
+<section class="section-patients">
+  <!-- ========== EN-TÊTE ========== -->
+  <header class="en-tete-patients">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="en-tete-contenu">
+      <div class="en-tete-titre">
+        <span class="badge-clinique"><i class="bi bi-people-fill"></i> Cabinet WARMS</span>
+        <h1>Patients</h1>
+        <p class="sous-titre">{{ compteurs.actifs }} actif{{ compteurs.actifs === 1 ? '' : 's' }} · {{ compteurs.archives }} archivé{{ compteurs.archives === 1 ? '' : 's' }} · {{ compteurs.corbeille }} en corbeille</p>
       </div>
-      @for (patient of patients; track patient.id) {
-        <div class="row">
-          <span>{{ patient.prenom }} {{ patient.nom }}</span>
-          <span>{{ patient.telephone || '-' }}</span>
-          <span>{{ patient.email || '-' }}</span>
-          <span>
-            <span class="etat etat-{{ patient.statut_parcours || 'nouveau' }}">{{ patient.statut_parcours || 'nouveau' }}</span>
-          </span>
-          <span class="actions">
-            <button 
-              (click)="archiver(patient)" 
-              [disabled]="actionEnCours[patient.id] === 'archivage'"
-              [style.cursor]="actionEnCours[patient.id] === 'archivage' ? 'wait' : 'pointer'"
-              title="Archiver le patient">
-              <i class="bi bi-archive"></i>
-              @if (actionEnCours[patient.id] === 'archivage') {
-                <span>...</span>
-              }
-            </button>
-            <button 
-              (click)="supprimer(patient)" 
-              [disabled]="actionEnCours[patient.id] === 'suppression'"
-              [style.cursor]="actionEnCours[patient.id] === 'suppression' ? 'wait' : 'pointer'"
-              title="Supprimer le patient">
-              <i class="bi bi-trash"></i>
-              @if (actionEnCours[patient.id] === 'suppression') {
-                <span>...</span>
-              }
-            </button>
-          </span>
+      <button class="bouton-nouveau" (click)="nouveauPatient()">
+        <i class="bi bi-person-plus-fill"></i>
+        Nouveau patient
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== ONGLETS ========== -->
+  <nav class="onglets-vues">
+    <button class="onglet" [class.actif]="vue === 'actifs'" (click)="changerVue('actifs')">
+      <i class="bi bi-people"></i>
+      <span>Actifs</span>
+      <span class="compteur">{{ compteurs.actifs }}</span>
+    </button>
+    <button class="onglet" [class.actif]="vue === 'archives'" (click)="changerVue('archives')">
+      <i class="bi bi-archive"></i>
+      <span>Archivés</span>
+      <span class="compteur">{{ compteurs.archives }}</span>
+    </button>
+    <button class="onglet" [class.actif]="vue === 'corbeille'" (click)="changerVue('corbeille')">
+      <i class="bi bi-trash3"></i>
+      <span>Corbeille</span>
+      <span class="compteur">{{ compteurs.corbeille }}</span>
+    </button>
+  </nav>
+
+  <!-- ========== RECHERCHE ========== -->
+  <div class="barre-recherche">
+    <div class="input-groupe">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Rechercher par nom, prénom, dossier, téléphone, email..."
+        [(ngModel)]="termeRecherche"
+        (input)="onRechercheChange()"
+        class="input-recherche">
+    </div>
+    <button class="bouton-rafraichir" (click)="charger()" [disabled]="chargement">
+      <i class="bi bi-arrow-clockwise" [class.tourne]="chargement"></i>
+    </button>
+  </div>
+
+  <!-- ========== CONTENU ========== -->
+  @if (chargement && patientsFiltres.length === 0) {
+    <div class="etat-chargement">
+      <div class="spinner-patients"></div>
+      <p>Chargement des patients...</p>
+    </div>
+  } @else {
+    <div class="grille-patients">
+      @for (patient of patientsFiltres; track patient.id) {
+        <article class="carte-patient">
+          <div class="carte-entete">
+            <div class="avatar-patient">{{ obtenirInitiale(patient) }}</div>
+            <div class="infos-principales">
+              <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
+              <span class="numero-dossier">N° {{ patient.numero_dossier || 'Non attribué' }}</span>
+            </div>
+            @if (vue !== 'corbeille') {
+              <span class="badge-statut badge-statut-{{ patient.statut_parcours || 'nouveau' }}">
+                {{ patient.statut_parcours || 'nouveau' }}
+              </span>
+            }
+          </div>
+
+          <div class="contacts-patient">
+            @if (patient.telephone) {
+              <span class="puce-contact"><i class="bi bi-telephone"></i>{{ patient.telephone }}</span>
+            }
+            @if (patient.email) {
+              <span class="puce-contact"><i class="bi bi-envelope"></i>{{ patient.email }}</span>
+            }
+            @if (!patient.telephone && !patient.email) {
+              <span class="puce-contact puce-vide">Aucun contact renseigné</span>
+            }
+          </div>
+
+          @if (vue === 'corbeille' && patient.supprime_le) {
+            <div class="info-corbeille">
+              <i class="bi bi-clock-history"></i>
+              Mis à la corbeille le {{ patient.supprime_le | date:'dd/MM/yyyy à HH:mm' }}
+            </div>
+          }
+
+          <div class="carte-actions">
+            @if (vue === 'actifs') {
+              <button class="bouton-action bouton-principal" (click)="ouvrirDossier(patient)">
+                <i class="bi bi-journal-bookmark"></i> Dossier
+              </button>
+              <button
+                class="bouton-action"
+                [disabled]="actionEnCours[patient.id] === 'archivage'"
+                (click)="archiver(patient)"
+                title="Archiver">
+                <i class="bi bi-archive"></i>
+              </button>
+              <button
+                class="bouton-action bouton-danger"
+                [disabled]="actionEnCours[patient.id] === 'corbeille'"
+                (click)="mettreCorbeille(patient)"
+                title="Mettre à la corbeille">
+                <i class="bi bi-trash3"></i>
+              </button>
+            }
+
+            @if (vue === 'archives') {
+              <button class="bouton-action bouton-principal" (click)="ouvrirDossier(patient)">
+                <i class="bi bi-journal-bookmark"></i> Dossier
+              </button>
+              <button
+                class="bouton-action"
+                [disabled]="actionEnCours[patient.id] === 'desarchivage'"
+                (click)="desarchiver(patient)"
+                title="Désarchiver">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+              <button
+                class="bouton-action bouton-danger"
+                [disabled]="actionEnCours[patient.id] === 'corbeille'"
+                (click)="mettreCorbeille(patient)"
+                title="Mettre à la corbeille">
+                <i class="bi bi-trash3"></i>
+              </button>
+            }
+
+            @if (vue === 'corbeille') {
+              <button
+                class="bouton-action bouton-principal"
+                [disabled]="actionEnCours[patient.id] === 'restauration'"
+                (click)="restaurer(patient)">
+                <i class="bi bi-arrow-counterclockwise"></i> Restaurer
+              </button>
+              <button
+                class="bouton-action bouton-danger"
+                [disabled]="actionEnCours[patient.id] === 'suppression'"
+                (click)="supprimerDefinitivement(patient)"
+                title="Supprimer définitivement">
+                <i class="bi bi-x-octagon"></i>
+              </button>
+            }
+          </div>
+        </article>
+      }
+
+      @if (!chargement && patientsFiltres.length === 0) {
+        <div class="etat-vide">
+          <i class="bi" [class]="vue === 'corbeille' ? 'bi-trash3' : vue === 'archives' ? 'bi-archive' : 'bi-people'"></i>
+          @if (termeRecherche) {
+            <h3>Aucun résultat pour "{{ termeRecherche }}"</h3>
+            <p>Essayez avec d'autres termes de recherche.</p>
+          } @else if (vue === 'corbeille') {
+            <h3>La corbeille est vide</h3>
+            <p>Les patients supprimés apparaîtront ici avant suppression définitive.</p>
+          } @else if (vue === 'archives') {
+            <h3>Aucun patient archivé</h3>
+            <p>Les patients archivés apparaîtront ici.</p>
+          } @else {
+            <h3>Aucun patient actif</h3>
+            <p>Commencez par ajouter un nouveau patient.</p>
+          }
         </div>
       }
     </div>

@@ -1,48 +1,99 @@
 /* ========================================
-   STYLES POUR L'ONGLET CARNETS DES PATIENTS
-   (Basé sur le style du personnel)
+   CARNETS PATIENTS — style chaleureux, organique, WARMS
    ======================================== */
 
-/* Import des styles du personnel */
-.carnets {
-  padding: 2rem;
-  max-width: 1200px;
+.section-carnets {
+  padding: 1.5rem 2rem 3rem;
+  max-width: 1320px;
   margin: 0 auto;
 }
 
-/* En-tête avec contrôles */
+/* ----------------------------------------
+   EN-TÊTE
+   ---------------------------------------- */
 .en-tete-carnets {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f8faff 0%, #e8f0ff 100%);
-  border-radius: 16px;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 2rem 2.25rem;
+  background: linear-gradient(135deg, #fff9f0 0%, #fef0db 55%, #eaf1ff 100%);
+  border-radius: 28px;
+  margin-bottom: 2.25rem;
+  box-shadow: 0 16px 40px -12px rgba(30, 77, 183, 0.16);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(2px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob-1 {
+  width: 220px;
+  height: 220px;
+  top: -90px;
+  right: -60px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+}
+
+.blob-2 {
+  width: 260px;
+  height: 260px;
+  bottom: -130px;
+  left: -80px;
+  background: radial-gradient(circle, rgba(30, 77, 183, 0.18) 0%, transparent 70%);
 }
 
 .titre-avec-icone-carnets {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.1rem;
+}
+
+.icone-titre-conteneur {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(30, 77, 183, 0.18);
+  flex-shrink: 0;
 }
 
 .icone-titre-carnets {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
 }
 
 .titre-carnets {
   margin: 0;
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #1e4db7;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #16327a;
+  letter-spacing: -0.02em;
+}
+
+.sous-titre-carnets {
+  margin: 0.2rem 0 0;
+  color: #7c6a4f;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 /* Conteneur des contrôles */
 .controles-carnets {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
@@ -52,7 +103,7 @@
 /* Barre de recherche */
 .controle-recherche {
   flex: 1;
-  min-width: 300px;
+  min-width: 280px;
 }
 
 .input-groupe {
@@ -63,68 +114,71 @@
 
 .input-groupe i {
   position: absolute;
-  left: 1rem;
-  color: #6b7280;
+  left: 1.1rem;
+  color: #b08a4e;
   z-index: 1;
 }
 
 .input-recherche {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  border: none;
+  border-radius: 999px;
   font-size: 0.95rem;
-  transition: all 0.3s ease;
-  background: white;
+  transition: all 0.25s ease;
+  background: #ffffff;
+  color: #2c3a5c;
+  box-shadow: 0 2px 10px rgba(30, 77, 183, 0.08), inset 0 0 0 1.5px rgba(30, 77, 183, 0.08);
 }
 
 .input-recherche:focus {
   outline: none;
-  border-color: #1e4db7;
-  box-shadow: 0 0 0 3px rgba(30, 77, 183, 0.1);
+  box-shadow: 0 2px 14px rgba(30, 77, 183, 0.16), inset 0 0 0 2px #1e4db7;
 }
 
 .input-recherche::placeholder {
-  color: #9ca3af;
+  color: #b3a489;
 }
 
 /* Contrôles de tri */
 .controles-tri {
   display: flex;
-  gap: 0.5rem;
-  background: white;
-  padding: 0.25rem;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  gap: 0.25rem;
+  background: #ffffff;
+  padding: 0.3rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(30, 77, 183, 0.08);
 }
 
 .bouton-tri {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   background: transparent;
-  color: #6b7280;
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: #7c6a4f;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .bouton-tri:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: #fef0db;
+  color: #16327a;
 }
 
 .bouton-tri.actif {
-  background: #1e4db7;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.35);
 }
 
 .bouton-tri i {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 /* Bouton de rafraîchissement */
@@ -132,558 +186,304 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1.4rem;
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
   color: white;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.3);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.32);
+  white-space: nowrap;
 }
 
 .bouton-rafraichir:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(30, 77, 183, 0.4);
+  box-shadow: 0 10px 22px rgba(249, 115, 22, 0.4);
 }
 
 .bouton-rafraichir:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
 }
 
-.bouton-rafraichir i {
-  transition: transform 0.5s ease;
+.bouton-rafraichir i.tourne {
+  animation: tourner 1s linear infinite;
 }
 
-.bouton-rafraichir:disabled i {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
+@keyframes tourner {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-/* Grille d'affichage des carnets patients */
+/* ----------------------------------------
+   ÉTAT DE CHARGEMENT
+   ---------------------------------------- */
+.indicateur-chargement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  color: #7c6a4f;
+}
+
+.spinner-carnet {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 4px solid #eaf1ff;
+  border-top-color: #1e4db7;
+  animation: tourner 0.9s linear infinite;
+}
+
+/* ----------------------------------------
+   GRILLE DES CARNETS
+   ---------------------------------------- */
 .grille-carnets {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  padding-top: 0.5rem;
 }
 
-/* Grille des carnets patients (style personnel) */
-.personnel-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-}
-
-.personnel-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  }
-}
-
-/* Carte individuelle d'un carnet patient */
 .carte-carnet {
   position: relative;
-  padding: 1.5rem;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  border: 2px solid #f0f4ff;
-  cursor: pointer;
-}
-
-.carte-carnet:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(30, 77, 183, 0.15);
-  border-color: #1e4db7;
-}
-
-.carte-carnet:hover .indicateur-clic {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Conteneur pour l'icône du dossier */
-.conteneur-icone-dossier {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Image du dossier - maintenant visible et centrée */
-.image-dossier {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 12px;
-  background: #f8faff;
-  padding: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Cercle avec les initiales - positionné en bas à droite de l'image */
-.cercle-initiales {
-  position: absolute;
-  bottom: -8px;
-  right: -8px;
-  background: linear-gradient(135deg, #1e4db7, #163a8a);
-  color: #ffffff;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(30, 77, 183, 0.3);
-  border: 3px solid #ffffff;
-}
-
-/* Contenu textuel du carnet */
-.contenu-carnet {
-  text-align: center;
-}
-
-.contenu-carnet h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1a202c;
-  line-height: 1.3;
-}
-
-.numero-dossier {
-  margin: 0 0 1rem 0;
-  font-size: 0.9rem;
-  color: #4a5568;
-  line-height: 1.4;
-}
-
-.numero-dossier strong {
-  color: #2d3748;
-}
-
-/* Informations de contact */
-.informations-contact {
-  margin: 1rem 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-contact {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #6b7280;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.info-contact i {
-  font-size: 0.9rem;
-  color: #1e4db7;
-}
-
-/* Indicateur de clic */
-.indicateur-clic {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: rgba(30, 77, 183, 0.1);
-  color: #1e4db7;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: all 0.3s ease;
-}
-
-.indicateur-clic i {
-  font-size: 0.7rem;
-}
-
-/* Code QR du patient */
-.code-qr {
-  border-radius: 8px;
-  border: 2px solid #e2e8f0;
   background: #ffffff;
-  padding: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* Indicateur de chargement */
-.indicateur-chargement {
-  text-align: center;
-  padding: 3rem;
-  color: #64748b;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin: 1rem;
-}
-
-.indicateur-chargement i {
-  font-size: 2rem;
-  color: #1e4db7;
-  margin-bottom: 1rem;
-  display: block;
-  animation: rotation 1s linear infinite;
-}
-
-/* Bouton de rafraîchissement */
-.bouton-rafraichir {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #1e4db7, #163a8a);
-  color: white;
-  border: none;
-  border-radius: 8px;
+  border-radius: 26px;
+  padding: 2.5rem 1.5rem 1.5rem;
+  box-shadow: 0 10px 28px -10px rgba(30, 77, 183, 0.18);
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(30, 77, 183, 0.2);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+  outline: none;
 }
 
-.bouton-rafraichir:hover {
-  background: linear-gradient(135deg, #163a8a, #0f2851);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(30, 77, 183, 0.3);
+.carte-carnet:hover,
+.carte-carnet:focus-visible {
+  transform: translateY(-8px);
+  box-shadow: 0 22px 40px -14px rgba(30, 77, 183, 0.3);
 }
 
-.bouton-rafraichir:disabled {
-  opacity: 0.6;
-  cursor: wait;
-  transform: none;
+.carte-carnet:hover .plaque-qr,
+.carte-carnet:focus-visible .plaque-qr {
+  transform: rotate(0deg) scale(1.04);
 }
 
-/* Animation de rotation pour l'icône de chargement */
-@keyframes rotation {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.carte-carnet:hover .icone-dossier-mini,
+.carte-carnet:focus-visible .icone-dossier-mini {
+  transform: rotate(0deg);
 }
 
-/* En-tête de section */
-.en-tete-carnets {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 0 1rem;
+.carte-carnet:hover .fleche,
+.carte-carnet:focus-visible .fleche {
+  transform: translateX(4px);
 }
 
-/* Conteneur pour le titre avec icône */
-.titre-avec-icone-carnets {
+/* Onglet "dossier" en haut de carte */
+.onglet-dossier {
+  position: absolute;
+  top: 0;
+  left: 1.25rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #eaf1ff 0%, #d9e6ff 100%);
+  padding: 0.4rem 0.8rem 0.45rem;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 4px 10px rgba(30, 77, 183, 0.12);
 }
 
-.icone-titre-carnets {
-  width: 48px;
-  height: 48px;
+.icone-dossier-mini {
+  width: 18px;
+  height: 18px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  animation: flottement-subtil 3s ease-in-out infinite;
+  transform: rotate(-10deg);
+  transition: transform 0.3s ease;
 }
 
-.titre-carnets {
-  margin: 0;
-  font-size: 1.8rem;
-  color: #1a2e6b;
+.numero-dossier-badge {
+  font-size: 0.72rem;
   font-weight: 700;
+  color: #1e4db7;
+  letter-spacing: 0.02em;
 }
 
-/* Animation subtile pour l'icône du titre */
-@keyframes flottement-subtil {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-3px); }
-}
-
-/* Styles des cards personnel adaptés pour les carnets */
-.card-header {
-  display: flex;
-  align-items: center;
-  padding: 1rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.personnel-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+/* QR centré, façon tampon */
+.zone-qr {
   position: relative;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.plaque-qr {
+  width: 128px;
+  height: 128px;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  .cercle-initiales {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #1e4db7 0%, #163a8a 100%);
-    color: white;
-    font-weight: 700;
-    font-size: 1.2rem;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 1;
-    padding: 2px;
-    box-sizing: border-box;
-    position: relative;
-    transform: translateY(-1px); // Ajustement fin pour le centrage vertical
-  }
+  background: #ffffff;
+  border-radius: 20px;
+  border: 2px dashed #cdd9f5;
+  box-shadow: 0 10px 22px -6px rgba(30, 77, 183, 0.22);
+  transform: rotate(-3deg);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.personnel-info {
-  flex: 1;
-  margin-left: 1rem;
-  
-  h3 {
-    color: #1e293b;
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-  }
-  
-  p {
-    color: #64748b;
-    margin: 0.25rem 0;
-    font-size: 0.9rem;
-  }
+.plaque-qr-attente {
+  color: #cdd9f5;
+  font-size: 2.4rem;
 }
 
-.numero-dossier {
-  color: #64748b;
-  font-size: 0.9rem;
-  
-  strong {
-    color: #1e293b;
-  }
+.image-qr {
+  width: 102px;
+  height: 102px;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
-.email {
-  color: #059669;
-  font-size: 0.85rem;
-  
-  i {
-    margin-right: 0.5rem;
-  }
-}
-
-.telephone {
-  color: #64748b;
-  font-size: 0.9rem;
-  
-  i {
-    margin-right: 0.5rem;
-  }
-}
-
-.card-actions {
+.avatar-flottant {
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.btn-edit {
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #1e4db7 0%, #163a8a 100%);
   color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: 3px solid white;
+  box-shadow: 0 4px 10px rgba(30, 77, 183, 0.35);
+}
+
+/* Informations patient */
+.info-carnet {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.info-carnet h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #16327a;
+}
+
+.contacts-carnet {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.puce-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #fdf6ec;
+  color: #8a7654;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.puce-contact i {
+  color: #d99b3f;
+  font-size: 0.72rem;
+}
+
+/* Action d'ouverture */
+.bouton-ouvrir {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(30, 77, 183, 0.3);
-  }
-  
-  i {
-    font-size: 0.9rem;
-  }
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 18px -4px rgba(30, 77, 183, 0.4);
 }
 
-.card-footer {
-  padding: 1rem;
-  background: #f8fafc;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.bouton-ouvrir:hover {
+  box-shadow: 0 12px 24px -4px rgba(30, 77, 183, 0.5);
 }
 
-/* Conteneur pour le code QR */
-.conteneur-qr {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
+.bouton-ouvrir .fleche {
+  transition: transform 0.25s ease;
 }
 
-.code-qr {
-  border-radius: 8px;
-  border: 2px solid #e2e8f0;
-  background: #ffffff;
-  padding: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.legende-qr {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.legende-qr {
-  display: block;
-  margin-top: 0.5rem;
-  color: #64748b;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-/* Message lorsque aucun carnet n'est trouvé */
+/* ----------------------------------------
+   ÉTAT VIDE
+   ---------------------------------------- */
 .message-aucun-carnet {
   grid-column: 1 / -1;
   text-align: center;
-  padding: 3rem 2rem;
-  background: #f8fafc;
-  border-radius: 16px;
-  border: 2px dashed #cbd5e1;
-  color: #64748b;
+  padding: 4rem 1.5rem;
+  color: #7c6a4f;
 }
 
-.message-aucun-carnet .icone-aucun-carnet {
-  width: 80px;
-  height: 80px;
-  opacity: 0.3;
-  margin-bottom: 1rem;
-  filter: grayscale(50%);
+.icone-aucun-carnet {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  opacity: 0.55;
+  margin-bottom: 1.25rem;
 }
 
 .message-aucun-carnet h3 {
-  margin: 0 0 1rem;
-  color: #475569;
+  margin: 0 0 0.5rem;
   font-size: 1.3rem;
+  font-weight: 700;
+  color: #16327a;
 }
 
 .message-aucun-carnet p {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.6;
+  color: #8a7654;
 }
 
-/* Gestion des erreurs d'image */
-.image-erreur {
-  background: #fee2e2;
-  border: 2px dashed #ef4444;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-erreur::after {
-  content: "📁";
-  font-size: 2rem;
-  color: #ef4444;
-}
-
-/* Section principale */
-.section-carnets {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-/* Styles responsives pour mobile */
+/* ----------------------------------------
+   RESPONSIVE
+   ---------------------------------------- */
 @media (max-width: 768px) {
   .section-carnets {
-    padding: 1rem 0.5rem;
+    padding: 1rem 1.1rem 2rem;
   }
-  
+
   .en-tete-carnets {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
+    padding: 1.5rem 1.25rem;
   }
-  
-  .titre-avec-icone-carnets {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .icone-titre-carnets {
-    width: 40px;
-    height: 40px;
-  }
-  
+
   .titre-carnets {
     font-size: 1.5rem;
   }
-  
+
+  .controles-carnets {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controles-tri {
+    justify-content: space-between;
+  }
+
   .grille-carnets {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0.75rem;
-    padding: 0.5rem;
-  }
-  
-  .carte-carnet {
-    padding: 1rem;
-  }
-  
-  .conteneur-icone-dossier {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .cercle-initiales {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
-    bottom: -6px;
-    right: -6px;
-  }
-  
-  .message-aucun-carnet {
-    padding: 2rem 1rem;
+    grid-template-columns: 1fr;
   }
 }

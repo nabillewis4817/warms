@@ -27,8 +27,8 @@ export const erreurInterceptor: HttpInterceptorFn = (req, next) => {
             );
           }),
           catchError(() => {
+            auth.deconnexion();
             if (router.url !== '/connexion') {
-              auth.deconnexion();
               router.navigate(['/connexion']);
             }
             return throwError(() => err);
@@ -36,9 +36,11 @@ export const erreurInterceptor: HttpInterceptorFn = (req, next) => {
         );
       }
 
-      if (err?.status === 401 && !estEndpointAuth && router.url !== '/connexion') {
+      if (err?.status === 401 && !estEndpointAuth) {
         auth.deconnexion();
-        router.navigate(['/connexion']);
+        if (router.url !== '/connexion') {
+          router.navigate(['/connexion']);
+        }
       }
 
       return throwError(() => err);

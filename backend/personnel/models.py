@@ -62,10 +62,21 @@ class Utilisateur(AbstractUser):
         related_name="personnels_valides",
     )
     valide_le = models.DateTimeField(null=True, blank=True)
+    derniere_activite = models.DateTimeField(
+        null=True, blank=True, help_text="Dernière requête authentifiée (présence en ligne)."
+    )
+
+    SEUIL_EN_LIGNE = timezone.timedelta(minutes=2)
 
     def __str__(self) -> str:
         base = self.get_full_name() or self.username
         return f"{base} ({self.get_role_display()})"
+
+    @property
+    def est_en_ligne(self) -> bool:
+        if not self.derniere_activite:
+            return False
+        return timezone.now() - self.derniere_activite < self.SEUIL_EN_LIGNE
 
     def valider_par_chirurgien(self, chirurgien):
         self.est_valide_par_chirurgien = True

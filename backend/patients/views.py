@@ -1,5 +1,7 @@
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import mixins, status, viewsets
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -20,11 +22,17 @@ from .serializers import (
     PieceJointeDossierSerializer,
 )
 
+ACTIONS_CORBEILLE = ("corbeille", "restaurer_corbeille", "supprimer_definitivement")
+
 
 class PatientViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    queryset = Patient.objects.all()
     serializer_class = PatientSerializer
+
+    def get_queryset(self):
+        if self.action in ACTIONS_CORBEILLE:
+            return Patient.objects.filter(supprime_le__isnull=False).order_by("-supprime_le")
+        return Patient.objects.filter(supprime_le__isnull=True)
 
     def get_permissions(self):
         """
@@ -63,7 +71,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         patient = serializer.save()
-        self._creer_dossier_qr(patient)
+        self._creer_dossier_qr(patient, allergies=(request.data.get("allergies") or "").strip())
 
         username = (request.data.get("username_patient") or "").strip()
         password = (request.data.get("password_patient") or "").strip()
@@ -90,10 +98,12 @@ class PatientViewSet(viewsets.ModelViewSet):
         payload["identifiants_patient"] = {"username": username, "password": password}
         return Response(payload, status=status.HTTP_201_CREATED)
 
-    def _creer_dossier_qr(self, patient):
+    def _creer_dossier_qr(self, patient, allergies=""):
         # Création automatique du dossier + QR unique à la création patient.
         numero_dossier = f"WARMS-{patient.id:06d}"
-        dossier = DossierPatient.objects.create(patient=patient, numero_dossier=numero_dossier)
+        dossier = DossierPatient.objects.create(
+            patient=patient, numero_dossier=numero_dossier, allergies=allergies
+        )
         CarnetQRCode.objects.create(dossier=dossier)
         journaliser(
             acteur=self.request.user,
@@ -166,42 +176,92 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, pk=None):
         """
-        Supprime définitivement un patient avec ses données associées.
+        Suppression douce par défaut (déplacement vers la corbeille).
+        Pour une suppression définitive, utiliser l'action `supprimer-definitivement`.
         """
-        print(f"Tentative de suppression patient {pk} par utilisateur {request.user}")
-        print(f"Utilisateur authentifié: {request.user.is_authenticated}")
-        print(f"Rôle utilisateur: {getattr(request.user, 'role', 'Non défini')}")
-        
-        try:
-            patient = self.get_object()
-            print(f"Patient trouvé: {patient.prenom} {patient.nom}")
-        except Exception as e:
-            print(f"Erreur lors de la récupération du patient: {e}")
-            return Response(
-                {"detail": f"Patient introuvable: {str(e)}"}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        # Journaliser la suppression
+        return self.mettre_corbeille(request, pk=pk)
+
+    @action(detail=False, methods=["get"], permission_classes=[EstPersonnelCabinet])
+    def corbeille(self, request):
+        """
+        Liste des patients mis à la corbeille (suppression douce).
+        """
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="corbeille", permission_classes=[EstPersonnelCabinet])
+    def mettre_corbeille(self, request, pk=None):
+        """
+        Déplace un patient vers la corbeille (suppression douce, réversible).
+        """
+        patient = self.get_object()
+        patient.supprime_le = timezone.now()
+        patient.save(update_fields=["supprime_le", "modifie_le"])
         journaliser(
             acteur=request.user,
-            action="patient.deleted",
+            action="patient.trashed",
             objet_type="Patient",
             objet_id=patient.id,
-            message=f"Suppression définitive du patient {patient.prenom} {patient.nom}.",
+            message=f"Patient {patient.prenom} {patient.nom} déplacé vers la corbeille.",
         )
-        
-        try:
-            # Supprimer le patient (cascade automatique grâce aux related_name)
+        return Response(
+            {"id": patient.id, "detail": f"{patient.prenom} {patient.nom} déplacé vers la corbeille."}
+        )
+
+    @action(detail=True, methods=["post"], url_path="restaurer-corbeille", permission_classes=[EstPersonnelCabinet])
+    def restaurer_corbeille(self, request, pk=None):
+        """
+        Restaure un patient depuis la corbeille.
+        """
+        patient = self.get_object()
+        patient.supprime_le = None
+        patient.save(update_fields=["supprime_le", "modifie_le"])
+        journaliser(
+            acteur=request.user,
+            action="patient.restored",
+            objet_type="Patient",
+            objet_id=patient.id,
+            message=f"Patient {patient.prenom} {patient.nom} restauré depuis la corbeille.",
+        )
+        return Response(self.get_serializer(patient).data)
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path="supprimer-definitivement",
+        permission_classes=[EstPersonnelCabinet],
+    )
+    def supprimer_definitivement(self, request, pk=None):
+        """
+        Supprime définitivement un patient (depuis la corbeille) ainsi que
+        toutes ses données cliniques liées (consultations, dossier, pièces jointes).
+        Action irréversible.
+        """
+        from consultations.models import Consultation
+
+        patient = self.get_object()
+        nom_complet = f"{patient.prenom} {patient.nom}"
+        patient_id = patient.id
+
+        with transaction.atomic():
+            Consultation.objects.filter(patient=patient).delete()
+            try:
+                patient.dossier.delete()
+            except DossierPatient.DoesNotExist:
+                pass
             patient.delete()
-            print(f"Patient {patient.id} supprimé avec succès")
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            print(f"Erreur lors de la suppression du patient: {e}")
-            return Response(
-                {"detail": f"Erreur lors de la suppression: {str(e)}"}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+
+        journaliser(
+            acteur=request.user,
+            action="patient.deleted_permanently",
+            objet_type="Patient",
+            objet_id=patient_id,
+            message=f"Suppression définitive du patient {nom_complet} (corbeille).",
+        )
+        return Response(
+            {"detail": f"{nom_complet} supprimé définitivement.", "id": patient_id},
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=["post"], permission_classes=[EstPersonnelCabinet])
     def affecter_infirmiere(self, request, pk=None):
@@ -270,11 +330,38 @@ class PatientViewSet(viewsets.ModelViewSet):
 
 
 class AvisPatientViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = AvisPatient.objects.select_related("patient", "auteur").all()
     serializer_class = AvisPatientSerializer
 
     def perform_create(self, serializer):
         serializer.save(auteur=self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def statistiques(self, request):
+        from datetime import timedelta
+
+        from django.db.models import Avg
+        from django.utils import timezone
+
+        queryset = self.get_queryset()
+        recents_depuis = timezone.now() - timedelta(days=30)
+
+        par_note = {
+            str(note): queryset.filter(note=note).count() for note in range(1, 6)
+        }
+
+        return Response(
+            {
+                "total_avis": queryset.count(),
+                "note_moyenne": queryset.aggregate(moyenne=Avg("note"))["moyenne"] or 0,
+                "avis_recents": queryset.filter(cree_le__gte=recents_depuis).count(),
+                "avec_reponse": 0,
+                "par_type": {},
+                "par_note": par_note,
+                "par_statut": {},
+            }
+        )
 
 
 class DossierPatientViewSet(viewsets.ModelViewSet):
@@ -314,71 +401,3 @@ class PieceJointeDossierViewSet(
         )
 
 
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def supprimer_patient_ameliore(request, pk):
-    """
-    Endpoint de suppression patient amélioré avec vérifications détaillées
-    """
-    try:
-        # Vérifier l'authentification
-        if not request.user.is_authenticated:
-            return Response(
-                {'detail': 'Authentication requise'}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        # Vérifier les permissions
-        permission = EstPersonnelCabinet()
-        if not permission.has_permission(request, None):
-            return Response(
-                {
-                    'detail': 'Permission refusée', 
-                    'user_role': getattr(request.user, 'role', 'None'),
-                    'is_superuser': request.user.is_superuser,
-                    'required_roles': ['CHIRURGIEN_DENTISTE', 'SECRETAIRE', 'INFIRMIERE']
-                }, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Récupérer le patient
-        try:
-            patient = Patient.objects.get(pk=pk)
-        except Patient.DoesNotExist:
-            return Response(
-                {'detail': 'Patient non trouvé'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        # Journaliser la suppression
-        journaliser(
-            acteur=request.user,
-            action="patient.suppression",
-            objet_type="Patient",
-            objet_id=patient.id,
-            message=f"Suppression du patient {patient.prenom} {patient.nom}",
-            metadata={
-                'patient_nom': f"{patient.prenom} {patient.nom}",
-                'patient_email': patient.email,
-                'supprime_par': request.user.username
-            }
-        )
-        
-        # Supprimer le patient
-        patient.delete()
-        
-        return Response(
-            {
-                'detail': 'Patient supprimé avec succès',
-                'patient_nom': f"{patient.prenom} {patient.nom}",
-                'supprime_par': request.user.username
-            }, 
-            status=status.HTTP_200_OK
-        )
-        
-    except Exception as e:
-        print(f"Erreur suppression patient: {e}")
-        return Response(
-            {'detail': f'Erreur lors de la suppression: {str(e)}'}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )

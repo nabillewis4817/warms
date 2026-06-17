@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, finalize, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface JetonsAuth {
@@ -97,16 +97,28 @@ export class Authentification {
     return localStorage.getItem('warms_refresh');
   }
 
+  /** Mutualise les rafraîchissements simultanés pour éviter d'invalider le refresh token en cours de rotation. */
+  private refreshEnCours$: Observable<JetonsAuth | { access: string }> | null = null;
+
   rafraichirAccessToken(): Observable<JetonsAuth | { access: string }> {
+    if (this.refreshEnCours$) {
+      return this.refreshEnCours$;
+    }
+
     const refresh = this.tokenRefresh();
-    return this.http
+    this.refreshEnCours$ = this.http
       .post<JetonsAuth | { access: string }>(`${this.baseUrl}/auth/token/refresh/`, { refresh })
       .pipe(
         tap((res: any) => {
           if (res?.access) localStorage.setItem('warms_access', res.access);
           if (res?.refresh) localStorage.setItem('warms_refresh', res.refresh);
+        }),
+        shareReplay(1),
+        finalize(() => {
+          this.refreshEnCours$ = null;
         })
       );
+    return this.refreshEnCours$;
   }
 }
 

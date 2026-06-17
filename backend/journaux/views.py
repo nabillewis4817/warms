@@ -46,12 +46,7 @@ class LogActiviteViewSet(viewsets.ReadOnlyModelViewSet):
         type_log = self.request.query_params.get('type')
         if type_log:
             queryset = queryset.filter(type_action=type_log)
-        
-        # Alias query param « type » (frontend)
-        type_alias = self.request.query_params.get('type')
-        if type_alias:
-            queryset = queryset.filter(type_action=type_alias)
-        
+
         # Filtrage par utilisateur
         utilisateur = self.request.query_params.get('utilisateur')
         if utilisateur:
@@ -60,8 +55,8 @@ class LogActiviteViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(acteur__first_name__icontains=utilisateur) |
                 Q(acteur__last_name__icontains=utilisateur)
             )
-        
-        return queryset.order_by('-date_heure')
+
+        return queryset.order_by('-cree_le')
 
     @action(detail=False, methods=['get'])
     def exporter(self, request):
@@ -78,7 +73,7 @@ class LogActiviteViewSet(viewsets.ReadOnlyModelViewSet):
         
         for log in queryset:
             writer.writerow([
-                log.date_heure.strftime('%Y-%m-%d %H:%M:%S') if log.date_heure else '',
+                log.cree_le.strftime('%Y-%m-%d %H:%M:%S') if log.cree_le else '',
                 f"{log.acteur.first_name} {log.acteur.last_name}" if log.acteur else '',
                 log.action,
                 log.details,
@@ -101,11 +96,11 @@ class LogActiviteViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Obtenir la liste des utilisateurs ayant des journaux
         """
-        utilisateurs = []
-        for log in LogActivite.objects.select_related('acteur').distinct('acteur'):
+        utilisateurs = set()
+        for log in LogActivite.objects.select_related('acteur'):
             if log.acteur:
-                utilisateurs.append(f"{log.acteur.first_name} {log.acteur.last_name}")
-        return Response(list(set(utilisateurs)))
+                utilisateurs.add(f"{log.acteur.first_name} {log.acteur.last_name}")
+        return Response(list(utilisateurs))
 
     @action(detail=False, methods=['get'])
     def statistiques(self, request):

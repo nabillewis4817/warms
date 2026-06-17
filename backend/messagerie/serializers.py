@@ -54,6 +54,13 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class ConversationSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    patient_nom = serializers.SerializerMethodField()
+    dernier_message = serializers.SerializerMethodField()
+    dernier_message_le = serializers.SerializerMethodField()
+    non_lus = serializers.SerializerMethodField()
+    participants_info = serializers.SerializerMethodField()
+    en_ligne = serializers.SerializerMethodField()
+
     class Meta:
         model = Conversation
         fields = [
@@ -61,12 +68,65 @@ class ConversationSerializer(serializers.ModelSerializer):
             "titre",
             "type_conversation",
             "patient",
+            "patient_nom",
             "participants",
+            "participants_info",
+            "en_ligne",
+            "dernier_message",
+            "dernier_message_le",
+            "non_lus",
             "cree_par",
             "cree_le",
             "modifie_le",
         ]
         read_only_fields = ["cree_par", "cree_le", "modifie_le"]
+
+    def get_patient_nom(self, obj):
+        if obj.patient_id and obj.patient:
+            return f"{obj.patient.prenom} {obj.patient.nom}"
+        return None
+
+    def get_dernier_message(self, obj):
+        dernier = obj.messages.order_by("-cree_le").first()
+        return dernier.contenu if dernier else None
+
+    def get_dernier_message_le(self, obj):
+        dernier = obj.messages.order_by("-cree_le").first()
+        return dernier.cree_le if dernier else None
+
+    def get_non_lus(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if not user or not getattr(user, "is_authenticated", False):
+            return 0
+        return obj.messages.filter(lu=False).exclude(auteur_id=user.id).count()
+
+    def get_participants_info(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        infos = []
+        for participant in obj.participants.all():
+            if user and participant.id == user.id:
+                continue
+            infos.append(
+                {
+                    "id": participant.id,
+                    "nom": participant.get_full_name() or participant.username,
+                    "role": participant.role,
+                    "en_ligne": participant.est_en_ligne,
+                }
+            )
+        return infos
+
+    def get_en_ligne(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        for participant in obj.participants.all():
+            if user and participant.id == user.id:
+                continue
+            if participant.est_en_ligne:
+                return True
+        return False
 
 
 class NotificationInterneSerializer(serializers.ModelSerializer):

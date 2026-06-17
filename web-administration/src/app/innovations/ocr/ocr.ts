@@ -101,7 +101,7 @@ export class Ocr {
     console.log('Résultat OCR:', result);
     
     // Créer un message avec les données extraites
-    let message = `✅ ${typeDocument} traité avec succès!\n\n`;
+    let message = `${typeDocument} traité avec succès !\n\n`;
     message += 'Texte extrait :\n';
     message += result.texte_extrait || 'Aucun texte extrait';
     
@@ -116,9 +116,9 @@ export class Ocr {
       if (adresse) message += `• Adresse: ${adresse}\n`;
     }
     
-    if (result.symotomes && result.symotomes.length > 0) {
+    if (result.symptomes && result.symptomes.length > 0) {
       message += '\n\nSymptômes détectés :\n';
-      result.symotomes.forEach((symptome: string, index: number) => {
+      result.symptomes.forEach((symptome: string, index: number) => {
         message += `${index + 1}. ${symptome}\n`;
       });
     }
@@ -147,7 +147,7 @@ export class Ocr {
     console.error('Erreur OCR:', error);
     
     // Afficher l'erreur spécifique
-    let messageErreur = `❌ Erreur lors du traitement ${typeDocument}\n\n`;
+    let messageErreur = `Erreur lors du traitement ${typeDocument}\n\n`;
     
     if (error.status === 400) {
       messageErreur += 'Format de fichier invalide ou document illisible.';
@@ -185,7 +185,7 @@ export class Ocr {
         console.log('Résultat OCR:', result);
         
         // Créer un message avec les données extraites
-        let message = '✅ OCR traité avec succès!\n\n';
+        let message = 'OCR traité avec succès !\n\n';
         message += 'Texte extrait :\n';
         message += result.texte_extrait || 'Aucun texte extrait';
         
@@ -200,9 +200,9 @@ export class Ocr {
           if (adresse) message += `• Adresse: ${adresse}\n`;
         }
         
-        if (result.symotomes && result.symotomes.length > 0) {
+        if (result.symptomes && result.symptomes.length > 0) {
           message += '\n\nSymptômes détectés :\n';
-          result.symotomes.forEach((symptome: string, index: number) => {
+          result.symptomes.forEach((symptome: string, index: number) => {
             message += `${index + 1}. ${symptome}\n`;
           });
         }
@@ -225,7 +225,7 @@ export class Ocr {
         console.error('Erreur OCR:', error);
         
         // Afficher l'erreur spécifique
-        let messageErreur = '❌ Erreur lors du traitement OCR\n\n';
+        let messageErreur = 'Erreur lors du traitement OCR\n\n';
         
         if (error.status === 400) {
           messageErreur += 'Format de fichier invalide ou image illisible.';

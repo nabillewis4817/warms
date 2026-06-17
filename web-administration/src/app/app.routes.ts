@@ -13,7 +13,6 @@ import { Inscription } from './authentification/inscription/inscription';
 import { MotDePasseOublie } from './authentification/mot-de-passe-oublie/mot-de-passe-oublie';
 import { PersonnelComponent } from './personnel/personnel.component';
 import { Carnets } from './patients/carnets/carnets';
-import { ParametresCarnet } from './patients/parametres-carnet/parametres-carnet';
 import { Ocr } from './innovations/ocr/ocr';
 import { IaWarms } from './innovations/ia-warms/ia-warms';
 import { Avis } from './avis/avis';
@@ -38,7 +37,6 @@ export const routes: Routes = [
   { path: 'patients', component: ListePatients, canActivate: [authentificationGuard] },
   { path: 'patients/nouveau', component: NouveauPatient, canActivate: [authentificationGuard] },
   { path: 'patients/:id/dossier', component: DossierPatient, canActivate: [authentificationGuard] },
-  { path: 'patients/:id/parametres-carnet', component: ParametresCarnet, canActivate: [authentificationGuard] },
   { path: 'carnets', component: Carnets, canActivate: [authentificationGuard] },
   { path: 'ocr', component: Ocr, canActivate: [authentificationGuard] },
   { path: 'ia-warms', component: IaWarms, canActivate: [authentificationGuard] },

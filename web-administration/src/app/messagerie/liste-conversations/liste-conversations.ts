@@ -1,57 +1,84 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { Subscription, interval } from 'rxjs';
 
 import { Conversation, Messagerie } from '../../noyau/services/messagerie';
-import { Patients } from '../../noyau/services/patients';
-import { Patient } from '../../noyau/services/patients';
+import { Patient, Patients } from '../../noyau/services/patients';
+import { Personnel, PersonnelService } from '../../noyau/services/personnel.service';
 import { DialogueService } from '../../noyau/services/dialogue.service';
+
+type ModeCreation = 'patient' | 'equipe';
 
 @Component({
   selector: 'app-liste-conversations',
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './liste-conversations.html',
   styleUrl: './liste-conversations.scss',
 })
-export class ListeConversations implements OnInit {
+export class ListeConversations implements OnInit, OnDestroy {
   private readonly messagerie = inject(Messagerie);
   private readonly patientsService = inject(Patients);
+  private readonly personnelService = inject(PersonnelService);
   private readonly router = inject(Router);
   private readonly dialogueService = inject(DialogueService);
+
   conversations: Conversation[] = [];
+  conversationsFiltrees: Conversation[] = [];
+  termeRecherche = '';
+
   listePatients: Patient[] = [];
+  listePersonnel: Personnel[] = [];
+
+  afficherCreation = false;
+  modeCreation: ModeCreation = 'patient';
   patientSelectionne: Patient | null = null;
-  titre = '';
-  contact = '';
-  modeEdition = false;
-  conversationEnEdition: Conversation | null = null;
+  participantsSelectionnes: number[] = [];
+  titrePersonnalise = '';
+  creationEnCours = false;
+
+  chargement = false;
+  private rafraichissement: Subscription | null = null;
 
   ngOnInit(): void {
     this.charger();
     this.chargerPatients();
+    this.chargerPersonnel();
+    this.rafraichissement = interval(20000).subscribe(() => this.charger(true));
   }
 
-  charger(): void {
+  ngOnDestroy(): void {
+    this.rafraichissement?.unsubscribe();
+  }
+
+  charger(silencieux = false): void {
+    if (!silencieux) this.chargement = true;
     this.messagerie.listerConversations().subscribe({
       next: (items) => {
-        // Filtrer les conversations selon le rôle de l'utilisateur
-        this.conversations = this.filtrerConversationsParPatient(items);
+        this.conversations = [...items].sort(
+          (a, b) => new Date(b.modifie_le).getTime() - new Date(a.modifie_le).getTime()
+        );
+        this.appliquerFiltre();
+        this.chargement = false;
       },
+      error: () => (this.chargement = false),
     });
   }
 
-  private filtrerConversationsParPatient(conversations: Conversation[]): Conversation[] {
-    const utilisateur = this.obtenirUtilisateurConnecte();
-    // Le backend renvoie déjà les conversations autorisées pour l'utilisateur connecté.
-    // On garde un filtrage défensif basé sur la participation.
-    return conversations.filter((conv) => conv.participants?.includes(utilisateur?.id));
+  onRechercheChange(): void {
+    this.appliquerFiltre();
   }
 
-  private obtenirUtilisateurConnecte(): any {
-    // Récupérer les informations de l'utilisateur connecté
-    const userData = localStorage.getItem('utilisateur');
-    return userData ? JSON.parse(userData) : null;
+  private appliquerFiltre(): void {
+    const terme = this.termeRecherche.trim().toLowerCase();
+    this.conversationsFiltrees = !terme
+      ? this.conversations
+      : this.conversations.filter((c) =>
+          [c.titre, c.patient_nom, ...(c.participants_info?.map((p) => p.nom) ?? [])]
+            .filter(Boolean)
+            .some((champ) => String(champ).toLowerCase().includes(terme))
+        );
   }
 
   chargerPatients(): void {
@@ -60,108 +87,97 @@ export class ListeConversations implements OnInit {
     });
   }
 
+  chargerPersonnel(): void {
+    this.personnelService.getPersonnel().subscribe({
+      next: (personnel) => (this.listePersonnel = personnel.filter((p) => p.role?.toLowerCase() !== 'patient')),
+    });
+  }
+
+  ouvrirPanneauCreation(mode: ModeCreation): void {
+    this.modeCreation = mode;
+    this.afficherCreation = true;
+    this.patientSelectionne = null;
+    this.participantsSelectionnes = [];
+    this.titrePersonnalise = '';
+  }
+
+  fermerPanneauCreation(): void {
+    this.afficherCreation = false;
+  }
+
+  toggleParticipant(id: number): void {
+    const index = this.participantsSelectionnes.indexOf(id);
+    if (index >= 0) {
+      this.participantsSelectionnes.splice(index, 1);
+    } else {
+      this.participantsSelectionnes.push(id);
+    }
+  }
+
+  get peutCreer(): boolean {
+    if (this.modeCreation === 'patient') return !!this.patientSelectionne;
+    return this.participantsSelectionnes.length > 0;
+  }
+
   creerConversation(): void {
-    if (!this.titre.trim()) return;
+    if (!this.peutCreer || this.creationEnCours) return;
+    this.creationEnCours = true;
 
-    if (this.patientSelectionne) {
-      this.messagerie
-        .creerConversation(this.titre, 'patient', this.patientSelectionne.id)
-        .subscribe({
-          next: (conversation) => {
-            this.titre = '';
-            this.patientSelectionne = null;
-            this.charger();
-            this.router.navigate(['/messagerie/conversation', conversation.id]);
-          },
-          error: () => {
-            this.dialogueService.erreur({
-              titre: 'Erreur',
-              message: 'Impossible de créer la conversation. Veuillez réessayer.'
-            }).subscribe();
-          }
-        });
+    if (this.modeCreation === 'patient' && this.patientSelectionne) {
+      const titre = `Chat avec ${this.patientSelectionne.prenom} ${this.patientSelectionne.nom}`;
+      this.messagerie.creerConversation(titre, 'patient', this.patientSelectionne.id).subscribe({
+        next: (conversation) => this.apresCreation(conversation),
+        error: () => this.echecCreation(),
+      });
       return;
     }
 
-    // Sans patient sélectionné, on crée une conversation interne simple.
-    this.messagerie.creerConversation(this.titre, 'interne').subscribe({
-      next: (conversation) => {
-        this.titre = '';
-        this.patientSelectionne = null;
-        this.charger();
-        this.router.navigate(['/messagerie/conversation', conversation.id]);
-      },
-      error: () => {
-        this.dialogueService.erreur({
-          titre: 'Erreur',
-          message: 'Impossible de créer la conversation. Veuillez réessayer.'
-        }).subscribe();
-      }
+    const noms = this.listePersonnel
+      .filter((p) => this.participantsSelectionnes.includes(p.id))
+      .map((p) => `${p.prenom} ${p.nom}`)
+      .join(', ');
+    const titre = this.titrePersonnalise.trim() || `Discussion avec ${noms}`;
+
+    this.messagerie.creerConversation(titre, 'interne', undefined, this.participantsSelectionnes).subscribe({
+      next: (conversation) => this.apresCreation(conversation),
+      error: () => this.echecCreation(),
     });
   }
 
-  demarrerChatPatient(): void {
-    if (!this.patientSelectionne) {
-      this.dialogueService.erreur({
-        titre: 'Erreur',
-        message: 'Veuillez sélectionner un patient pour démarrer le chat.'
-      }).subscribe();
-      return;
-    }
-
-    const titre = `Chat avec ${this.patientSelectionne.prenom} ${this.patientSelectionne.nom}`;
-
-    this.messagerie.creerConversation(titre, 'patient', this.patientSelectionne.id).subscribe({
-      next: (conversation) => {
-        this.titre = '';
-        this.patientSelectionne = null;
-        this.charger();
-        this.router.navigate(['/messagerie/conversation', conversation.id]);
-      },
-      error: () => {
-        this.dialogueService.erreur({
-          titre: 'Erreur',
-          message: 'Impossible de démarrer le chat. Veuillez réessayer.'
-        }).subscribe();
-      }
-    });
-  }
-
-  editerConversation(conversation: Conversation): void {
-    this.conversationEnEdition = conversation;
-    this.titre = conversation.titre;
-    this.modeEdition = true;
-  }
-
-  sauvegarderEdition(): void {
-    if (!this.conversationEnEdition || !this.titre.trim()) return;
-    
-    // Note: Cette fonctionnalité nécessiterait un endpoint PUT/PATCH dans le backend
-    // Pour l'instant, on simule l'édition
-    this.modeEdition = false;
-    this.conversationEnEdition = null;
-    this.titre = '';
+  private apresCreation(conversation: Conversation): void {
+    this.creationEnCours = false;
+    this.afficherCreation = false;
     this.charger();
+    this.router.navigate(['/messagerie/conversation', conversation.id]);
   }
 
-  annulerEdition(): void {
-    this.modeEdition = false;
-    this.conversationEnEdition = null;
-    this.titre = '';
+  private echecCreation(): void {
+    this.creationEnCours = false;
+    this.dialogueService
+      .erreur({ titre: 'Erreur', message: 'Impossible de créer la conversation. Veuillez réessayer.' })
+      .subscribe();
   }
 
-  enregistrerContact(): void {
-    if (!this.contact.trim()) return;
-    const deja = JSON.parse(localStorage.getItem('warms_contacts') || '[]') as string[];
-    localStorage.setItem('warms_contacts', JSON.stringify([...deja, this.contact]));
-    this.contact = '';
+  ouvrirConversation(conversation: Conversation): void {
+    this.router.navigate(['/messagerie/conversation', conversation.id]);
   }
 
-  voirHistoriquePatient(conversation: Conversation): void {
+  voirDossierPatient(conversation: Conversation, event: Event): void {
+    event.stopPropagation();
     if (!conversation.patient) return;
-    
-    // Rediriger vers la page du patient avec l'historique médical
-    this.router.navigate(['/patients', conversation.patient]);
+    this.router.navigate(['/patients', conversation.patient, 'dossier']);
+  }
+
+  obtenirInitiale(conversation: Conversation): string {
+    const source = conversation.patient_nom || conversation.titre || '?';
+    return source.charAt(0).toUpperCase();
+  }
+
+  obtenirApercu(conversation: Conversation): string {
+    if (!conversation.dernier_message) return 'Aucun message pour le moment';
+    return conversation.dernier_message.length > 60
+      ? conversation.dernier_message.slice(0, 60) + '…'
+      : conversation.dernier_message;
   }
 }
 

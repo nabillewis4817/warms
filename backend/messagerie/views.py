@@ -17,21 +17,18 @@ from .serializers import (
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    queryset = Conversation.objects.prefetch_related("participants").all()
+    queryset = Conversation.objects.select_related("patient").prefetch_related("participants").all()
     serializer_class = ConversationSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
+        base = Conversation.objects.select_related("patient").prefetch_related("participants")
         # Confidentialité stricte: un utilisateur ne voit que ses conversations,
         # sauf superuser.
         if user.is_superuser:
-            return Conversation.objects.prefetch_related("participants").all()
-        return (
-            Conversation.objects.prefetch_related("participants")
-            .filter(participants=user)
-            .distinct()
-        )
+            return base.all()
+        return base.filter(participants=user).distinct()
 
     def perform_create(self, serializer):
         conversation = serializer.save(cree_par=self.request.user)
@@ -48,6 +45,13 @@ class ConversationViewSet(viewsets.ModelViewSet):
                     conversation=conversation,
                     utilisateur_id=patient_user_id,
                 )
+        # Conversation interne: ajouter les membres d'équipe sélectionnés.
+        participants_ids = self.request.data.get("participants_ids") or []
+        for utilisateur_id in participants_ids:
+            ParticipantConversation.objects.get_or_create(
+                conversation=conversation,
+                utilisateur_id=utilisateur_id,
+            )
         journaliser(
             acteur=self.request.user,
             action="conversation.created",
@@ -173,15 +177,13 @@ class ConversationViewSet(viewsets.ModelViewSet):
             
             # Récupérer les messages
             qs = Message.objects.filter(conversation=conversation).select_related("auteur")
-            messages_data = MessageSerializer(qs, many=True).data
-            
-            # Marquer automatiquement les messages comme lus pour cet utilisateur
-            # (uniquement s'il est participant de la conversation)
+
+            # Marquer comme lus les messages des AUTRES participants (jamais les siens,
+            # sinon l'accusé de réception "Vu" deviendrait vrai dès le propre rafraîchissement de l'auteur).
             if is_participant:
-                messages_non_lus = qs.filter(lu=False)
-                for message in messages_non_lus:
-                    message.lu = True
-                    message.save(update_fields=['lu'])
+                qs.filter(lu=False).exclude(auteur_id=request.user.id).update(lu=True)
+
+            messages_data = MessageSerializer(qs, many=True, context={"request": request}).data
             
             return Response(messages_data)
             

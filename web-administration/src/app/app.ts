@@ -52,7 +52,10 @@ export class App {
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
-        if (this.authService.estConnecte() && !this.authService.utilisateur()) {
+        if (this.estPageConnexion || !this.authService.estConnecte()) {
+          return;
+        }
+        if (!this.authService.utilisateur()) {
           this.authService.chargerProfil().subscribe({
             next: (profil) => {
               this.themeService.appliquer(!!(profil as any).mode_sombre);
@@ -60,12 +63,10 @@ export class App {
             },
           });
         }
-        if (this.authService.estConnecte()) {
-          this.messagerie.badges().subscribe({ 
-            next: (b) => (this.badges = { ...b, total: b.message + b.critique + b.rappel }) 
-          });
-          this.notificationsService.badges$.subscribe({ next: (b) => (this.badges = b) });
-        }
+        this.messagerie.badges().subscribe({
+          next: (b) => (this.badges = { ...b, total: b.message + b.critique + b.rappel })
+        });
+        this.notificationsService.badges$.subscribe({ next: (b) => (this.badges = b) });
       });
   }
 

@@ -1,13 +1,13 @@
 /* Variables et animations */
 :root {
-  --primary-color: #667eea;
-  --secondary-color: #764ba2;
+  --primary-color: #1e4db7;
+  --secondary-color: #2a5fc9;
   --success-color: #10b981;
   --error-color: #ef4444;
   --warning-color: #f59e0b;
-  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  --hover-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  --bg-gradient: linear-gradient(135deg, #1e4db7 0%, #2a5fc9 100%);
+  --card-shadow: 0 10px 25px rgba(22, 50, 122, 0.12);
+  --hover-shadow: 0 15px 35px rgba(22, 50, 122, 0.18);
 }
 
 /* Animations */
@@ -88,12 +88,62 @@
   }
 }
 
+.btn-retour {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  margin-right: 0.25rem;
+}
+
+.btn-retour:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.avatar-chat {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  font-weight: 800;
+  font-size: 1.05rem;
+  z-index: 1;
+}
+
+.pastille-en-ligne {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #4ade80;
+  border: 2px solid var(--primary-color);
+}
+
 .header-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
   position: relative;
   z-index: 1;
+  flex: 1;
 }
 
 .conversation-title {
@@ -131,13 +181,26 @@
     }
   }
   
+  &.offline {
+    color: rgba(255, 255, 255, 0.6);
+
+    i {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.6rem;
+    }
+  }
+
   &.loading {
     color: #fbbf24;
-    
+
     i {
       animation: loading 2s linear infinite;
     }
   }
+}
+
+.tourne {
+  animation: loading 1s linear infinite;
 }
 
 .header-actions {
@@ -179,6 +242,41 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.separateur-date {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0;
+
+  span {
+    background: rgba(30, 77, 183, 0.08);
+    color: #5a6b8a;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+  }
+}
+
+/* État de chargement du fil */
+.etat-chargement-chat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 100%;
+  color: #94a3b8;
+}
+
+.spinner-chat {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 4px solid #e2e8f7;
+  border-top-color: var(--primary-color);
+  animation: loading 0.9s linear infinite;
 }
 
 /* Empty state */
@@ -258,10 +356,11 @@
   
   &.own {
     flex-direction: row-reverse;
-    
+
     .message-content {
       background: var(--bg-gradient);
       color: white;
+      border-radius: 18px 18px 4px 18px;
     }
     
     .author {
@@ -285,13 +384,19 @@
   &.other {
     .message-content {
       background: white;
+      color: #1f2937;
+      border-radius: 18px 18px 18px 4px;
       border: 1px solid #e5e7eb;
     }
-    
+
+    .message-text {
+      color: #1f2937;
+    }
+
     .author {
       color: var(--primary-color);
     }
-    
+
     .timestamp {
       color: #6b7280;
     }
@@ -321,9 +426,10 @@
   max-width: 70%;
   border-radius: 16px;
   padding: 1rem;
+  color: #1f2937;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
@@ -356,6 +462,20 @@
   line-height: 1.5;
   word-wrap: break-word;
   font-size: 0.95rem;
+}
+
+.accuse-reception {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 0.15rem;
+}
+
+.accuse-reception .vu {
+  color: #93c5fd;
 }
 
 .message-actions {
@@ -422,7 +542,12 @@
   transition: all 0.3s ease;
   outline: none;
   background: #f9fafb;
-  
+  color: #1f2937;
+
+  &::placeholder {
+    color: #94a3b8;
+  }
+
   &:focus {
     border-color: var(--primary-color);
     background: white;

@@ -36,6 +36,8 @@ APPEND_SLASH = False
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -72,6 +74,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "personnel.middleware.ActivitePresenceMiddleware",
 ]
 
 ROOT_URLCONF = "gestion_cabinet.urls"
@@ -224,16 +227,16 @@ ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", default="claude-3-5-sonnet-latest")
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-# Channels configuration
-ASGI_APPLICATION = 'warms.asgi.application'
+# Channels configuration (WebSocket temps réel pour la messagerie)
+ASGI_APPLICATION = 'gestion_cabinet.asgi.application'
 
-# Channel layer configuration
+# Couche en mémoire locale : aucune dépendance externe (pas de Redis requis).
+# Suffisant pour un seul processus serveur (dev, ou un seul worker en prod).
+# Pour scaler sur plusieurs workers/processus, remplacer par channels_redis
+# une fois un serveur Redis disponible.
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
-        },
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
 

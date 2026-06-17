@@ -80,9 +80,6 @@ export class TauxAbsenteismeService {
     if (params?.page) httpParams = httpParams.set('page', params.page);
     if (params?.page_size) httpParams = httpParams.set('page_size', params.page_size);
 
-    console.log('🔍 DEBUG - TauxAbsenteisme URL appelée:', this.apiUrl);
-    console.log('🔍 DEBUG - TauxAbsenteisme Params:', httpParams.toString());
-
     return this.http.get<TauxAbsenteisme[]>(this.apiUrl, { params: httpParams }).pipe(
       tap(taux => this.tauxCache.next(taux)),
       shareReplay(1),
@@ -203,10 +200,7 @@ export class TauxAbsenteismeService {
       });
     }
 
-    console.log('🔍 DEBUG - Export TauxAbsenteisme URL appelée:', `${this.apiUrl}export/`);
-    console.log('🔍 DEBUG - Export TauxAbsenteisme Params:', params.toString());
-
-    return this.http.get(`${this.apiUrl}export/`, { 
+    return this.http.get(`${this.apiUrl}export/`, {
       params, 
       responseType: 'blob' 
     }).pipe(
