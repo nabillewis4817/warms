@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { Accueil } from './authentification/accueil/accueil';
 import { Connexion } from './authentification/connexion/connexion';
 import { TableauDeBord } from './tableau-de-bord/tableau-de-bord/tableau-de-bord';
 import { ProfilUtilisateur } from './parametres/profil-utilisateur/profil-utilisateur';
@@ -24,10 +25,10 @@ import { authentificationGuard } from './noyau/gardes/authentification-guard';
 import { roleGuard } from './noyau/gardes/role-guard';
 
 export const routes: Routes = [
+  { path: '', component: Accueil, pathMatch: 'full' },
   { path: 'connexion', component: Connexion },
   { path: 'inscription', component: Inscription },
   { path: 'mot-de-passe-oublie', component: MotDePasseOublie },
-  { path: '', pathMatch: 'full', redirectTo: 'connexion' },
   { path: 'tableau-de-bord', component: TableauDeBord, canActivate: [authentificationGuard] },
   {
     path: 'statistiques',

@@ -1,92 +1,167 @@
-<section class="auth-card">
-  <h2>Créer un compte</h2>
-  <form [formGroup]="form" (ngSubmit)="soumettre()">
-    <div class="form-group">
-      <input placeholder="Username" formControlName="username" 
-             [class.error]="form.get('username')?.invalid && form.get('username')?.touched" />
-      @if (form.get('username')?.invalid && form.get('username')?.touched) {
-        <small class="error-text">Le nom d'utilisateur est requis</small>
-      }
-    </div>
-    
-    <div class="form-group">
-      <input placeholder="Email" formControlName="email" 
-             [class.error]="form.get('email')?.invalid && form.get('email')?.touched" />
-      @if (form.get('email')?.invalid && form.get('email')?.touched) {
-        <small class="error-text">Un email valide est requis</small>
-      }
-    </div>
-    
-    <div class="form-group">
-      <input placeholder="Prénom" formControlName="first_name" 
-             [class.error]="form.get('first_name')?.invalid && form.get('first_name')?.touched" />
-      @if (form.get('first_name')?.invalid && form.get('first_name')?.touched) {
-        <small class="error-text">Le prénom est requis</small>
-      }
-    </div>
-    
-    <div class="form-group">
-      <input placeholder="Nom" formControlName="last_name" 
-             [class.error]="form.get('last_name')?.invalid && form.get('last_name')?.touched" />
-      @if (form.get('last_name')?.invalid && form.get('last_name')?.touched) {
-        <small class="error-text">Le nom est requis</small>
-      }
-    </div>
-    
-    <div class="form-group">
-      <input placeholder="Téléphone" formControlName="telephone" />
-    </div>
-    
-    <div class="form-group role-selection">
-      <label class="role-label">Sélectionner votre rôle</label>
-      <div class="role-options">
-        <label class="role-option">
-          <input type="radio" formControlName="role" value="secretaire" />
-          <div class="role-card">
-            <i class="bi bi-clipboard-data"></i>
-            <h4>Secrétaire</h4>
-            <p>Gestion administrative et planning</p>
-          </div>
-        </label>
-        <label class="role-option">
-          <input type="radio" formControlName="role" value="chirurgien_dentiste" />
-          <div class="role-card">
-            <i class="bi bi-heart-pulse"></i>
-            <h4>Chirurgien-dentiste</h4>
-            <p>Soins dentaires et consultations</p>
-          </div>
-        </label>
+<div class="page-inscription">
+  <div class="pi-fond">
+    <div class="pi-orb pi-orb-1"></div>
+    <div class="pi-orb pi-orb-2"></div>
+  </div>
+
+  <div class="pi-contenu">
+
+    <!-- Nav -->
+    <div class="pi-nav">
+      <div class="pi-logo">
+        <div class="pi-logo-icone">
+          <i class="bi bi-heart-pulse-fill"></i>
+        </div>
+        <span>WAM'S</span>
       </div>
-      @if (form.get('role')?.invalid && form.get('role')?.touched) {
-        <small class="error-text">Veuillez sélectionner un rôle</small>
-      }
+      <a routerLink="/connexion" class="pi-retour">
+        <i class="bi bi-arrow-left"></i>
+        Déjà un compte ? Se connecter
+      </a>
     </div>
-    
-    <div class="form-group">
-      <input placeholder="Mot de passe (min 8 caractères)" type="password" formControlName="password" 
-             [class.error]="form.get('password')?.invalid && form.get('password')?.touched" />
-      @if (form.get('password')?.invalid && form.get('password')?.touched) {
-        <small class="error-text">Le mot de passe doit contenir au moins 8 caractères</small>
+
+    <!-- Carte formulaire -->
+    <div class="pi-carte">
+
+      <div class="pi-carte-entete">
+        <div class="pi-icone">
+          <i class="bi bi-person-plus-fill"></i>
+        </div>
+        <h1>Créer un compte</h1>
+        <p>Rejoignez la plateforme WARMS dentaire</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="soumettre()">
+
+        <div class="pi-grille">
+          <div class="pi-champ">
+            <label>
+              <i class="bi bi-person"></i> Prénom
+            </label>
+            <input
+              formControlName="first_name"
+              placeholder="Lewis"
+              [class.erreur]="form.get('first_name')?.invalid && form.get('first_name')?.touched"
+            />
+            @if (form.get('first_name')?.invalid && form.get('first_name')?.touched) {
+              <small class="pi-erreur-texte">Le prénom est requis</small>
+            }
+          </div>
+          <div class="pi-champ">
+            <label>
+              <i class="bi bi-person"></i> Nom
+            </label>
+            <input
+              formControlName="last_name"
+              placeholder="EBA"
+              [class.erreur]="form.get('last_name')?.invalid && form.get('last_name')?.touched"
+            />
+            @if (form.get('last_name')?.invalid && form.get('last_name')?.touched) {
+              <small class="pi-erreur-texte">Le nom est requis</small>
+            }
+          </div>
+        </div>
+
+        <div class="pi-champ">
+          <label>
+            <i class="bi bi-at"></i> Nom d'utilisateur
+          </label>
+          <input
+            formControlName="username"
+            placeholder="dr.martin"
+            [class.erreur]="form.get('username')?.invalid && form.get('username')?.touched"
+          />
+          @if (form.get('username')?.invalid && form.get('username')?.touched) {
+            <small class="pi-erreur-texte">Le nom d'utilisateur est requis</small>
+          }
+        </div>
+
+        <div class="pi-champ">
+          <label>
+            <i class="bi bi-envelope"></i> Adresse email
+          </label>
+          <input
+            formControlName="email"
+            placeholder="lewis.eba@cabinet.cm"
+            [class.erreur]="form.get('email')?.invalid && form.get('email')?.touched"
+          />
+          @if (form.get('email')?.invalid && form.get('email')?.touched) {
+            <small class="pi-erreur-texte">Un email valide est requis</small>
+          }
+        </div>
+
+        <div class="pi-champ">
+          <label>
+            <i class="bi bi-phone"></i> Téléphone
+            <span class="optionnel">(optionnel)</span>
+          </label>
+          <input formControlName="telephone" placeholder="+237 6XX XXX XXX" />
+        </div>
+
+        <div class="pi-champ pi-roles">
+          <label class="pi-roles-label">
+            <i class="bi bi-briefcase"></i> Votre rôle
+          </label>
+          <div class="pi-roles-options">
+            <label class="pi-role-option">
+              <input type="radio" formControlName="role" value="secretaire" />
+              <div class="pi-role-carte">
+                <i class="bi bi-clipboard-data"></i>
+                <h4>Secrétaire</h4>
+                <p>Gestion administrative</p>
+              </div>
+            </label>
+            <label class="pi-role-option">
+              <input type="radio" formControlName="role" value="chirurgien_dentiste" />
+              <div class="pi-role-carte">
+                <i class="bi bi-heart-pulse"></i>
+                <h4>Chirurgien-dentiste</h4>
+                <p>Soins & consultations</p>
+              </div>
+            </label>
+          </div>
+          @if (form.get('role')?.invalid && form.get('role')?.touched) {
+            <small class="pi-erreur-texte">Veuillez sélectionner un rôle</small>
+          }
+        </div>
+
+        <div class="pi-champ">
+          <label>
+            <i class="bi bi-shield-lock"></i> Mot de passe
+          </label>
+          <input
+            type="password"
+            formControlName="password"
+            placeholder="Minimum 8 caractères"
+            [class.erreur]="form.get('password')?.invalid && form.get('password')?.touched"
+          />
+          @if (form.get('password')?.invalid && form.get('password')?.touched) {
+            <small class="pi-erreur-texte">Le mot de passe doit contenir au moins 8 caractères</small>
+          }
+        </div>
+
+        <button type="submit" class="pi-btn-submit" [disabled]="loading">
+          @if (loading) {
+            <i class="bi bi-arrow-clockwise tourne"></i>
+            <span>Inscription en cours…</span>
+          } @else {
+            <i class="bi bi-person-check-fill"></i>
+            <span>Créer mon compte</span>
+          }
+        </button>
+      </form>
+
+      @if (message) {
+        <div [class]="message.includes('réussie') ? 'pi-msg-succes' : 'pi-msg-erreur'">
+          <i [class]="message.includes('réussie') ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-triangle-fill'"></i>
+          <span>{{ message }}</span>
+        </div>
       }
+
+      <a routerLink="/" class="pi-lien-accueil">
+        <i class="bi bi-arrow-left"></i>
+        Retour à l'accueil
+      </a>
     </div>
-    
-    <button type="submit" [disabled]="loading" [class.loading]="loading">
-      @if (loading) { 
-        <i class="bi bi-arrow-clockwise rotating"></i> Inscription... 
-      } @else { 
-        <i class="bi bi-person-plus"></i> S'inscrire 
-      }
-    </button>
-  </form>
-  
-  <a routerLink="/connexion" class="back-link">
-    <i class="bi bi-arrow-left"></i> Retour à la connexion
-  </a>
-  
-  @if (message) { 
-    <div [class]="message.includes('réussie') ? 'success-message' : 'error-message'">
-      <i [class]="message.includes('réussie') ? 'bi bi-check-circle' : 'bi bi-exclamation-triangle'"></i>
-      <span>{{ message }}</span>
-    </div>
-  }
-</section>
+  </div>
+</div>

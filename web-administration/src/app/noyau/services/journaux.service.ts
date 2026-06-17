@@ -11,6 +11,10 @@ export interface Journal {
   details: string;
   type: string;
   icone: string;
+  objet_type?: string;
+  objet_id?: string;
+  adresse_ip?: string | null;
+  cree_le?: string;
 }
 
 export interface JournalFilters {
@@ -33,6 +37,9 @@ interface JournalApiRow {
   cree_le?: string;
   message?: string;
   acteur_username?: string;
+  objet_type?: string;
+  objet_id?: string;
+  adresse_ip?: string | null;
 }
 
 @Injectable({
@@ -53,6 +60,10 @@ export class JournauxService {
       details: row.details ?? row.message ?? '',
       type,
       icone: row.icone ?? this.iconFromType(type),
+      objet_type: row.objet_type,
+      objet_id: row.objet_id,
+      adresse_ip: row.adresse_ip,
+      cree_le: row.cree_le,
     };
   }
 

@@ -1,220 +1,267 @@
-<section class="journaux-container">
-  <!-- Header moderne -->
-  <div class="header-section">
-    <div class="header-content">
-      <div class="header-icon">
-        <i class="bi bi-journal-text"></i>
-      </div>
-      <div class="header-text">
-        <h2>Journaux d'activité</h2>
-        <p class="subtitle">Historique complet de toutes les actions effectuées dans le système</p>
-      </div>
-    </div>
-    <div class="header-stats">
-      <div class="stat-item">
-        <span class="stat-number">{{ journaux.length }}</span>
-        <span class="stat-label">Total</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number">{{ journauxFiltres.length }}</span>
-        <span class="stat-label">Filtrés</span>
-      </div>
-    </div>
-  </div>
+<section class="journaux-page">
 
-  <!-- Section des filtres et contrôles -->
-  <div class="controls-section">
-    <div class="filters-panel">
-      <div class="panel-header">
-        <i class="bi bi-funnel"></i>
-        <h3>Filtres et recherche</h3>
-      </div>
-      <form [formGroup]="form" class="filters-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">
-              <i class="bi bi-search"></i>
-              Recherche
-            </label>
-            <input 
-              type="text" 
-              placeholder="Rechercher dans les journaux..." 
-              formControlName="recherche"
-              (input)="filtrerJournaux()"
-              class="form-input"
-            />
-          </div>
-          <div class="form-group">
-            <label class="form-label">
-              <i class="bi bi-tag"></i>
-              Type
-            </label>
-            <select formControlName="type" (change)="filtrerJournaux()" class="form-select">
-              <option value="">Tous les types</option>
-              <option value="patient">Patient</option>
-              <option value="consultation">Consultation</option>
-              <option value="rendez_vous">Rendez-vous</option>
-              <option value="systeme">Système</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">
-              <i class="bi bi-calendar-date"></i>
-              Date début
-            </label>
-            <input 
-              type="date" 
-              formControlName="dateDebut"
-              (change)="filtrerJournaux()"
-              class="form-input"
-            />
-          </div>
-          <div class="form-group">
-            <label class="form-label">
-              <i class="bi bi-calendar-date"></i>
-              Date fin
-            </label>
-            <input 
-              type="date" 
-              formControlName="dateFin"
-              (change)="filtrerJournaux()"
-              class="form-input"
-            />
-          </div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn-secondary" (click)="resetFilters()">
-            <i class="bi bi-x-circle"></i>
-            Réinitialiser
-          </button>
-          <button type="button" class="btn-primary" (click)="rafraichir()">
-            <i class="bi bi-arrow-clockwise"></i>
-            Rafraîchir
-          </button>
-        </div>
-      </form>
-    </div>
+  <!-- ========== EN-TÊTE ========== -->
+  <header class="entete-journaux">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
 
-    <div class="actions-panel">
-      <div class="panel-header">
-        <i class="bi bi-gear"></i>
-        <h3>Actions</h3>
+    <div class="entete-contenu">
+      <div class="entete-titre">
+        <div class="icone-entete">
+          <i class="bi bi-journal-text"></i>
+        </div>
+        <div>
+          <h1>Journaux d'activité</h1>
+          <p class="sous-titre">Traçabilité complète de toutes les actions du cabinet</p>
+        </div>
       </div>
-      <div class="actions-grid">
-        <button type="button" class="action-btn export" (click)="exporterJournaux()">
+
+      <div class="kpi-entete">
+        <div class="kpi-card">
+          <span class="kpi-nombre">{{ journaux.length }}</span>
+          <span class="kpi-libelle">Total</span>
+        </div>
+        <div class="kpi-card kpi-today">
+          <span class="kpi-nombre">{{ compterAujourdhui() }}</span>
+          <span class="kpi-libelle">Aujourd'hui</span>
+        </div>
+        <div class="kpi-card kpi-filtres">
+          <span class="kpi-nombre">{{ journauxFiltres.length }}</span>
+          <span class="kpi-libelle">Filtrés</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========== BARRE DE FILTRES ========== -->
+  <div class="barre-filtres">
+    <form [formGroup]="form" class="filtres-form">
+      <div class="input-recherche-groupe">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          formControlName="recherche"
+          placeholder="Rechercher par action, détails ou acteur..."
+          class="input-recherche"
+          (input)="appliquerFiltres()"
+        />
+      </div>
+
+      <select formControlName="type" (change)="appliquerFiltres()" class="select-type">
+        <option value="">Tous les types</option>
+        @for (t of typesDisponibles; track t.valeur) {
+          <option [value]="t.valeur">{{ t.info.label }}</option>
+        }
+      </select>
+
+      <div class="dates-groupe">
+        <input
+          type="date"
+          formControlName="dateDebut"
+          (change)="appliquerFiltres()"
+          class="input-date"
+          title="Date de début"
+        />
+        <span class="dates-separateur">→</span>
+        <input
+          type="date"
+          formControlName="dateFin"
+          (change)="appliquerFiltres()"
+          class="input-date"
+          title="Date de fin"
+        />
+      </div>
+    </form>
+
+    <div class="actions-barre">
+      <button class="btn-reinit" (click)="reinitialiserFiltres()" title="Réinitialiser les filtres">
+        <i class="bi bi-x-circle"></i>
+        <span>Réinitialiser</span>
+      </button>
+      <button class="btn-rafraichir" (click)="chargerJournaux()" [disabled]="chargement" title="Rafraîchir">
+        <i class="bi bi-arrow-clockwise" [class.tourne]="chargement"></i>
+        <span>Rafraîchir</span>
+      </button>
+      <button class="btn-exporter" (click)="exporterJournaux()" [disabled]="chargementExport">
+        @if (chargementExport) {
+          <i class="bi bi-arrow-clockwise tourne"></i>
+        } @else {
           <i class="bi bi-download"></i>
-          <span>Exporter</span>
-        </button>
-        <button type="button" class="action-btn refresh" (click)="rafraichir()">
-          <i class="bi bi-arrow-clockwise"></i>
-          <span>Rafraîchir</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Liste des journaux -->
-  <div class="journaux-section">
-    <div class="section-header">
-      <i class="bi bi-list-ul"></i>
-      <h3>Historique des journaux</h3>
-      <div class="view-toggle">
-        <button class="toggle-btn active" title="Vue liste">
-          <i class="bi bi-list-ul"></i>
-        </button>
-        <button class="toggle-btn" title="Vue grille">
-          <i class="bi bi-grid"></i>
-        </button>
-      </div>
-    </div>
-    
-    <div class="journaux-list" *ngIf="!chargement && journauxFiltres.length > 0">
-      @for (journal of journauxFiltres; track journal.id) {
-        <article class="journal-item" (click)="voirDetails(journal)">
-          <div class="journal-header">
-            <div class="journal-icon" [class]="'icon-' + journal.type">
-              <i [class]="'bi ' + getIcone(journal.type)"></i>
-            </div>
-            <div class="journal-info">
-              <div class="journal-meta">
-                <span class="journal-date">
-                  <i class="bi bi-calendar"></i>
-                  {{ journal.date }}
-                </span>
-                <span class="journal-user">
-                  <i class="bi bi-person"></i>
-                  {{ journal.utilisateur }}
-                </span>
-              </div>
-              <div class="journal-type">
-                <span class="type-badge" [class]="'type-' + journal.type">
-                  {{ getTypeLabel(journal.type) }}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="journal-content">
-            <h4 class="journal-action">{{ journal.action }}</h4>
-            <p class="journal-details">{{ journal.details }}</p>
-          </div>
-          <div class="journal-actions">
-            <button class="action-icon" title="Voir les détails">
-              <i class="bi bi-eye"></i>
-            </button>
-            <button class="action-icon" title="Exporter cette entrée">
-              <i class="bi bi-download"></i>
-            </button>
-          </div>
-        </article>
-      }
-    </div>
-
-    <!-- État de chargement -->
-    <div class="loading-state" *ngIf="chargement">
-      <div class="loading-spinner">
-        <div class="spinner"></div>
-        <p>Chargement des journaux...</p>
-      </div>
-    </div>
-
-    @if (erreurChargement) {
-      <div class="empty-state error">
-        <p>{{ erreurChargement }}</p>
-        <button class="btn-primary" (click)="rafraichir()">Réessayer</button>
-      </div>
-    }
-
-    <!-- État vide -->
-    <div class="empty-state" *ngIf="!chargement && !erreurChargement && journauxFiltres.length === 0">
-      <div class="empty-icon">
-        <i class="bi bi-journal-text"></i>
-      </div>
-      <h3>Aucun journal trouvé</h3>
-      <p>Les actions (connexion, CRUD patients, personnel…) apparaîtront ici automatiquement.</p>
-      <button class="btn-primary" (click)="resetFilters()">
-        <i class="bi bi-arrow-counterclockwise"></i>
-        Réinitialiser les filtres
+        }
+        <span>Exporter CSV</span>
       </button>
     </div>
   </div>
 
-  @if (journalSelectionne) {
-    <div class="modal-overlay" (click)="fermerDetails()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
-        <header>
-          <h3>Détail de l'activité</h3>
-          <button type="button" (click)="fermerDetails()"><i class="bi bi-x-lg"></i></button>
-        </header>
-        <dl>
-          <dt>Date</dt><dd>{{ journalSelectionne.date }}</dd>
-          <dt>Utilisateur</dt><dd>{{ journalSelectionne.utilisateur }}</dd>
-          <dt>Type</dt><dd>{{ getTypeLabel(journalSelectionne.type) }}</dd>
-          <dt>Action</dt><dd>{{ journalSelectionne.action }}</dd>
-          <dt>Détails</dt><dd>{{ journalSelectionne.details }}</dd>
-        </dl>
-      </div>
+  <!-- ========== ÉTAT CHARGEMENT ========== -->
+  @if (chargement) {
+    <div class="etat-chargement">
+      <div class="spinner-journaux"></div>
+      <p>Chargement des journaux d'activité…</p>
     </div>
   }
+
+  <!-- ========== ÉTAT ERREUR ========== -->
+  @if (!chargement && erreurChargement) {
+    <div class="etat-erreur">
+      <i class="bi bi-exclamation-triangle"></i>
+      <p>{{ erreurChargement }}</p>
+      <button class="btn-rafraichir" (click)="chargerJournaux()">
+        <i class="bi bi-arrow-clockwise"></i> Réessayer
+      </button>
+    </div>
+  }
+
+  <!-- ========== TIMELINE ========== -->
+  @if (!chargement && !erreurChargement) {
+    @if (journauxFiltres.length > 0) {
+      <ol class="timeline-journaux">
+        @for (journal of journauxFiltres; track journal.id) {
+          <li
+            class="entree-journal"
+            [style.--couleur-type]="obtenirInfoType(journal.type).couleur"
+            [style.--fond-type]="obtenirInfoType(journal.type).fondClair"
+            (click)="voirDetails(journal)"
+            tabindex="0"
+            (keyup.enter)="voirDetails(journal)"
+            role="button"
+            [attr.aria-label]="'Voir les détails : ' + humaniserAction(journal.action)"
+          >
+            <!-- Icône type -->
+            <div class="icone-entree">
+              <i class="bi {{ obtenirInfoType(journal.type).icone }}"></i>
+            </div>
+
+            <!-- Corps -->
+            <div class="corps-entree">
+              <div class="ligne-titre">
+                <h4 class="action-humanisee">{{ humaniserAction(journal.action) }}</h4>
+                <span class="badge-type">{{ obtenirInfoType(journal.type).label }}</span>
+              </div>
+              @if (journal.details) {
+                <p class="details-texte">{{ journal.details }}</p>
+              }
+              @if (journal.objet_type && journal.objet_id) {
+                <span class="puce-objet">
+                  <i class="bi bi-link-45deg"></i>
+                  {{ journal.objet_type }} #{{ journal.objet_id }}
+                </span>
+              }
+            </div>
+
+            <!-- Meta droite -->
+            <div class="meta-entree">
+              <div class="acteur-groupe" [title]="journal.utilisateur">
+                <div class="avatar-acteur">{{ obtenirInitiale(journal.utilisateur) }}</div>
+                <span class="nom-acteur">{{ journal.utilisateur }}</span>
+              </div>
+              <div class="dates-entree">
+                <span class="temps-relatif">{{ obtenirTempsRelatif(journal.date) }}</span>
+                <span class="date-exacte">{{ journal.date }}</span>
+              </div>
+            </div>
+          </li>
+        }
+      </ol>
+    } @else {
+      <div class="etat-vide">
+        <div class="icone-vide">
+          <i class="bi bi-journal-x"></i>
+        </div>
+        <h3>Aucun journal trouvé</h3>
+        <p>
+          @if (form.value.recherche || form.value.type || form.value.dateDebut || form.value.dateFin) {
+            Aucun résultat ne correspond à vos critères de recherche.
+          } @else {
+            Les actions (connexions, gestion des patients, consultations…) apparaîtront ici automatiquement.
+          }
+        </p>
+        @if (form.value.recherche || form.value.type || form.value.dateDebut || form.value.dateFin) {
+          <button class="btn-reinit" (click)="reinitialiserFiltres()">
+            <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser les filtres
+          </button>
+        }
+      </div>
+    }
+  }
+
 </section>
+
+<!-- ========== MODAL DÉTAIL ========== -->
+@if (journalSelectionne) {
+  <div class="overlay-modal" (click)="fermerDetails()">
+    <div
+      class="panneau-detail"
+      (click)="$event.stopPropagation()"
+      [style.--couleur-type]="obtenirInfoType(journalSelectionne.type).couleur"
+      [style.--fond-type]="obtenirInfoType(journalSelectionne.type).fondClair"
+    >
+      <!-- En-tête modal -->
+      <div class="modal-entete">
+        <div class="modal-icone">
+          <i class="bi {{ obtenirInfoType(journalSelectionne.type).icone }}"></i>
+        </div>
+        <div class="modal-titre">
+          <h3>{{ humaniserAction(journalSelectionne.action) }}</h3>
+          <span class="badge-type modal-badge">{{ obtenirInfoType(journalSelectionne.type).label }}</span>
+        </div>
+        <button class="btn-fermer-modal" (click)="fermerDetails()" title="Fermer">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Corps modal -->
+      <div class="modal-corps">
+        @if (journalSelectionne.details) {
+          <div class="section-detail">
+            <span class="libelle-detail"><i class="bi bi-chat-text"></i> Détails</span>
+            <p class="valeur-detail detail-long">{{ journalSelectionne.details }}</p>
+          </div>
+        }
+
+        <div class="grille-details">
+          <div class="section-detail">
+            <span class="libelle-detail"><i class="bi bi-person-circle"></i> Acteur</span>
+            <div class="acteur-modal">
+              <div class="avatar-acteur avatar-grand">{{ obtenirInitiale(journalSelectionne.utilisateur) }}</div>
+              <span>{{ journalSelectionne.utilisateur }}</span>
+            </div>
+          </div>
+
+          <div class="section-detail">
+            <span class="libelle-detail"><i class="bi bi-clock-history"></i> Date et heure</span>
+            <p class="valeur-detail">{{ journalSelectionne.date }}</p>
+            <p class="valeur-detail mute">{{ obtenirTempsRelatif(journalSelectionne.date) }}</p>
+          </div>
+
+          @if (journalSelectionne.objet_type || journalSelectionne.objet_id) {
+            <div class="section-detail">
+              <span class="libelle-detail"><i class="bi bi-link-45deg"></i> Objet concerné</span>
+              <p class="valeur-detail">
+                {{ journalSelectionne.objet_type }}
+                @if (journalSelectionne.objet_id) { #{{ journalSelectionne.objet_id }} }
+              </p>
+            </div>
+          }
+
+          @if (journalSelectionne.adresse_ip) {
+            <div class="section-detail">
+              <span class="libelle-detail"><i class="bi bi-globe"></i> Adresse IP</span>
+              <p class="valeur-detail code">{{ journalSelectionne.adresse_ip }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Pied modal -->
+      <div class="modal-pied">
+        <button class="btn-exporter" (click)="exporterJournalUnique(journalSelectionne!)">
+          <i class="bi bi-download"></i> Exporter cette entrée
+        </button>
+        <button class="btn-fermer-sec" (click)="fermerDetails()">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+}

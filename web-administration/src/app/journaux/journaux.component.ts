@@ -1,185 +1,156 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { JournauxService, Journal, JournalFilters } from '../noyau/services/journaux.service';
+
+interface InfoType {
+  label: string;
+  icone: string;
+  couleur: string;
+  fondClair: string;
+}
 
 @Component({
   selector: 'app-journaux',
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './journaux.component.html',
-  styleUrl: './journaux.component.scss'
+  styleUrl: './journaux.component.scss',
 })
 export class JournauxComponent implements OnInit {
-  form: any;
+  private readonly fb = inject(FormBuilder);
+  private readonly journauxService = inject(JournauxService);
+
   journaux: Journal[] = [];
   journauxFiltres: Journal[] = [];
   chargement = false;
+  chargementExport = false;
   erreurChargement = '';
   journalSelectionne: Journal | null = null;
-  filtre = '';
-  typesJournaux: string[] = [];
-  utilisateurs: string[] = [];
+  statistiques: { total: number; par_type: Record<string, number> } | null = null;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private journauxService: JournauxService
-  ) {
-    this.form = this.fb.group({
-      recherche: [''],
-      dateDebut: [''],
-      dateFin: [''],
-      type: [''],
-      utilisateur: ['']
-    });
-  }
+  readonly typesDisponibles: { valeur: string; info: InfoType }[] = [
+    { valeur: 'patient',      info: { label: 'Patient',      icone: 'bi-person-plus',         couleur: '#10b981', fondClair: '#d1fae5' } },
+    { valeur: 'consultation', info: { label: 'Consultation', icone: 'bi-clipboard2-pulse',     couleur: '#f59e0b', fondClair: '#fef3c7' } },
+    { valeur: 'rendez_vous',  info: { label: 'Rendez-vous',  icone: 'bi-calendar-check',       couleur: '#3b82f6', fondClair: '#dbeafe' } },
+    { valeur: 'personnel',    info: { label: 'Personnel',    icone: 'bi-people',               couleur: '#8b5cf6', fondClair: '#ede9fe' } },
+    { valeur: 'modification', info: { label: 'Modification', icone: 'bi-pencil-square',        couleur: '#6366f1', fondClair: '#e0e7ff' } },
+    { valeur: 'suppression',  info: { label: 'Suppression',  icone: 'bi-trash3',               couleur: '#ef4444', fondClair: '#fee2e2' } },
+    { valeur: 'connexion',    info: { label: 'Connexion',    icone: 'bi-box-arrow-in-right',   couleur: '#14b8a6', fondClair: '#ccfbf1' } },
+    { valeur: 'ordonnance',   info: { label: 'Ordonnance',   icone: 'bi-file-medical',         couleur: '#ec4899', fondClair: '#fce7f3' } },
+    { valeur: 'analyse',      info: { label: 'Analyse',      icone: 'bi-graph-up-arrow',       couleur: '#06b6d4', fondClair: '#cffafe' } },
+    { valeur: 'systeme',      info: { label: 'Système',      icone: 'bi-gear-wide-connected',  couleur: '#6b7280', fondClair: '#f3f4f6' } },
+  ];
+
+  form = this.fb.group({
+    recherche: [''],
+    dateDebut: [''],
+    dateFin: [''],
+    type: [''],
+  });
 
   ngOnInit(): void {
     this.chargerJournaux();
-    this.chargerTypesEtUtilisateurs();
+    this.chargerStatistiques();
   }
 
   chargerJournaux(): void {
     this.chargement = true;
     this.erreurChargement = '';
-    const filters: JournalFilters = this.form.value;
-    
-    this.journauxService.getJournaux(filters).subscribe({
+
+    this.journauxService.getJournaux().subscribe({
       next: (data) => {
         this.journaux = data;
-        this.journauxFiltres = data;
+        this.appliquerFiltres();
         this.chargement = false;
       },
-      error: (error) => {
-        console.error('Erreur lors du chargement des journaux:', error);
-        this.journaux = [];
-        this.journauxFiltres = [];
-        this.erreurChargement = 'Impossible de charger les journaux. Vérifiez la connexion au serveur.';
+      error: () => {
+        this.erreurChargement = 'Impossible de charger les journaux. Vérifiez votre connexion au serveur.';
         this.chargement = false;
-      }
+      },
     });
   }
 
-  filtrerJournaux(): void {
-    const filtreTexte = this.form.value.recherche?.toLowerCase() || '';
-    const filtreType = this.form.value.type || '';
-    const filtreUtilisateur = this.form.value.utilisateur?.toLowerCase() || '';
-    const filtreDateDebut = this.form.value.dateDebut || '';
-    const filtreDateFin = this.form.value.dateFin || '';
-    
-    this.journauxFiltres = this.journaux.filter(journal => {
-      // Filtre par texte
-      const matchTexte = !filtreTexte || 
-        journal.action.toLowerCase().includes(filtreTexte) ||
-        journal.details.toLowerCase().includes(filtreTexte) ||
-        journal.utilisateur.toLowerCase().includes(filtreTexte);
-      
-      // Filtre par type
-      const matchType = !filtreType || journal.type === filtreType;
-      
-      // Filtre par utilisateur
-      const matchUtilisateur = !filtreUtilisateur || 
-        journal.utilisateur.toLowerCase().includes(filtreUtilisateur);
-      
-      // Filtre par date
-      const journalDate = new Date(journal.date);
-      const dateDebut = filtreDateDebut ? new Date(filtreDateDebut) : null;
-      const dateFin = filtreDateFin ? new Date(filtreDateFin) : null;
-      
-      const matchDateDebut = !dateDebut || journalDate >= dateDebut;
-      const matchDateFin = !dateFin || journalDate <= dateFin;
-      
-      return matchTexte && matchType && matchUtilisateur && matchDateDebut && matchDateFin;
+  chargerStatistiques(): void {
+    this.journauxService.getStatistiques().subscribe({
+      next: (stats) => (this.statistiques = stats),
+      error: () => undefined,
     });
+  }
+
+  appliquerFiltres(): void {
+    const { recherche, type, dateDebut, dateFin } = this.form.value;
+    const terme = (recherche ?? '').toLowerCase();
+
+    this.journauxFiltres = this.journaux.filter((j) => {
+      if (
+        terme &&
+        !j.action.toLowerCase().includes(terme) &&
+        !j.details.toLowerCase().includes(terme) &&
+        !j.utilisateur.toLowerCase().includes(terme) &&
+        !this.humaniserAction(j.action).toLowerCase().includes(terme)
+      ) {
+        return false;
+      }
+      if (type && j.type !== type) return false;
+
+      const date = new Date(j.date);
+      if (dateDebut && date < new Date(dateDebut)) return false;
+      if (dateFin && date > new Date(dateFin + 'T23:59:59')) return false;
+
+      return true;
+    });
+  }
+
+  private formToFilters(): JournalFilters {
+    const v = this.form.value;
+    return {
+      recherche: v.recherche ?? undefined,
+      dateDebut: v.dateDebut ?? undefined,
+      dateFin: v.dateFin ?? undefined,
+      type: v.type ?? undefined,
+    };
   }
 
   exporterJournaux(): void {
-    const filters: JournalFilters = this.form.value;
-    
+    if (this.chargementExport) return;
+    this.chargementExport = true;
+    const filters = this.formToFilters();
+
     this.journauxService.exporterJournaux(filters).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `journaux_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+        this.telechargerBlob(blob, `journaux_warms_${new Date().toISOString().split('T')[0]}.csv`);
+        this.chargementExport = false;
       },
-      error: (error) => {
-        console.error('Erreur lors de l\'exportation des journaux:', error);
-        alert('Erreur lors de l\'exportation des journaux');
-      }
+      error: () => { this.chargementExport = false; },
     });
   }
 
-  rafraichir(): void {
-    this.chargerJournaux();
+  exporterJournalUnique(journal: Journal): void {
+    const entetes = ['ID', 'Date', 'Utilisateur', 'Action', 'Détails', 'Type', 'Objet', 'IP'];
+    const ligne = [
+      journal.id,
+      journal.date,
+      `"${journal.utilisateur}"`,
+      `"${this.humaniserAction(journal.action)}"`,
+      `"${journal.details.replace(/"/g, '""')}"`,
+      journal.type,
+      journal.objet_type ? `${journal.objet_type} #${journal.objet_id}` : '',
+      journal.adresse_ip ?? '',
+    ];
+    const csv = [entetes.join(','), ligne.join(',')].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    this.telechargerBlob(blob, `journal_${journal.id}.csv`);
   }
 
-  getIcone(type: string): string {
-    const icones: { [key: string]: string } = {
-      patient: 'bi-person-plus',
-      consultation: 'bi-clipboard2',
-      rendez_vous: 'bi-calendar-check',
-      systeme: 'bi-gear',
-      modification: 'bi-pencil',
-      suppression: 'bi-trash',
-      connexion: 'bi-box-arrow-in-right'
-    };
-    return icones[type] || 'bi-circle';
-  }
-
-  chargerTypesEtUtilisateurs(): void {
-    // Charger les types de journaux disponibles
-    this.journauxService.getTypesJournaux().subscribe({
-      next: (types) => {
-        this.typesJournaux = types;
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des types:', error);
-        // Utiliser des types par défaut
-        this.typesJournaux = ['patient', 'consultation', 'rendez_vous', 'systeme'];
-      }
-    });
-
-    // Charger les utilisateurs disponibles
-    this.journauxService.getUtilisateurs().subscribe({
-      next: (utilisateurs) => {
-        this.utilisateurs = utilisateurs;
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des utilisateurs:', error);
-        // Utiliser des utilisateurs par défaut
-        this.utilisateurs = ['Dr. Martin', 'Secrétaire', 'Dr. Dubois'];
-      }
-    });
-  }
-
-  resetFilters(): void {
-    this.form.reset({
-      recherche: '',
-      dateDebut: '',
-      dateFin: '',
-      type: '',
-      utilisateur: ''
-    });
-    this.filtrerJournaux();
-  }
-
-  getTypeLabel(type: string): string {
-    const labels: { [key: string]: string } = {
-      patient: 'Patient',
-      consultation: 'Consultation',
-      rendez_vous: 'Rendez-vous',
-      systeme: 'Système',
-      modification: 'Modification',
-      suppression: 'Suppression',
-      connexion: 'Connexion'
-    };
-    return labels[type] || type;
+  private telechargerBlob(blob: Blob, nom: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nom;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 
   voirDetails(journal: Journal): void {
@@ -190,31 +161,69 @@ export class JournauxComponent implements OnInit {
     this.journalSelectionne = null;
   }
 
-  exporterJournal(journal: Journal): void {
-    // Exporter une seule entrée de journal
-    const csvContent = this.formatJournalToCSV([journal]);
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `journal_${journal.id}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+  reinitialiserFiltres(): void {
+    this.form.reset({ recherche: '', dateDebut: '', dateFin: '', type: '' });
+    this.appliquerFiltres();
   }
 
-  private formatJournalToCSV(journaux: Journal[]): string {
-    const headers = ['ID', 'Date', 'Utilisateur', 'Action', 'Détails', 'Type'];
-    const rows = journaux.map(journal => [
-      journal.id,
-      journal.date,
-      journal.utilisateur,
-      journal.action,
-      journal.details,
-      journal.type
-    ]);
-    
-    return [headers, ...rows].map(row => row.join(',')).join('\n');
+  humaniserAction(action: string): string {
+    const connus: Record<string, string> = {
+      creation_patient: 'Création de patient',
+      modification_patient: 'Modification de patient',
+      suppression_patient: 'Suppression de patient',
+      archivage_patient: 'Archivage de patient',
+      restauration_patient: 'Restauration de patient',
+      creation_consultation: 'Création de consultation',
+      modification_consultation: 'Modification de consultation',
+      suppression_consultation: 'Suppression de consultation',
+      creation_rendez_vous: 'Création de rendez-vous',
+      modification_rendez_vous: 'Modification de rendez-vous',
+      suppression_rendez_vous: 'Suppression de rendez-vous',
+      connexion: 'Connexion au système',
+      deconnexion: 'Déconnexion du système',
+      creation_personnel: 'Création de membre du personnel',
+      modification_personnel: 'Modification de membre du personnel',
+      suppression_personnel: 'Suppression de membre du personnel',
+      creation_ordonnance: "Création d'ordonnance",
+      modification_ordonnance: "Modification d'ordonnance",
+      creation_analyse: "Création d'analyse",
+      modification_analyse: "Modification d'analyse",
+    };
+    if (connus[action]) return connus[action];
+    return action.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+  }
+
+  obtenirInfoType(type: string): InfoType {
+    return (
+      this.typesDisponibles.find((t) => t.valeur === type)?.info ?? {
+        label: type,
+        icone: 'bi-circle',
+        couleur: '#6b7280',
+        fondClair: '#f3f4f6',
+      }
+    );
+  }
+
+  obtenirInitiale(utilisateur: string): string {
+    const parties = (utilisateur ?? 'S').split(' ');
+    if (parties.length >= 2) return (parties[0][0] + parties[1][0]).toUpperCase();
+    return parties[0].charAt(0).toUpperCase();
+  }
+
+  obtenirTempsRelatif(date: string): string {
+    if (!date) return '';
+    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+    if (diff < 60) return 'à l\'instant';
+    if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
+    if (diff < 604800) return `il y a ${Math.floor(diff / 86400)} j`;
+    return new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  compterAujourdhui(): number {
+    const auj = new Date().toISOString().split('T')[0];
+    return this.journaux.filter((j) => j.date.startsWith(auj)).length;
   }
 }
+
+// #EbaJioloLewis

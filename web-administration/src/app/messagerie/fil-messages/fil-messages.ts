@@ -3,6 +3,7 @@ import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 import { Conversation, MessageConversation, Messagerie } from '../../noyau/services/messagerie';
 
@@ -23,7 +24,11 @@ export class FilMessages implements OnInit, OnDestroy {
   conversationId = 0;
   chargement = false;
   envoiEnCours = false;
+  wsConnecte = false;
   readonly username: string | null = this.obtenirUsernameConnecte();
+
+  private ws: WebSocket | null = null;
+  private wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private refreshMessages: Subscription | null = null;
   private refreshConversation: Subscription | null = null;
 
@@ -35,14 +40,64 @@ export class FilMessages implements OnInit, OnDestroy {
     this.conversationId = Number(this.route.snapshot.paramMap.get('id'));
     this.chargerConversation();
     this.charger();
-    // Auto-rafraîchissement silencieux : messages toutes les 5s, présence/infos toutes les 15s.
-    this.refreshMessages = interval(5000).subscribe(() => this.charger(true));
+    this.connecterWebSocket();
+    // Polling de secours: messages toutes les 30s (WS gère le temps réel), infos toutes les 15s
+    this.refreshMessages = interval(30000).subscribe(() => this.charger(true));
     this.refreshConversation = interval(15000).subscribe(() => this.chargerConversation());
   }
 
   ngOnDestroy(): void {
     this.refreshMessages?.unsubscribe();
     this.refreshConversation?.unsubscribe();
+    if (this.wsReconnectTimer) clearTimeout(this.wsReconnectTimer);
+    this.ws?.close();
+    this.ws = null;
+  }
+
+  private connecterWebSocket(): void {
+    const token = localStorage.getItem('warms_access') ?? '';
+    const wsBase = environment.apiBaseUrl
+      .replace(/^http:\/\//, 'ws://')
+      .replace(/^https:\/\//, 'wss://')
+      .replace('/api/v1', '');
+    const url = `${wsBase}/ws/chat/${this.conversationId}/?token=${token}`;
+
+    try {
+      this.ws = new WebSocket(url);
+    } catch {
+      return;
+    }
+
+    this.ws.onopen = () => {
+      this.wsConnecte = true;
+    };
+
+    this.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message) {
+          this.ajouterMessage(data.message as MessageConversation);
+        }
+      } catch { /* ignore malformed frames */ }
+    };
+
+    this.ws.onclose = () => {
+      this.wsConnecte = false;
+      this.ws = null;
+      // Reconnexion automatique dans 5 secondes
+      this.wsReconnectTimer = setTimeout(() => this.connecterWebSocket(), 5000);
+    };
+
+    this.ws.onerror = () => {
+      this.ws?.close();
+    };
+  }
+
+  private ajouterMessage(msg: MessageConversation): void {
+    if (!this.messages.some((m) => m.id === msg.id)) {
+      this.messages = [...this.messages, msg];
+      this.defilerEnBas();
+    }
   }
 
   chargerConversation(): void {
@@ -53,21 +108,15 @@ export class FilMessages implements OnInit, OnDestroy {
   }
 
   charger(silencieux = false): void {
-    if (!silencieux) {
-      this.chargement = true;
-    }
+    if (!silencieux) this.chargement = true;
     this.messagerie.listerMessages(this.conversationId).subscribe({
       next: (items) => {
         const nouveauxMessages = items.length > this.messages.length;
         this.messages = items;
         this.chargement = false;
-        if (!silencieux || nouveauxMessages) {
-          this.defilerEnBas();
-        }
+        if (!silencieux || nouveauxMessages) this.defilerEnBas();
       },
-      error: () => {
-        this.chargement = false;
-      },
+      error: () => { this.chargement = false; },
     });
   }
 
@@ -81,11 +130,10 @@ export class FilMessages implements OnInit, OnDestroy {
     this.messagerie.envoyerMessage(this.conversationId, message).subscribe({
       next: () => {
         this.envoiEnCours = false;
-        this.charger();
+        if (!this.wsConnecte) this.charger(true);
       },
       error: () => {
         this.envoiEnCours = false;
-        // En cas d'erreur, restaurer le message
         this.form.patchValue({ contenu: message });
       },
     });
@@ -93,7 +141,7 @@ export class FilMessages implements OnInit, OnDestroy {
 
   envoyerSuggestion(texte: string): void {
     this.messagerie.envoyerMessage(this.conversationId, texte).subscribe({
-      next: () => this.charger(),
+      next: () => { if (!this.wsConnecte) this.charger(true); },
     });
   }
 
@@ -108,7 +156,7 @@ export class FilMessages implements OnInit, OnDestroy {
 
   obtenirNomConversation(): string {
     if (!this.conversation) return 'Conversation';
-    return this.conversation.titre || `Conversation #${this.conversation.id}`;
+    return this.conversation.patient_nom || this.conversation.titre || `Conversation #${this.conversation.id}`;
   }
 
   obtenirInitiale(): string {
@@ -116,7 +164,6 @@ export class FilMessages implements OnInit, OnDestroy {
     return source.charAt(0).toUpperCase();
   }
 
-  /** Affiche un séparateur de date au-dessus du premier message d'un nouveau jour. */
   afficherSeparateurDate(index: number): boolean {
     if (index === 0) return true;
     const courant = new Date(this.messages[index].cree_le).toDateString();
@@ -138,10 +185,8 @@ export class FilMessages implements OnInit, OnDestroy {
   private defilerEnBas(): void {
     setTimeout(() => {
       const container = document.querySelector('.messages-container');
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 100);
+      if (container) container.scrollTop = container.scrollHeight;
+    }, 80);
   }
 
   private obtenirUsernameConnecte(): string | null {

@@ -643,3 +643,448 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ----------------------------------------
+   OPÉRATIONS & SCHÉMA DENTAIRE
+   ---------------------------------------- */
+.operations-section {
+  margin-top: 2.5rem;
+  position: relative;
+  animation: apparition 0.5s ease both;
+  animation-delay: 0.15s;
+}
+
+/* Accès liste schémas */
+.op-schemas-acces {
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid #f0f4ff;
+}
+
+.btn-voir-schemas {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #f0f4ff;
+  border: 1.5px solid #c7d9ff;
+  border-radius: 12px;
+  color: #1e4db7;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  i { font-size: 17px; }
+
+  .schemas-badge {
+    background: #1e4db7;
+    color: #fff;
+    border-radius: 50px;
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  &:hover {
+    background: #1e4db7;
+    border-color: #1e4db7;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(30, 77, 183, 0.3);
+
+    .schemas-badge {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+}
+
+.operations-card {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+/* Ligne principale: état patient + boutons */
+.op-ligne-principale {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Carte patient confirmé */
+.op-patient-carte {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #f0f7ff, #eff6ff);
+  border: 1.5px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 14px 18px;
+  animation: opEntree 0.25s ease;
+
+  .op-patient-avatar-lg {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, #1e4db7, #3b82f6);
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; font-weight: 800;
+    color: #fff; flex-shrink: 0;
+    box-shadow: 0 5px 14px rgba(30, 77, 183, 0.28);
+  }
+
+  .op-patient-details {
+    .op-label-patient {
+      display: block;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: #94a3b8; margin-bottom: 3px;
+    }
+    h3 {
+      font-size: 16px; font-weight: 800;
+      color: #0d1b3e; margin: 0 0 5px;
+    }
+    .op-dossier-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(30,77,183,0.1); color: #1e4db7;
+      border-radius: 50px; padding: 3px 10px;
+      font-size: 11.5px; font-weight: 600;
+      i { font-size: 11px; }
+    }
+  }
+}
+
+/* État vide */
+.op-empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+
+  .op-empty-icone {
+    width: 48px; height: 48px;
+    background: #f1f5f9; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    i { font-size: 22px; color: #94a3b8; }
+  }
+
+  p { font-size: 14px; font-weight: 600; color: #475569; margin: 0 0 3px; }
+  small { font-size: 12px; color: #94a3b8; }
+}
+
+/* Boutons action */
+.op-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-selectionner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 18px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  color: #475569;
+  font-size: 13.5px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  i { font-size: 16px; }
+
+  &:hover {
+    background: #f0f9ff;
+    border-color: #3b82f6;
+    color: #1e4db7;
+  }
+}
+
+.btn-schema-dentaire {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #1e4db7, #2563eb);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 20px rgba(30,77,183,0.35);
+  white-space: nowrap;
+
+  i:first-child { font-size: 17px; }
+  i:last-child  { font-size: 15px; transition: transform 0.2s ease; }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(30,77,183,0.5);
+    i:last-child { transform: translateX(4px); }
+  }
+}
+
+/* ----------------------------------------
+   MODAL SÉLECTEUR PATIENT
+   ---------------------------------------- */
+@keyframes opEntree {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes modalEntree {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.selecteur-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 100000;
+  animation: opEntree 0.2s ease;
+}
+
+.selecteur-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100001;
+  width: 520px;
+  max-width: calc(100vw - 40px);
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalEntree 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.selecteur-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+
+  .selecteur-titre {
+    display: flex; align-items: center; gap: 10px;
+    i { font-size: 20px; color: #1e4db7; }
+    h3 { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0; }
+    .selecteur-count {
+      background: #eff6ff; color: #3b82f6;
+      border-radius: 50px; padding: 2px 10px;
+      font-size: 11.5px; font-weight: 700;
+    }
+  }
+
+  .selecteur-close {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 9px; cursor: pointer;
+    color: #64748b; font-size: 14px;
+    transition: all 0.15s ease;
+
+    &:hover { background: #fee2e2; border-color: #fecaca; color: #e11d48; }
+  }
+}
+
+.selecteur-recherche {
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 22px 10px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  padding: 10px 14px;
+  flex-shrink: 0;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    background: #fff;
+  }
+
+  i.bi-search { font-size: 15px; color: #94a3b8; flex-shrink: 0; }
+
+  input {
+    flex: 1; border: none; background: transparent;
+    font-size: 13.5px; font-family: inherit; color: #0f172a; outline: none;
+    &::placeholder { color: #94a3b8; }
+  }
+
+  button {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer;
+    color: #cbd5e1; font-size: 15px;
+    transition: color 0.15s;
+    &:hover { color: #64748b; }
+  }
+}
+
+.selecteur-liste {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 12px 8px;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+}
+
+.selecteur-vide {
+  display: flex; align-items: center; gap: 10px;
+  padding: 24px 16px;
+  color: #94a3b8; font-size: 13.5px;
+  justify-content: center;
+  i { font-size: 20px; }
+}
+
+.selecteur-item {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 11px 12px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  cursor: pointer; text-align: left;
+  transition: all 0.15s ease;
+  margin-bottom: 2px;
+
+  &:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+  }
+
+  &.actif {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+
+    .sel-info strong { color: #1e4db7; }
+  }
+
+  .sel-avatar {
+    width: 40px; height: 40px;
+    background: #e2e8f0;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800;
+    color: #64748b; flex-shrink: 0;
+    transition: all 0.2s ease;
+
+    &.sel-avatar-actif {
+      background: linear-gradient(135deg, #1e4db7, #3b82f6);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(30,77,183,0.3);
+    }
+  }
+
+  .sel-info {
+    flex: 1;
+    strong { display: block; font-size: 14px; font-weight: 700; color: #0f172a; }
+    small {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11.5px; color: #94a3b8; margin-top: 2px;
+      i { font-size: 10px; }
+    }
+  }
+
+  .sel-check {
+    width: 24px; height: 24px;
+    background: #1e4db7; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; flex-shrink: 0;
+    animation: opEntree 0.15s ease;
+  }
+}
+
+.selecteur-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  background: #fafbfc;
+
+  .sel-apercu {
+    display: flex; align-items: center; gap: 10px;
+    .sel-apercu-avatar {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #1e4db7, #3b82f6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #fff;
+    }
+    span { font-size: 13px; font-weight: 700; color: #0f172a; }
+  }
+
+  .sel-hint { font-size: 12.5px; color: #94a3b8; font-style: italic; }
+
+  .sel-footer-actions {
+    display: flex; align-items: center; gap: 8px;
+  }
+}
+
+.btn-annuler {
+  padding: 9px 18px;
+  background: #fff; border: 1.5px solid #e2e8f0;
+  border-radius: 10px; color: #64748b;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+
+  &:hover { background: #f1f5f9; }
+}
+
+.btn-valider {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 20px;
+  background: linear-gradient(135deg, #1e4db7, #2563eb);
+  border: none; border-radius: 10px;
+  color: #fff; font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(30,77,183,0.3);
+
+  i { font-size: 16px; }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 20px rgba(30,77,183,0.45);
+  }
+
+  &:disabled {
+    opacity: 0.4; cursor: not-allowed;
+    transform: none; box-shadow: none;
+  }
+}
+
+/* ----------------------------------------
+   OVERLAY PLEIN ÉCRAN SCHÉMA DENTAIRE
+   ---------------------------------------- */
+.schema-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100002;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  animation: overlayIn 0.25s ease;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}

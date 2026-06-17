@@ -1,0 +1,585 @@
+<div class="schema-overlay-wrapper" [class.mode-presentation]="modePresentation">
+
+  <!-- ===== HEADER ===== -->
+  <header class="schema-header">
+    <div class="schema-patient-info">
+      <div class="patient-avatar">{{ initiales }}</div>
+      <div class="patient-meta">
+        <h2>{{ patient?.prenom }} {{ patient?.nom }}</h2>
+        <span class="dossier-tag">
+          <i class="bi bi-folder2-open"></i>
+          Dossier #{{ patient?.numero_dossier ?? '—' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="schema-titre-centre">
+      <i class="bi bi-grid-3x3-gap"></i>
+      <span>Schéma Dentaire Interactif</span>
+      <span class="notation-badge">Notation FDI</span>
+    </div>
+
+    <div class="schema-header-actions">
+      @if (modePresentation) {
+        <div class="mode-pres-badge">
+          <i class="bi bi-eye-fill"></i>
+          Mode présentation actif
+        </div>
+      }
+      <button class="btn-header" [class.btn-pres-actif]="modePresentation" (click)="togglePresentation()" title="Mode présentation patient">
+        <i class="bi" [ngClass]="modePresentation ? 'bi-eye-slash' : 'bi-eye'"></i>
+        <span>{{ modePresentation ? 'Quitter' : 'Présenter' }}</span>
+      </button>
+      <button class="btn-header btn-header-danger" (click)="modalResetOuvert = true" title="Réinitialiser">
+        <i class="bi bi-arrow-counterclockwise"></i>
+      </button>
+      <button class="btn-header" (click)="sauvegarder()" title="Sauvegarder">
+        <i class="bi bi-floppy2"></i>
+        <span>Sauvegarder</span>
+      </button>
+      <button class="btn-header" (click)="ouvrirExport()" title="Exporter en image">
+        <i class="bi bi-download"></i>
+        <span>Exporter</span>
+      </button>
+      <button class="btn-fermer" (click)="fermer()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== CORPS PRINCIPAL ===== -->
+  <div class="schema-body">
+
+    <!-- ===== KIT DENTAIRE (gauche) ===== -->
+    <aside class="kit-dentaire" [class.masque]="modePresentation">
+      <div class="kit-titre">
+        <i class="bi bi-tools"></i>
+        Kit dentaire
+      </div>
+
+      @if (getOutilActif()) {
+        <div class="outil-actif-info" [style.border-left-color]="getOutilActif()!.couleur">
+          <small>Outil sélectionné</small>
+          <strong>{{ getOutilActif()!.libelle }}</strong>
+          <small>Cliquez une dent pour appliquer</small>
+        </div>
+      }
+
+      <div class="outils-liste">
+        @for (outil of outils; track outil.id) {
+          <button
+            class="outil-btn"
+            [class.actif]="outilSelectionne === outil.id"
+            [style.--outil-couleur]="outil.couleur"
+            [style.--outil-fond]="outil.fondClair"
+            (click)="selectionnerOutil(outil.id)"
+            [title]="outil.libelle"
+          >
+            <i class="bi" [ngClass]="outil.icone" [style.color]="outil.couleur"></i>
+            <span>{{ outil.libelle }}</span>
+            <div class="outil-dot" [style.background]="outil.couleur"></div>
+          </button>
+        }
+        <button class="outil-btn outil-effacer" [class.actif]="outilSelectionne === null" (click)="outilSelectionne = null">
+          <i class="bi bi-cursor"></i>
+          <span>Curseur</span>
+        </button>
+      </div>
+
+      <!-- Légende conditions -->
+      <div class="legende-section">
+        <div class="kit-titre" style="margin-top: 8px">
+          <i class="bi bi-info-circle"></i>
+          Légende
+        </div>
+        @for (outil of outils; track outil.id) {
+          <div class="legende-item">
+            <span class="legende-couleur" [style.background]="outil.couleur"></span>
+            <span>{{ outil.libelle }}</span>
+          </div>
+        }
+      </div>
+    </aside>
+
+    <!-- ===== ZONE CENTRALE: SVG ODONTOGRAMME ===== -->
+    <main class="chart-zone">
+
+      <div class="arch-labels arch-labels-top">
+        <span class="arch-label-q">
+          <i class="bi bi-arrow-left"></i> Droite patient
+        </span>
+        <span class="arch-label-nom">Maxillaire supérieur</span>
+        <span class="arch-label-q">
+          Gauche patient <i class="bi bi-arrow-right"></i>
+        </span>
+      </div>
+
+      <svg
+        class="dental-svg"
+        viewBox="0 0 720 498"
+        xmlns="http://www.w3.org/2000/svg"
+        [class.mode-pres]="modePresentation"
+      >
+        <defs>
+          <clipPath id="clip-upper">
+            <rect x="0" y="0" width="720" height="249" />
+          </clipPath>
+          <clipPath id="clip-lower">
+            <rect x="0" y="249" width="720" height="249" />
+          </clipPath>
+          <filter id="shadow-dent" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.15)" />
+          </filter>
+          <filter id="shadow-selected">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(37,99,235,0.5)" />
+          </filter>
+          <radialGradient id="gum-grad-upper" cx="50%" cy="100%" r="80%">
+            <stop offset="0%"   stop-color="#fde8e4" stop-opacity="0.9" />
+            <stop offset="60%"  stop-color="#fad4cc" stop-opacity="0.7" />
+            <stop offset="100%" stop-color="#f9c5bb" stop-opacity="0.4" />
+          </radialGradient>
+          <radialGradient id="gum-grad-lower" cx="50%" cy="0%" r="80%">
+            <stop offset="0%"   stop-color="#fde8e4" stop-opacity="0.9" />
+            <stop offset="60%"  stop-color="#fad4cc" stop-opacity="0.7" />
+            <stop offset="100%" stop-color="#f9c5bb" stop-opacity="0.4" />
+          </radialGradient>
+        </defs>
+
+        <!-- Fond de la mâchoire supérieure (palais) -->
+        <ellipse cx="360" cy="10" rx="342" ry="250"
+          fill="url(#gum-grad-upper)"
+          stroke="rgba(220,160,145,0.5)" stroke-width="1.5"
+          clip-path="url(#clip-upper)" />
+        <!-- Palais intérieur -->
+        <ellipse cx="360" cy="15" rx="295" ry="215"
+          fill="rgba(255,245,242,0.6)"
+          clip-path="url(#clip-upper)" />
+
+        <!-- Fond de la mâchoire inférieure (mandibule) -->
+        <ellipse cx="360" cy="490" rx="342" ry="250"
+          fill="url(#gum-grad-lower)"
+          stroke="rgba(220,160,145,0.5)" stroke-width="1.5"
+          clip-path="url(#clip-lower)" />
+        <!-- Plancher intérieur -->
+        <ellipse cx="360" cy="485" rx="295" ry="215"
+          fill="rgba(255,245,242,0.6)"
+          clip-path="url(#clip-lower)" />
+
+        <!-- Ligne de symétrie verticale -->
+        <line x1="360" y1="60" x2="360" y2="190"
+          stroke="rgba(148,163,184,0.5)" stroke-width="1" stroke-dasharray="4,4" />
+        <line x1="360" y1="308" x2="360" y2="438"
+          stroke="rgba(148,163,184,0.5)" stroke-width="1" stroke-dasharray="4,4" />
+
+        <!-- Séparateur central inter-arcades -->
+        <line x1="20" y1="248" x2="700" y2="248"
+          stroke="rgba(148,163,184,0.4)" stroke-width="1.5" />
+
+        <!-- Labels quadrants -->
+        <text x="30" y="74" class="svg-quadrant-label">Q1</text>
+        <text x="687" y="74" class="svg-quadrant-label" text-anchor="end">Q2</text>
+        <text x="687" y="434" class="svg-quadrant-label" text-anchor="end">Q3</text>
+        <text x="30" y="434" class="svg-quadrant-label">Q4</text>
+
+        <!-- ===== DENTS MAXILLAIRE SUPÉRIEUR (Q1 + Q2) ===== -->
+        @for (dent of dentsMaxillaire; track dent.numero) {
+          <g
+            class="dent-groupe"
+            [class.selected]="isDentSelectionnee(dent.numero)"
+            [class.curseur-actif]="outilSelectionne !== null"
+            (click)="onDentClick(dent)"
+            [attr.filter]="isDentSelectionnee(dent.numero) ? 'url(#shadow-selected)' : 'url(#shadow-dent)'"
+          >
+            <!-- Corps de la dent -->
+            <rect
+              [attr.x]="dent.cx - dent.w / 2"
+              [attr.y]="dent.cy - dent.h / 2"
+              [attr.width]="dent.w"
+              [attr.height]="dent.h"
+              [attr.rx]="dent.type === 'canine' ? 5 : dent.type === 'incisive_centrale' || dent.type === 'incisive_laterale' ? 4 : 4"
+              [attr.fill]="getConditionFill(dent.numero)"
+              [attr.stroke]="isDentSelectionnee(dent.numero) ? '#2563eb' : getConditionStroke(dent.numero)"
+              [attr.stroke-width]="isDentSelectionnee(dent.numero) ? 2.5 : 1.8"
+            />
+
+            <!-- Détail sillon molaire (croix) -->
+            @if (hasMolarDetail(dent)) {
+              <line
+                [attr.x1]="dent.cx" [attr.y1]="dent.cy - dent.h * 0.28"
+                [attr.x2]="dent.cx" [attr.y2]="dent.cy + dent.h * 0.28"
+                [attr.stroke]="getConditionStroke(dent.numero)" stroke-width="0.8" stroke-opacity="0.6"
+              />
+              <line
+                [attr.x1]="dent.cx - dent.w * 0.28" [attr.y1]="dent.cy"
+                [attr.x2]="dent.cx + dent.w * 0.28" [attr.y2]="dent.cy"
+                [attr.stroke]="getConditionStroke(dent.numero)" stroke-width="0.8" stroke-opacity="0.6"
+              />
+            }
+
+            <!-- Détail sillon prémolaire (deux cercles) -->
+            @if (hasPremolarDetail(dent)) {
+              <circle [attr.cx]="dent.cx - 3" [attr.cy]="dent.cy" r="2"
+                [attr.fill]="getConditionStroke(dent.numero)" fill-opacity="0.35" />
+              <circle [attr.cx]="dent.cx + 3" [attr.cy]="dent.cy" r="2"
+                [attr.fill]="getConditionStroke(dent.numero)" fill-opacity="0.35" />
+            }
+
+            <!-- Indicateur extraction (X) -->
+            @if (isExtraction(dent.numero)) {
+              <line
+                [attr.x1]="dent.cx - dent.w * 0.3" [attr.y1]="dent.cy - dent.h * 0.3"
+                [attr.x2]="dent.cx + dent.w * 0.3" [attr.y2]="dent.cy + dent.h * 0.3"
+                stroke="#94a3b8" stroke-width="2" stroke-linecap="round"
+              />
+              <line
+                [attr.x1]="dent.cx + dent.w * 0.3" [attr.y1]="dent.cy - dent.h * 0.3"
+                [attr.x2]="dent.cx - dent.w * 0.3" [attr.y2]="dent.cy + dent.h * 0.3"
+                stroke="#94a3b8" stroke-width="2" stroke-linecap="round"
+              />
+            }
+
+            <!-- Numéro FDI au-dessus de la dent -->
+            <text
+              [attr.x]="dent.cx"
+              [attr.y]="dent.cy - dent.h / 2 - 4"
+              class="dent-num"
+              text-anchor="middle"
+              [attr.fill]="isDentSelectionnee(dent.numero) ? '#2563eb' : '#64748b'"
+              [attr.font-weight]="isDentSelectionnee(dent.numero) ? '700' : '400'"
+            >{{ dent.numero }}</text>
+
+            <!-- Point de condition (hors sain) -->
+            @if (getEtatDent(dent.numero).condition !== 'sain') {
+              <circle
+                [attr.cx]="dent.cx + dent.w / 2 - 3"
+                [attr.cy]="dent.cy - dent.h / 2 + 3"
+                r="4"
+                [attr.fill]="getConditionCouleur(dent.numero)"
+                stroke="#fff" stroke-width="1"
+              />
+            }
+          </g>
+        }
+
+        <!-- ===== DENTS MANDIBULE INFÉRIEURE (Q3 + Q4) ===== -->
+        @for (dent of dentesMandibule; track dent.numero) {
+          <g
+            class="dent-groupe"
+            [class.selected]="isDentSelectionnee(dent.numero)"
+            [class.curseur-actif]="outilSelectionne !== null"
+            (click)="onDentClick(dent)"
+            [attr.filter]="isDentSelectionnee(dent.numero) ? 'url(#shadow-selected)' : 'url(#shadow-dent)'"
+          >
+            <rect
+              [attr.x]="dent.cx - dent.w / 2"
+              [attr.y]="dent.cy - dent.h / 2"
+              [attr.width]="dent.w"
+              [attr.height]="dent.h"
+              rx="4"
+              [attr.fill]="getConditionFill(dent.numero)"
+              [attr.stroke]="isDentSelectionnee(dent.numero) ? '#2563eb' : getConditionStroke(dent.numero)"
+              [attr.stroke-width]="isDentSelectionnee(dent.numero) ? 2.5 : 1.8"
+            />
+
+            @if (hasMolarDetail(dent)) {
+              <line
+                [attr.x1]="dent.cx" [attr.y1]="dent.cy - dent.h * 0.28"
+                [attr.x2]="dent.cx" [attr.y2]="dent.cy + dent.h * 0.28"
+                [attr.stroke]="getConditionStroke(dent.numero)" stroke-width="0.8" stroke-opacity="0.6"
+              />
+              <line
+                [attr.x1]="dent.cx - dent.w * 0.28" [attr.y1]="dent.cy"
+                [attr.x2]="dent.cx + dent.w * 0.28" [attr.y2]="dent.cy"
+                [attr.stroke]="getConditionStroke(dent.numero)" stroke-width="0.8" stroke-opacity="0.6"
+              />
+            }
+
+            @if (hasPremolarDetail(dent)) {
+              <circle [attr.cx]="dent.cx - 3" [attr.cy]="dent.cy" r="2"
+                [attr.fill]="getConditionStroke(dent.numero)" fill-opacity="0.35" />
+              <circle [attr.cx]="dent.cx + 3" [attr.cy]="dent.cy" r="2"
+                [attr.fill]="getConditionStroke(dent.numero)" fill-opacity="0.35" />
+            }
+
+            @if (isExtraction(dent.numero)) {
+              <line
+                [attr.x1]="dent.cx - dent.w * 0.3" [attr.y1]="dent.cy - dent.h * 0.3"
+                [attr.x2]="dent.cx + dent.w * 0.3" [attr.y2]="dent.cy + dent.h * 0.3"
+                stroke="#94a3b8" stroke-width="2" stroke-linecap="round"
+              />
+              <line
+                [attr.x1]="dent.cx + dent.w * 0.3" [attr.y1]="dent.cy - dent.h * 0.3"
+                [attr.x2]="dent.cx - dent.w * 0.3" [attr.y2]="dent.cy + dent.h * 0.3"
+                stroke="#94a3b8" stroke-width="2" stroke-linecap="round"
+              />
+            }
+
+            <!-- Numéro FDI en-dessous de la dent -->
+            <text
+              [attr.x]="dent.cx"
+              [attr.y]="dent.cy + dent.h / 2 + 12"
+              class="dent-num"
+              text-anchor="middle"
+              [attr.fill]="isDentSelectionnee(dent.numero) ? '#2563eb' : '#64748b'"
+              [attr.font-weight]="isDentSelectionnee(dent.numero) ? '700' : '400'"
+            >{{ dent.numero }}</text>
+
+            @if (getEtatDent(dent.numero).condition !== 'sain') {
+              <circle
+                [attr.cx]="dent.cx + dent.w / 2 - 3"
+                [attr.cy]="dent.cy + dent.h / 2 - 3"
+                r="4"
+                [attr.fill]="getConditionCouleur(dent.numero)"
+                stroke="#fff" stroke-width="1"
+              />
+            }
+          </g>
+        }
+
+        <!-- Label centre mâchoires -->
+        <text x="360" y="243" class="svg-center-label" text-anchor="middle">Sup.</text>
+        <text x="360" y="258" class="svg-center-label" text-anchor="middle">Inf.</text>
+      </svg>
+
+      <div class="arch-labels arch-labels-bottom">
+        <span class="arch-label-q">
+          <i class="bi bi-arrow-left"></i> Droite patient
+        </span>
+        <span class="arch-label-nom">Mandibule inférieure</span>
+        <span class="arch-label-q">
+          Gauche patient <i class="bi bi-arrow-right"></i>
+        </span>
+      </div>
+
+      <!-- Compteurs résumé -->
+      <div class="chart-resume">
+        @for (outil of outils; track outil.id) {
+          @if (countCondition(outil.id) > 0) {
+            <div class="resume-item" [style.border-color]="outil.couleur">
+              <span class="resume-dot" [style.background]="outil.couleur"></span>
+              <span class="resume-count">{{ countCondition(outil.id) }}</span>
+              <span class="resume-label">{{ outil.libelle }}</span>
+            </div>
+          }
+        }
+      </div>
+    </main>
+
+    <!-- ===== PANNEAU DENT SÉLECTIONNÉE (droite) ===== -->
+    <aside class="panneau-dent" [class.visible]="dentSelectionnee !== null" [class.masque]="modePresentation">
+      @if (dentSelectionnee) {
+        <div class="dent-header" [style.border-top-color]="getConditionCouleur(dentSelectionnee.numero)">
+          <div class="dent-numero-badge" [style.background]="getConditionCouleur(dentSelectionnee.numero)">
+            {{ dentSelectionnee.numero }}
+          </div>
+          <div>
+            <h3>Dent {{ dentSelectionnee.numero }}</h3>
+            <p class="dent-nom">{{ getNomDent(dentSelectionnee) }}</p>
+          </div>
+        </div>
+
+        <div class="dent-body">
+          <div class="dent-condition-row">
+            <label>Condition actuelle</label>
+            <span class="condition-pill"
+              [style.background]="getConditionFill(dentSelectionnee.numero)"
+              [style.color]="getConditionCouleur(dentSelectionnee.numero)"
+              [style.border-color]="getConditionCouleur(dentSelectionnee.numero)"
+            >
+              {{ getConditionLabel(dentSelectionnee.numero) }}
+            </span>
+          </div>
+
+          <div class="dent-quadrant-row">
+            <label>Quadrant</label>
+            <span>Q{{ dentSelectionnee.quadrant }} — {{ dentSelectionnee.quadrant === 1 ? 'Sup. Droit' : dentSelectionnee.quadrant === 2 ? 'Sup. Gauche' : dentSelectionnee.quadrant === 3 ? 'Inf. Gauche' : 'Inf. Droit' }}</span>
+          </div>
+
+          <div class="dent-type-row">
+            <label>Type</label>
+            <span>{{ dentSelectionnee.type === 'incisive_centrale' ? 'Incisive centrale' : dentSelectionnee.type === 'incisive_laterale' ? 'Incisive latérale' : dentSelectionnee.type === 'canine' ? 'Canine' : dentSelectionnee.type === 'premolaire' ? 'Prémolaire' : dentSelectionnee.type === 'molaire' ? 'Molaire' : 'Sagesse' }}</span>
+          </div>
+
+          <div class="dent-notes-section">
+            <label>
+              <i class="bi bi-pencil"></i>
+              Notes cliniques
+            </label>
+            <textarea
+              [(ngModel)]="notesDent"
+              (blur)="sauvegarderNotes()"
+              placeholder="Observations, remarques cliniques..."
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="changer-condition-section">
+            <label>Changer la condition</label>
+            <div class="mini-outils">
+              @for (outil of outils; track outil.id) {
+                <button
+                  class="mini-outil"
+                  [class.actif]="getEtatDent(dentSelectionnee.numero).condition === outil.id"
+                  [style.--c]="outil.couleur"
+                  (click)="outilSelectionne = outil.id; onDentClick(dentSelectionnee)"
+                  [title]="outil.libelle"
+                >
+                  <i class="bi" [ngClass]="outil.icone" [style.color]="outil.couleur"></i>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="panneau-vide">
+          <i class="bi bi-cursor-fill"></i>
+          <p>Cliquez sur une dent pour voir ses détails</p>
+          <small>Sélectionnez d'abord un outil pour appliquer un traitement</small>
+        </div>
+      }
+    </aside>
+  </div>
+
+  <!-- ===== TIMELINE PLAN DE TRAITEMENT ===== -->
+  <footer class="timeline-footer" [class.masque]="modePresentation">
+    <div class="timeline-header">
+      <div class="timeline-titre">
+        <i class="bi bi-list-check"></i>
+        <h3>Plan de traitement</h3>
+        @if (actesPlanifies.length > 0) {
+          <div class="timeline-stats">
+            @if (actesPlanifiesCount > 0) {
+              <span class="tl-stat tl-stat-planifie">
+                <i class="bi bi-clock"></i> {{ actesPlanifiesCount }} planifié(s)
+              </span>
+            }
+            @if (actesEnCoursCount > 0) {
+              <span class="tl-stat tl-stat-encours">
+                <i class="bi bi-arrow-repeat"></i> {{ actesEnCoursCount }} en cours
+              </span>
+            }
+            @if (actesTerminesCount > 0) {
+              <span class="tl-stat tl-stat-termine">
+                <i class="bi bi-check-circle-fill"></i> {{ actesTerminesCount }} terminé(s)
+              </span>
+            }
+          </div>
+        }
+      </div>
+      @if (actesPlanifies.length === 0) {
+        <span class="timeline-vide-hint">Appliquez des conditions aux dents pour construire le plan de traitement</span>
+      }
+    </div>
+
+    @if (actesPlanifies.length > 0) {
+      <div class="timeline-items">
+        @for (acte of actesPlanifies; track acte.id) {
+          <div class="timeline-item" [class]="'statut-' + acte.statut">
+            <div class="tl-dent-badge">{{ acte.dent }}</div>
+            <div class="tl-content">
+              <span class="tl-type">{{ acte.libelle }}</span>
+              <span class="tl-statut-label">
+                <i class="bi" [ngClass]="getStatutIcon(acte.statut)"></i>
+                {{ getStatutLabel(acte.statut) }}
+              </span>
+            </div>
+            <div class="tl-actions">
+              <button class="tl-btn tl-btn-avancer" (click)="avancerStatut(acte)" [title]="'Avancer: ' + getStatutLabel(acte.statut)">
+                <i class="bi bi-arrow-right-circle"></i>
+              </button>
+              <button class="tl-btn tl-btn-sup" (click)="supprimerActe(acte.id)" title="Supprimer">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </footer>
+
+  <!-- ===== MODAL SUCCÈS SAUVEGARDE ===== -->
+  @if (modalSuccesOuvert) {
+    <div class="modal-interne-backdrop" (click)="modalSuccesOuvert = false">
+      <div class="modal-interne modal-succes-schema" (click)="$event.stopPropagation()">
+        <div class="modal-succes-icon">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <h3>Schéma sauvegardé</h3>
+        <p>
+          Le schéma dentaire de
+          <strong>{{ patient?.prenom }} {{ patient?.nom }}</strong>
+          a été enregistré avec succès.
+        </p>
+        <div class="modal-succes-stats">
+          <div class="succes-stat">
+            <span class="succes-stat-val">{{ statsAuSauvegarde.traitements }}</span>
+            <span class="succes-stat-label">dent(s) traitée(s)</span>
+          </div>
+          <div class="succes-stat">
+            <span class="succes-stat-val">{{ statsAuSauvegarde.actes }}</span>
+            <span class="succes-stat-label">acte(s) planifié(s)</span>
+          </div>
+        </div>
+        <div class="modal-succes-footer">
+          <button class="btn-voir-liste" (click)="modalSuccesOuvert = false; ouvrirListeEvent.emit()">
+            <i class="bi bi-folder2-open"></i>
+            Voir les schémas effectués
+          </button>
+          <button class="btn-modal-succes" (click)="modalSuccesOuvert = false">
+            <i class="bi bi-check2"></i> Parfait
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL CONFIRMATION RÉINITIALISATION ===== -->
+  @if (modalResetOuvert) {
+    <div class="modal-interne-backdrop" (click)="modalResetOuvert = false">
+      <div class="modal-interne modal-reset-schema" (click)="$event.stopPropagation()">
+        <div class="modal-reset-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h3>Réinitialiser le schéma ?</h3>
+        <p>Toutes les conditions dentaires, les notes et le plan de traitement seront effacés. Cette action est irréversible.</p>
+        <div class="modal-reset-actions">
+          <button class="btn-reset-annuler" (click)="modalResetOuvert = false">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button class="btn-reset-confirmer" (click)="confirmerReset()">
+            <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL EXPORT FORMAT IMAGE ===== -->
+  @if (modalExportOuvert) {
+    <div class="modal-interne-backdrop" (click)="modalExportOuvert = false">
+      <div class="modal-interne modal-export-schema" (click)="$event.stopPropagation()">
+        <div class="modal-export-header">
+          <i class="bi bi-download"></i>
+          <h3>Exporter le schéma</h3>
+          <button class="btn-modal-close" (click)="modalExportOuvert = false">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <p>Choisissez le format d'image pour l'export local :</p>
+        <div class="export-formats">
+          <button class="btn-format" (click)="exporter('png')">
+            <i class="bi bi-file-image"></i>
+            <span class="format-ext">PNG</span>
+            <small>Haute qualité, fond transparent</small>
+          </button>
+          <button class="btn-format" (click)="exporter('jpg')">
+            <i class="bi bi-file-image-fill"></i>
+            <span class="format-ext">JPG / JPEG</span>
+            <small>Compression, fond blanc</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

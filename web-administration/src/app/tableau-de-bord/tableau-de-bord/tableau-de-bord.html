@@ -239,6 +239,72 @@
       </section>
     }
 
+    <!-- ========== OPÉRATIONS & SCHÉMA DENTAIRE ========== -->
+    <section class="operations-section">
+      <div class="section-header">
+        <h2><i class="bi bi-activity"></i> Opérations chirurgicales</h2>
+        <p>Schéma dentaire interactif par patient</p>
+      </div>
+
+      <div class="operations-card">
+
+        <!-- Bouton accès à la liste des schémas -->
+        <div class="op-schemas-acces">
+          <button class="btn-voir-schemas" (click)="listeSchemasOuverte = true">
+            <i class="bi bi-folder2-open"></i>
+            <span>Voir les schémas effectués</span>
+            @if (nombreSchemas > 0) {
+              <span class="schemas-badge">{{ nombreSchemas }}</span>
+            }
+          </button>
+        </div>
+
+        <!-- Zone patient + bouton sélectionner -->
+        <div class="op-ligne-principale">
+
+          @if (patientOperations) {
+            <!-- Patient confirmé -->
+            <div class="op-patient-carte">
+              <div class="op-patient-avatar-lg">{{ getInitialesPatient(patientOperations) }}</div>
+              <div class="op-patient-details">
+                <span class="op-label-patient">Patient sélectionné</span>
+                <h3>{{ patientOperations.prenom }} {{ patientOperations.nom }}</h3>
+                <span class="op-dossier-badge">
+                  <i class="bi bi-folder2-open"></i>
+                  Dossier #{{ patientOperations.numero_dossier ?? '—' }}
+                </span>
+              </div>
+            </div>
+          } @else {
+            <!-- Aucun patient -->
+            <div class="op-empty-state">
+              <div class="op-empty-icone"><i class="bi bi-person-bounding-box"></i></div>
+              <div>
+                <p>Aucun patient sélectionné</p>
+                <small>Cliquez sur "Sélectionner" pour choisir un patient</small>
+              </div>
+            </div>
+          }
+
+          <!-- Actions -->
+          <div class="op-actions">
+            <button class="btn-selectionner" (click)="ouvrirSelecteur()">
+              <i class="bi bi-people"></i>
+              <span>{{ patientOperations ? 'Changer' : 'Sélectionner' }}</span>
+            </button>
+            @if (patientOperations) {
+              <button class="btn-schema-dentaire" (click)="ouvrirSchema()">
+                <i class="bi bi-grid-3x3-gap-fill"></i>
+                <span>Faire son schéma dentaire</span>
+                <i class="bi bi-arrow-right-circle-fill"></i>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+    </section>
+
     <!-- ========== ACTIONS RAPIDES ========== -->
     <section class="quick-actions-section">
       <div class="section-header">
@@ -274,3 +340,23 @@
     </section>
   }
 </section>
+
+<!-- ===== OVERLAY SCHÉMA DENTAIRE PLEIN ÉCRAN ===== -->
+@if (schemaOuvert && patientOperations) {
+  <div class="schema-fullscreen-overlay">
+    <app-schema-dentaire
+      [patient]="patientOperations"
+      [schemaSauvegarde]="schemaEnEdition"
+      (fermerEvent)="fermerSchema()"
+      (ouvrirListeEvent)="ouvrirListeSchemas()"
+    />
+  </div>
+}
+
+<!-- ===== OVERLAY LISTE DES SCHÉMAS ===== -->
+@if (listeSchemasOuverte) {
+  <app-schemas-liste
+    (fermerEvent)="listeSchemasOuverte = false"
+    (modifierEvent)="editerSchema($event)"
+  />
+}

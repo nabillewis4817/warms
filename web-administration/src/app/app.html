@@ -122,7 +122,7 @@
       </header>
     }
 
-    <main class="page card">
+    <main [class.page]="!estPageConnexion" [class.card]="!estPageConnexion">
       <router-outlet />
     </main>
   </section>
@@ -166,6 +166,75 @@
   
   <!-- Composant d'alerte global -->
   <app-alerte></app-alerte>
+
+  <!-- ===== SÉLECTEUR PATIENT GLOBAL (hors main pour z-index correct) ===== -->
+  @if (selecteurSvc.ouvert()) {
+    <div class="selecteur-backdrop" (click)="selecteurSvc.fermer()">
+      <div class="selecteur-modal" (click)="$event.stopPropagation()">
+
+        <div class="selecteur-header">
+          <div class="selecteur-header-icon"><i class="bi bi-people-fill"></i></div>
+          <div>
+            <h3>Sélectionner un patient</h3>
+            <p>Cliquez sur un patient pour le sélectionner</p>
+          </div>
+          <button class="selecteur-close" (click)="selecteurSvc.fermer()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="selecteur-recherche">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            placeholder="Rechercher par nom ou dossier..."
+            [value]="selecteurSvc.recherche()"
+            (input)="selecteurSvc.filtrer($any($event.target).value)"
+            autofocus
+          />
+        </div>
+
+        <div class="selecteur-liste">
+          @if (selecteurSvc.filtres().length === 0) {
+            <div class="selecteur-vide">
+              <i class="bi bi-person-slash"></i>
+              <span>Aucun patient trouvé</span>
+            </div>
+          }
+          @for (p of selecteurSvc.filtres(); track p.id) {
+            <div
+              class="selecteur-item"
+              [class.selecteur-item-actif]="selecteurSvc.temp()?.id === p.id"
+              (click)="selecteurSvc.choisir(p)"
+            >
+              <div class="selecteur-avatar">{{ selecteurSvc.initiales(p) }}</div>
+              <div class="selecteur-info">
+                <span class="selecteur-nom">{{ p.prenom }} {{ p.nom }}</span>
+                <span class="selecteur-dossier">#{{ p.numero_dossier ?? '—' }}</span>
+              </div>
+              @if (selecteurSvc.temp()?.id === p.id) {
+                <i class="bi bi-check-circle-fill selecteur-check"></i>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="selecteur-footer">
+          <button class="btn-annuler" (click)="selecteurSvc.fermer()">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button
+            class="btn-valider"
+            [disabled]="!selecteurSvc.temp()"
+            (click)="selecteurSvc.valider()"
+          >
+            <i class="bi bi-check2-circle"></i> Valider
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
 
   <!-- Gestionnaire global des erreurs de token -->
   <app-global-token-error-handler></app-global-token-error-handler>

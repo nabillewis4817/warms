@@ -8,26 +8,26 @@
     <div class="avatar-chat" [class.en-ligne]="conversation?.en_ligne">
       {{ obtenirInitiale() }}
       @if (conversation?.en_ligne) {
-        <span class="pastille-en-ligne"></span>
+        <span class="pastille-en-ligne" title="En ligne"></span>
       }
     </div>
 
     <div class="header-info">
-      <div class="conversation-title">
-        <h2>{{ obtenirNomConversation() }}</h2>
-      </div>
+      <h2 class="conversation-title">{{ obtenirNomConversation() }}</h2>
       <div class="chat-status">
         @if (conversation?.en_ligne) {
           <span class="status-indicator online">
-            <i class="bi bi-circle-fill"></i>
-            En ligne
+            <i class="bi bi-circle-fill"></i> En ligne
           </span>
         } @else {
           <span class="status-indicator offline">
-            <i class="bi bi-circle-fill"></i>
-            Hors ligne
+            <i class="bi bi-circle-fill"></i> Hors ligne
           </span>
         }
+        <span class="ws-badge" [class.ws-ok]="wsConnecte" [class.ws-off]="!wsConnecte"
+              [title]="wsConnecte ? 'Temps réel actif' : 'Mode polling'">
+          <i class="bi" [class.bi-lightning-charge-fill]="wsConnecte" [class.bi-lightning-charge]="!wsConnecte"></i>
+        </span>
       </div>
     </div>
 

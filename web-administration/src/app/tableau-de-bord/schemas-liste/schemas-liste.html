@@ -1,0 +1,227 @@
+<div class="schemas-liste-overlay">
+
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="sl-header">
+    <div class="sl-header-info">
+      <div class="sl-header-icone"><i class="bi bi-folder2-open"></i></div>
+      <div>
+        <h2>Schémas dentaires effectués</h2>
+        <p>{{ schemas.length }} schéma(s) enregistré(s) en local</p>
+      </div>
+    </div>
+
+    <div class="sl-header-actions">
+      <div class="sl-recherche">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          placeholder="Rechercher un patient..."
+          [(ngModel)]="recherche"
+        />
+        @if (recherche) {
+          <button class="sl-recherche-clear" (click)="recherche = ''">
+            <i class="bi bi-x"></i>
+          </button>
+        }
+      </div>
+      <button class="sl-btn-fermer" (click)="fermer()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== CORPS ===== -->
+  <div class="sl-corps">
+
+    @if (schemas.length === 0) {
+      <div class="sl-vide">
+        <div class="sl-vide-icone"><i class="bi bi-folder2"></i></div>
+        <h3>Aucun schéma enregistré</h3>
+        <p>Créez et sauvegardez un schéma dentaire pour le retrouver ici.</p>
+      </div>
+    }
+
+    @if (schemas.length > 0 && schemasFiltres.length === 0) {
+      <div class="sl-vide">
+        <div class="sl-vide-icone"><i class="bi bi-search"></i></div>
+        <h3>Aucun résultat</h3>
+        <p>Aucun schéma ne correspond à « {{ recherche }} ».</p>
+      </div>
+    }
+
+    <div class="sl-grille">
+      @for (schema of schemasFiltres; track schema.id) {
+        <div class="sl-carte">
+          <!-- Onglet dossier -->
+          <div class="sl-carte-onglet">
+            <i class="bi bi-folder-fill"></i>
+            <span>Dossier</span>
+          </div>
+
+          <!-- Corps du dossier -->
+          <div class="sl-carte-corps" (click)="voirImage(schema)">
+
+            <!-- Patient -->
+            <div class="sl-carte-patient">
+              <div class="sl-patient-avatar">{{ initiales(schema) }}</div>
+              <div class="sl-patient-info">
+                <h3>{{ schema.patient.prenom }} {{ schema.patient.nom }}</h3>
+                <span class="sl-dossier-num">
+                  <i class="bi bi-folder2-open"></i>
+                  #{{ schema.patient.numero_dossier ?? '—' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Aperçu miniature -->
+            @if (schema.apercu) {
+              <div class="sl-apercu">
+                <img [src]="schema.apercu" alt="Aperçu schéma dentaire" />
+                <div class="sl-apercu-hover">
+                  <i class="bi bi-eye-fill"></i>
+                  <span>Voir le schéma</span>
+                </div>
+              </div>
+            } @else {
+              <div class="sl-apercu sl-apercu-vide">
+                <i class="bi bi-grid-3x3-gap"></i>
+                <small>Aperçu non disponible</small>
+              </div>
+            }
+
+            <!-- Stats -->
+            <div class="sl-stats">
+              <div class="sl-stat">
+                <i class="bi bi-patch-check-fill"></i>
+                <span>{{ schema.traitements }} dent(s) traitée(s)</span>
+              </div>
+              <div class="sl-stat">
+                <i class="bi bi-list-check"></i>
+                <span>{{ schema.actesPlanifies.length }} acte(s)</span>
+              </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="sl-dates">
+              <span><i class="bi bi-calendar3"></i> Créé le {{ formatDate(schema.dateCreation) }}</span>
+              @if (schema.dateMaj !== schema.dateCreation) {
+                <span><i class="bi bi-pencil"></i> Modifié le {{ formatDate(schema.dateMaj) }}</span>
+              }
+            </div>
+
+            <!-- Actions -->
+            <div class="sl-actions" (click)="$event.stopPropagation()">
+              <button class="sl-btn sl-btn-voir" (click)="voirImage(schema)" title="Voir le schéma">
+                <i class="bi bi-eye"></i> Voir
+              </button>
+              <button class="sl-btn sl-btn-modifier" (click)="modifier(schema)" title="Modifier">
+                <i class="bi bi-pencil"></i> Modifier
+              </button>
+              <button class="sl-btn sl-btn-exporter" (click)="exporter(schema, 'png')" title="Télécharger PNG">
+                <i class="bi bi-download"></i>
+              </button>
+              <button class="sl-btn sl-btn-supprimer" (click)="demanderSuppression(schema)" title="Supprimer">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ===== VISIONNEUSE IMAGE ===== -->
+  @if (schemaVu) {
+    <div class="sl-visionneuse-backdrop" (click)="fermerVue()">
+      <div class="sl-visionneuse" (click)="$event.stopPropagation()">
+
+        <div class="sl-vis-header">
+          <div class="sl-vis-patient">
+            <div class="sl-vis-avatar">{{ initiales(schemaVu) }}</div>
+            <div>
+              <h3>{{ schemaVu.patient.prenom }} {{ schemaVu.patient.nom }}</h3>
+              <span>Dossier #{{ schemaVu.patient.numero_dossier ?? '—' }} · {{ formatDate(schemaVu.dateMaj) }}</span>
+            </div>
+          </div>
+          <div class="sl-vis-actions">
+            <button class="sl-vis-btn sl-vis-btn-modifier" (click)="modifier(schemaVu)">
+              <i class="bi bi-pencil"></i> Modifier
+            </button>
+            <button class="sl-vis-btn sl-vis-btn-export" (click)="exporter(schemaVu, 'png')">
+              <i class="bi bi-download"></i> PNG
+            </button>
+            <button class="sl-vis-btn sl-vis-btn-export" (click)="exporter(schemaVu, 'jpg')">
+              <i class="bi bi-download"></i> JPG
+            </button>
+            <button class="sl-vis-btn sl-vis-btn-supprimer" (click)="fermerVue(); demanderSuppression(schemaVu)">
+              <i class="bi bi-trash3"></i>
+            </button>
+            <button class="sl-vis-btn sl-vis-btn-fermer" (click)="fermerVue()">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        @if (schemaVu.apercu) {
+          <div class="sl-vis-image-wrapper">
+            <img [src]="schemaVu.apercu" class="sl-vis-image" alt="Schéma dentaire" />
+          </div>
+        } @else {
+          <div class="sl-vis-vide">
+            <i class="bi bi-image"></i>
+            <p>Aperçu non disponible pour ce schéma</p>
+            <small>Ouvrez et resauvegardez le schéma pour générer l'aperçu.</small>
+          </div>
+        }
+
+        <!-- Stats barre basse -->
+        <div class="sl-vis-footer">
+          <div class="sl-vis-stat">
+            <i class="bi bi-patch-check-fill"></i>
+            <span>{{ schemaVu.traitements }} dent(s) traitée(s)</span>
+          </div>
+          <div class="sl-vis-stat">
+            <i class="bi bi-list-check"></i>
+            <span>{{ schemaVu.actesPlanifies.length }} acte(s) planifié(s)</span>
+          </div>
+          @if (schemaVu.actesPlanifies.length > 0) {
+            @for (acte of schemaVu.actesPlanifies.slice(0, 4); track acte.id) {
+              <div class="sl-vis-acte" [class]="'acte-' + acte.statut">
+                <span class="sl-vis-acte-dent">{{ acte.dent }}</span>
+                <span>{{ acte.libelle }}</span>
+              </div>
+            }
+            @if (schemaVu.actesPlanifies.length > 4) {
+              <span class="sl-vis-plus">+{{ schemaVu.actesPlanifies.length - 4 }} autres</span>
+            }
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL CONFIRMATION SUPPRESSION ===== -->
+  @if (schemaASupprimer) {
+    <div class="sl-confirm-backdrop" (click)="schemaASupprimer = null">
+      <div class="sl-confirm-modal" (click)="$event.stopPropagation()">
+        <div class="sl-confirm-icone"><i class="bi bi-trash3-fill"></i></div>
+        <h3>Supprimer ce schéma ?</h3>
+        <p>
+          Le schéma de
+          <strong>{{ schemaASupprimer.patient.prenom }} {{ schemaASupprimer.patient.nom }}</strong>
+          sera définitivement supprimé. Cette action est irréversible.
+        </p>
+        <div class="sl-confirm-actions">
+          <button class="sl-confirm-annuler" (click)="schemaASupprimer = null">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button class="sl-confirm-confirmer" (click)="confirmerSuppression()">
+            <i class="bi bi-trash3"></i> Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

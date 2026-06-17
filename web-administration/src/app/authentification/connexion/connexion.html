@@ -1,73 +1,122 @@
-<section class="connexion-scene">
-  <div class="aurora"></div>
-  <div class="bubble bubble-a"></div>
-  <div class="bubble bubble-b"></div>
-  <div class="diamond"></div>
+<div class="page-connexion">
 
-  <!-- Texte de bienvenue centré en haut -->
-  <div class="welcome-header">
-    <h1>Bienvenue sur Warm's Administration</h1>
-    <p>
-      Une gestion dentaire moderne, fluide et élégante. Connectez-vous pour piloter
-      les patients, rendez-vous, consultations et statistiques en temps réel.
-    </p>
-  </div>
+  <!-- ---- Panel gauche illustré ---- -->
+  <div class="panneau-gauche">
+    <div class="pg-orb pg-orb-1"></div>
+    <div class="pg-orb pg-orb-2"></div>
+    <div class="pg-ring"></div>
 
-  <div class="login-container">
-    <!-- Image de connexion à gauche -->
-    <div class="login-image">
-      <img src="assets/acc.png" alt="Connexion Warm's" 
-           onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDgwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMCIgeTE9IjAiIHgyPSI4MDAiIHkyPSI2MDAiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzFFNERCNyIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwRDFCM0UiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8dGV4dCB4PSI0MDAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQ4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPldhcm0ncyBBZG1pbmlzdHJhdGlvbjwvdGV4dD4KPHRleHQgeD0iNDAwIiB5PSIzNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIG9wYWNpdHk9IjAuOSI+RXNwYWNlIFByb2Zlc3Npb25uZWw8L3RleHQ+Cjx0ZXh0IHg9IjQwMCIgeT0iNDAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBvcGFjaXR5PSIwLjciPkFjY8OcyBzw6ljdXJpc8OiIMOgIHZvdHJlIGNhYmluZXQgZGVudGFpcmU8L3RleHQ+Cjwvc3ZnPg=='" />
-      <div class="image-overlay">
-        <h2>Espace Professionnel</h2>
-        <p>Accès sécurisé à votre cabinet dentaire</p>
+    <div class="pg-logo">
+      <div class="pg-logo-icone">
+        <i class="bi bi-heart-pulse-fill"></i>
       </div>
+      <span>WAM'S</span>
     </div>
 
-    <!-- Formulaire stylé à droite -->
-    <div class="login-form-section">
-      <div class="card glass">
-        <h2>Connexion sécurisée</h2>
-        <p>Bienvenue de retour.</p>
+    <div class="pg-illustration">
+      <img src="assets/acc.png" alt="WARMS Dentaire"
+           onerror="this.src='assets/accueil.png'" />
+    </div>
 
-        <form [formGroup]="form" (ngSubmit)="soumettre()">
-          <label>
-            <span><i class="bi bi-person-circle"></i> Username</span>
-            <input type="text" formControlName="username" placeholder="Ex: admin_warms" />
-          </label>
-          <label>
-            <span><i class="bi bi-shield-lock"></i> Mot de passe</span>
-            <div class="password-input-wrapper">
-              <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Ton mot de passe" />
-              <button type="button" class="password-toggle" (click)="togglePassword()" [title]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
-                <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-              </button>
-            </div>
-          </label>
-          <button type="submit" [disabled]="enCours">
-            {{ enCours ? 'Connexion...' : 'Se connecter' }}
-          </button>
-        </form>
+    <div class="pg-tagline">
+      <h2>Espace Professionnel</h2>
+      <p>Accès sécurisé à votre cabinet dentaire numérique</p>
+    </div>
 
-        <div class="links">
-          <a routerLink="/inscription">Créer un compte</a>
-          <a routerLink="/mot-de-passe-oublie">Mot de passe oublié ?</a>
+    <div class="pg-features">
+      <div class="pg-feat">
+        <i class="bi bi-people-fill"></i>
+        <span>Gestion des patients</span>
+      </div>
+      <div class="pg-feat">
+        <i class="bi bi-calendar2-check-fill"></i>
+        <span>Agenda & rendez-vous</span>
+      </div>
+      <div class="pg-feat">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>Statistiques en temps réel</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Panel droit formulaire ---- -->
+  <div class="panneau-droit">
+    <div class="form-carte">
+
+      <div class="carte-entete">
+        <div class="carte-icone">
+          <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h1>Connexion sécurisée</h1>
+        <p>Bienvenue de retour. Entrez vos identifiants.</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="soumettre()">
+        <div class="champ-groupe">
+          <label class="champ-label">
+            <i class="bi bi-person-circle"></i>
+            Nom d'utilisateur
+          </label>
+          <input
+            type="text"
+            formControlName="username"
+            placeholder="ex: dr.martin"
+            class="champ-input"
+          />
+        </div>
+
+        <div class="champ-groupe">
+          <label class="champ-label">
+            <i class="bi bi-shield-lock"></i>
+            Mot de passe
+          </label>
+          <div class="champ-mdp">
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="••••••••"
+              class="champ-input"
+            />
+            <button type="button" class="btn-oeil" (click)="togglePassword()" [title]="showPassword ? 'Masquer' : 'Afficher'">
+              <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
         </div>
 
         @if (erreur) {
-          <p class="erreur">{{ erreur }}</p>
+          <div class="alerte-erreur">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>{{ erreur }}</span>
+          </div>
         }
 
-        <!-- Features list -->
-        <div class="features-list">
-          <h3>Plateforme complète</h3>
-          <ul>
-            <li><i class="bi bi-heart-pulse"></i> Suivi clinique intelligent</li>
-            <li><i class="bi bi-calendar-check"></i> Agenda optimisé</li>
-            <li><i class="bi bi-chat-left-text"></i> Communication intégrée</li>
-          </ul>
-        </div>
+        <button type="submit" class="btn-connexion" [disabled]="enCours">
+          @if (enCours) {
+            <i class="bi bi-arrow-clockwise tourne"></i>
+            <span>Connexion en cours…</span>
+          } @else {
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Se connecter</span>
+          }
+        </button>
+      </form>
+
+      <div class="carte-liens">
+        <a routerLink="/inscription" class="lien-carte">
+          <i class="bi bi-person-plus"></i>
+          Créer un compte
+        </a>
+        <a routerLink="/mot-de-passe-oublie" class="lien-carte">
+          <i class="bi bi-question-circle"></i>
+          Mot de passe oublié ?
+        </a>
       </div>
+
+      <a routerLink="/" class="lien-accueil">
+        <i class="bi bi-arrow-left"></i>
+        Retour à l'accueil
+      </a>
     </div>
   </div>
-</section>
+
+</div>

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Observable, filter } from 'rxjs';
 
@@ -12,6 +12,7 @@ import { ThemeService } from './noyau/services/theme';
 import { TraductionService } from './noyau/services/traduction';
 import { DateTimeService } from './noyau/services/datetime.service';
 import { AlerteService } from './noyau/services/alerte.service';
+import { SelecteurPatientService } from './noyau/services/selecteur-patient.service';
 
 import { AlerteComponent } from './noyau/composants/alerte/alerte.component';
 import { GlobalTokenErrorHandlerComponent } from './noyau/composants/global-token-error-handler.component';
@@ -23,6 +24,8 @@ import { GlobalTokenErrorHandlerComponent } from './noyau/composants/global-toke
   styleUrl: './app.scss',
 })
 export class App {
+  readonly selecteurSvc = inject(SelecteurPatientService);
+
   badges = { rappel: 0, message: 0, critique: 0, total: 0 };
   menuActionsOuvert = false;
   showNotificationPanel = false;
@@ -71,8 +74,9 @@ export class App {
   }
 
   get estPageConnexion(): boolean {
-    return this.router.url.startsWith('/connexion') || 
-           this.router.url.startsWith('/inscription') || 
+    return this.router.url === '/' ||
+           this.router.url.startsWith('/connexion') ||
+           this.router.url.startsWith('/inscription') ||
            this.router.url.startsWith('/mot-de-passe-oublie');
   }
 
@@ -149,8 +153,7 @@ export class App {
     // Fermer la fenêtre modale
     this.showLogoutModal = false;
     
-    // Rediriger vers la page de connexion
-    this.router.navigate(['/connexion']);
+    this.router.navigate(['/']);
   }
 
   // Fermer le menu lors d'un clic à l'extérieur

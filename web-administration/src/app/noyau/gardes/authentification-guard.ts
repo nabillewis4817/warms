@@ -8,7 +8,7 @@ export const authentificationGuard: CanActivateFn = (route, state) => {
   const auth = inject(Authentification);
   const router = inject(Router);
   if (auth.estConnecte()) return true;
-  router.navigate(['/connexion']);
+  router.navigate(['/']);
   return false;
 };
 

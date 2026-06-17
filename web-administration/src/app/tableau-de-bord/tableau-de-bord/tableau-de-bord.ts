@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { Router } from '@angular/router';
@@ -11,10 +12,15 @@ import { Authentification } from '../../noyau/services/authentification';
 import { DashboardService, DashboardStats } from '../../noyau/services/dashboard';
 import { DateTimeService } from '../../noyau/services/datetime.service';
 import { UserProfileComponent } from '../user-profile/user-profile.component';
+import { Patients, Patient } from '../../noyau/services/patients';
+import { SchemaDentaire } from '../schema-dentaire/schema-dentaire';
+import { SelecteurPatientService } from '../../noyau/services/selecteur-patient.service';
+import { SchemasDentairesService, SchemaSauvegarde } from '../../noyau/services/schemas-dentaires.service';
+import { SchemasListe } from '../schemas-liste/schemas-liste';
 
 @Component({
   selector: 'app-tableau-de-bord',
-  imports: [CommonModule, BaseChartDirective, UserProfileComponent],
+  imports: [CommonModule, FormsModule, BaseChartDirective, UserProfileComponent, SchemaDentaire, SchemasListe],
   templateUrl: './tableau-de-bord.html',
   styleUrls: ['./tableau-de-bord.scss'],
 })
@@ -25,6 +31,20 @@ export class TableauDeBord implements OnInit, OnDestroy {
   readonly auth = inject(Authentification);
   private readonly cdr = inject(ChangeDetectorRef);
   readonly dateTimeService = inject(DateTimeService);
+  private readonly patientsService       = inject(Patients);
+  readonly selecteurSvc                  = inject(SelecteurPatientService);
+  private readonly schemasDentairesSvc  = inject(SchemasDentairesService);
+
+  // — Opérations & schéma dentaire —
+  listePatients: Patient[]               = [];
+  patientOperations: Patient | null      = null;
+  schemaOuvert                           = false;
+  schemaEnEdition: SchemaSauvegarde | null = null;
+  listeSchemasOuverte                    = false;
+
+  get nombreSchemas(): number {
+    return this.schemasDentairesSvc.lister().length;
+  }
 
   stats: VueGeneraleStats | null = null;
   dashboardStats: DashboardStats | null = null;
@@ -94,7 +114,51 @@ export class TableauDeBord implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.charger();
+    this.chargerPatients();
     this.refreshInterval = setInterval(() => this.chargerSilencieux(), this.REFRESH_INTERVAL_MS);
+  }
+
+  private chargerPatients(): void {
+    this.patientsService.lister().subscribe({
+      next: (patients) => {
+        this.listePatients = patients.filter(p => p.actif);
+      },
+      error: () => {},
+    });
+  }
+
+  ouvrirSelecteur(): void {
+    this.selecteurSvc.ouvrir(this.listePatients, this.patientOperations, (p) => {
+      this.patientOperations = p;
+    });
+  }
+
+  getInitialesPatient(p: Patient): string {
+    return this.selecteurSvc.initiales(p);
+  }
+
+  ouvrirSchema(): void {
+    if (this.patientOperations) {
+      this.schemaEnEdition = null;
+      this.schemaOuvert    = true;
+    }
+  }
+
+  fermerSchema(): void {
+    this.schemaOuvert    = false;
+    this.schemaEnEdition = null;
+  }
+
+  ouvrirListeSchemas(): void {
+    this.fermerSchema();
+    this.listeSchemasOuverte = true;
+  }
+
+  editerSchema(schema: SchemaSauvegarde): void {
+    this.listeSchemasOuverte = false;
+    this.schemaEnEdition     = schema;
+    this.patientOperations   = schema.patient;
+    this.schemaOuvert        = true;
   }
 
   ngOnDestroy(): void {
