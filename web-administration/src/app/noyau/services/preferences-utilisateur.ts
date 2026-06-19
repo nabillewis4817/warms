@@ -21,6 +21,7 @@ export interface ProfilUtilisateur {
   photo_profil: string | null;
   langue_interface: 'fr' | 'en';
   mode_sombre: boolean;
+  theme_couleur: 'bleu' | 'vert' | 'rouge' | 'rose' | 'jaune';
   preferences_notifications: PreferencesNotifications;
 }
 
@@ -31,6 +32,7 @@ export interface PatchPreferencesPayload {
   telephone?: string;
   langue_interface?: 'fr' | 'en';
   mode_sombre?: boolean;
+  theme_couleur?: 'bleu' | 'vert' | 'rouge' | 'rose' | 'jaune';
   preferences_notifications?: PreferencesNotifications;
 }
 
@@ -52,6 +54,23 @@ export class PreferencesUtilisateurService {
 
   mettreAJourPreferencesMultipart(formData: FormData): Observable<Partial<ProfilUtilisateur>> {
     return this.http.patch<Partial<ProfilUtilisateur>>(`${this.baseUrl}/me/preferences/`, formData);
+  }
+
+  changerMotDePasse(ancien_mot_de_passe: string, nouveau_mot_de_passe: string): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${this.baseUrl}/me/mot-de-passe/`, {
+      ancien_mot_de_passe,
+      nouveau_mot_de_passe,
+    });
+  }
+
+  exporterSauvegarde(): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/sauvegarde/exporter/`, { responseType: 'blob' });
+  }
+
+  restaurerSauvegarde(fichier: File): Observable<{ detail: string }> {
+    const formData = new FormData();
+    formData.append('fichier', fichier, fichier.name);
+    return this.http.post<{ detail: string }>(`${this.baseUrl}/sauvegarde/restaurer/`, formData);
   }
 }
 

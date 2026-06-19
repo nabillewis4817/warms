@@ -49,6 +49,12 @@
           <h2><i class="bi bi-person-vcard"></i> Identité</h2>
           <p>Les informations de base du patient</p>
         </div>
+        <div class="photo-patient-zone">
+          <app-capture-photo
+            [initiales]="initialesPatient"
+            (fichierChange)="onPhotoChange($event)"
+          />
+        </div>
         <div class="form-grid">
           <label class="form-field">
             <span>Prénom *</span>

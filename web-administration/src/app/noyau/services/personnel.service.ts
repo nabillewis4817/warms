@@ -102,15 +102,29 @@ export class PersonnelService {
   }
 
   // Créer un nouveau membre du personnel
-  creerPersonnel(personnel: Partial<Personnel>): Observable<Personnel> {
-    const payload = this.mapPersonnelToApiPayload(personnel);
+  creerPersonnel(personnel: Partial<Personnel>, photo?: File | null): Observable<Personnel> {
+    const prenom = (personnel.prenom ?? '').trim();
+    const nom = (personnel.nom ?? '').trim();
+    const email = (personnel.email ?? '').trim();
+    const username = [prenom, nom].filter(Boolean).join('.').toLowerCase() || email.split('@')[0] || `user${Date.now()}`;
+
+    const payload = this.construireFormData(personnel, photo);
+    payload.append('username', username);
+    payload.append('password', '');
     return this.http.post<PersonnelApi>(this.apiUrl, payload).pipe(map((item) => this.mapApiToPersonnel(item)));
   }
 
   // Mettre à jour un membre du personnel
-  mettreAJourPersonnel(id: number, personnel: Partial<Personnel>): Observable<Personnel> {
-    const payload = this.mapPersonnelToApiPayload(personnel);
+  mettreAJourPersonnel(id: number, personnel: Partial<Personnel>, photo?: File | null): Observable<Personnel> {
+    const payload = this.construireFormData(personnel, photo);
     return this.http.patch<PersonnelApi>(`${this.apiUrl}${id}/`, payload).pipe(map((item) => this.mapApiToPersonnel(item)));
+  }
+
+  // Changer uniquement le statut RH (action rapide)
+  changerStatut(id: number, statut: string): Observable<Personnel> {
+    const fd = new FormData();
+    fd.append('statut', statut);
+    return this.http.patch<PersonnelApi>(`${this.apiUrl}${id}/`, fd).pipe(map((item) => this.mapApiToPersonnel(item)));
   }
 
   // Supprimer un membre du personnel
@@ -176,21 +190,18 @@ export class PersonnelService {
     };
   }
 
-  private mapPersonnelToApiPayload(personnel: Partial<Personnel>): Record<string, unknown> {
-    const prenom = (personnel.prenom ?? '').trim();
-    const nom = (personnel.nom ?? '').trim();
-    const email = (personnel.email ?? '').trim();
-    const fallbackUsername = [prenom, nom].filter(Boolean).join('.').toLowerCase() || email.split('@')[0] || `user${Date.now()}`;
-
-    return {
-      username: fallbackUsername,
-      first_name: prenom,
-      last_name: nom,
-      email,
-      telephone: personnel.telephone ?? '',
-      role: personnel.role ?? 'infirmiere',
-      // facultatif backend, mot de passe temporaire généré si vide
-      password: '',
-    };
+  private construireFormData(personnel: Partial<Personnel>, photo?: File | null): FormData {
+    const fd = new FormData();
+    fd.append('first_name', (personnel.prenom ?? '').trim());
+    fd.append('last_name', (personnel.nom ?? '').trim());
+    fd.append('email', (personnel.email ?? '').trim());
+    fd.append('telephone', personnel.telephone ?? '');
+    fd.append('role', personnel.role ?? 'infirmiere');
+    fd.append('service', personnel.service ?? '');
+    fd.append('specialite', personnel.specialite ?? '');
+    if (personnel.date_embauche) fd.append('date_embauche', personnel.date_embauche);
+    fd.append('statut', personnel.statut ?? 'actif');
+    if (photo) fd.append('photo_profil', photo, photo.name);
+    return fd;
   }
 }

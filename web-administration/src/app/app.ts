@@ -52,6 +52,7 @@ export class App {
     this.formattedDateTime$ = this.dateTimeService.formattedDateTime$;
     this.formattedDateExtended$ = this.dateTimeService.formattedDateExtended$;
     this.timeBasedGreeting = this.dateTimeService.getTimeBasedGreeting();
+    this.themeService.restaurerDepuisStockageLocal();
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
@@ -62,6 +63,7 @@ export class App {
           this.authService.chargerProfil().subscribe({
             next: (profil) => {
               this.themeService.appliquer(!!(profil as any).mode_sombre);
+              this.themeService.appliquerCouleur(((profil as any).theme_couleur ?? 'bleu') as any);
               this.traductionService.definirLangue(((profil as any).langue_interface ?? 'fr') as 'fr' | 'en');
             },
           });
@@ -71,6 +73,25 @@ export class App {
         });
         this.notificationsService.badges$.subscribe({ next: (b) => (this.badges = b) });
       });
+  }
+
+  get initialesUtilisateur(): string {
+    const u = this.authService.utilisateur();
+    if (!u) return '?';
+    return ((u.prenom?.charAt(0) ?? '') + (u.nom?.charAt(0) ?? '')).toUpperCase() || '?';
+  }
+
+  get roleLabelUtilisateur(): string {
+    const roles: Record<string, string> = {
+      chirurgien_dentiste: 'Chirurgien-Dentiste',
+      secretaire: 'Secrétaire',
+      infirmiere: 'Infirmière',
+      assistant: 'Assistant',
+      admin: 'Administrateur',
+      patient: 'Patient',
+    };
+    const role = this.authService.utilisateur()?.role ?? '';
+    return roles[role] || role;
   }
 
   get estPageConnexion(): boolean {

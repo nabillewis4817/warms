@@ -16,8 +16,13 @@ class UtilisateurSerializer(serializers.ModelSerializer):
             "telephone",
             "photo_profil",
             "role",
+            "service",
+            "specialite",
+            "date_embauche",
+            "statut",
             "langue_interface",
             "mode_sombre",
+            "theme_couleur",
             "preferences_notifications",
             "est_valide_par_chirurgien",
             "valide_par",
@@ -41,6 +46,11 @@ class UtilisateurCreateSerializer(serializers.ModelSerializer):
             "last_name",
             "telephone",
             "role",
+            "service",
+            "specialite",
+            "date_embauche",
+            "statut",
+            "photo_profil",
             "password",
         ]
 
@@ -139,6 +149,7 @@ class PreferencesUtilisateurSerializer(serializers.ModelSerializer):
         fields = [
             "langue_interface",
             "mode_sombre",
+            "theme_couleur",
             "preferences_notifications",
             "telephone",
             "photo_profil",

@@ -1,39 +1,123 @@
 <div class="personnel">
-  <div class="header">
-    <h2><i class="bi bi-people-fill"></i> Gestion du personnel</h2>
-    <p class="description">Administration de l'équipe médicale et administrative</p>
-  </div>
 
-  <div class="actions-bar">
-    <button type="button" class="btn-add" (click)="ajouterPersonnel()">
-      <i class="bi bi-person-plus"></i> Ajouter un membre
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="per-header">
+    <div class="per-header-blob per-blob-1"></div>
+    <div class="per-header-blob per-blob-2"></div>
+    <div class="per-header-content">
+      <span class="per-badge"><i class="bi bi-people-fill"></i> Équipe WARMS</span>
+      <h1><i class="bi bi-person-badge"></i> Gestion du personnel</h1>
+      <p>Administration de l'équipe médicale et administrative du cabinet</p>
+    </div>
+    <button type="button" class="per-btn-ajouter" (click)="ajouterPersonnel()">
+      <i class="bi bi-person-plus-fill"></i>
+      <span>Ajouter un membre</span>
     </button>
+  </header>
 
-    <form [formGroup]="form" class="search-form">
-      <div class="search-input">
-        <i class="bi bi-search"></i>
-        <input
-          type="text"
-          placeholder="Rechercher un membre..."
-          formControlName="recherche"
-          (input)="filtrerPersonnel()"
-        >
+  <!-- ===== STATISTIQUES ===== -->
+  <section class="per-stats">
+    <div class="per-stat-card per-stat-bleu">
+      <div class="per-stat-icone"><i class="bi bi-people-fill"></i></div>
+      <div class="per-stat-texte">
+        <strong>{{ totalPersonnel }}</strong>
+        <span>Membres au total</span>
       </div>
-    </form>
-  </div>
+    </div>
+    <div class="per-stat-card per-stat-vert">
+      <div class="per-stat-icone"><i class="bi bi-patch-check-fill"></i></div>
+      <div class="per-stat-texte">
+        <strong>{{ totalActifs }}</strong>
+        <span>Actifs</span>
+      </div>
+    </div>
+    <div class="per-stat-card per-stat-ambre">
+      <div class="per-stat-icone"><i class="bi bi-airplane-fill"></i></div>
+      <div class="per-stat-texte">
+        <strong>{{ totalEnConge }}</strong>
+        <span>En congé</span>
+      </div>
+    </div>
+    <div class="per-stat-card per-stat-rose">
+      <div class="per-stat-icone"><i class="bi bi-pause-circle-fill"></i></div>
+      <div class="per-stat-texte">
+        <strong>{{ totalIndisponibles }}</strong>
+        <span>Indisponibles</span>
+      </div>
+    </div>
+    <div class="per-stat-card per-stat-violet">
+      <div class="per-stat-icone"><i class="bi bi-diagram-3-fill"></i></div>
+      <div class="per-stat-texte">
+        <strong>{{ nombreRoles }}</strong>
+        <span>Rôles distincts</span>
+      </div>
+    </div>
+  </section>
 
-  <!-- Formulaire d'ajout/modification -->
+  <!-- ===== BARRE DE FILTRES ===== -->
+  <form [formGroup]="form" class="per-toolbar">
+    <div class="per-recherche">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Rechercher un membre..." formControlName="recherche" (input)="filtrerPersonnel()">
+    </div>
+
+    <select formControlName="role" class="per-filtre" (change)="filtrerPersonnel()">
+      <option value="">Tous les rôles</option>
+      @for (role of roles; track role) {
+        <option [value]="role">{{ getRoleLabel(role) }}</option>
+      }
+    </select>
+
+    <select formControlName="service" class="per-filtre" (change)="filtrerPersonnel()">
+      <option value="">Tous les services</option>
+      @for (service of services; track service) {
+        <option [value]="service">{{ service }}</option>
+      }
+    </select>
+
+    <select formControlName="statut" class="per-filtre" (change)="filtrerPersonnel()">
+      <option value="">Tous les statuts</option>
+      <option value="actif">Actif</option>
+      <option value="inactif">Inactif</option>
+      <option value="conge">En congé</option>
+      <option value="suspendu">Suspendu</option>
+    </select>
+
+    @if (filtresActifs) {
+      <button type="button" class="per-btn-reset" (click)="reinitialiserFiltres()" title="Réinitialiser les filtres">
+        <i class="bi bi-x-circle"></i>
+      </button>
+    }
+
+    <button type="button" class="per-btn-exporter" (click)="exporterPersonnel()">
+      <i class="bi bi-download"></i> Exporter
+    </button>
+  </form>
+
+  <!-- ===== FORMULAIRE D'AJOUT / MODIFICATION ===== -->
   @if (afficherFormulaireAjout) {
     <div class="modal-overlay" (click)="fermerFormulaire()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>{{ modeEdition ? 'Modifier un membre' : 'Ajouter un membre' }}</h3>
+          <h3>
+            <i class="bi" [ngClass]="modeEdition ? 'bi-pencil-square' : 'bi-person-plus'"></i>
+            {{ modeEdition ? 'Modifier un membre' : 'Ajouter un membre' }}
+          </h3>
           <button type="button" class="btn-close" (click)="fermerFormulaire()">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
 
         <form [formGroup]="formulaireAjout" class="personnel-form" (ngSubmit)="enregistrerPersonnel()">
+
+          <div class="per-photo-zone">
+            <app-capture-photo
+              [photoUrl]="personnelSelectionne?.photo ?? null"
+              [initiales]="getInitialesPersonnel(formulaireAjout.value)"
+              (fichierChange)="onPhotoChange($event)"
+            />
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label for="prenom">Prénom *</label>
@@ -89,7 +173,7 @@
               <select id="statut" formControlName="statut" class="form-control">
                 <option value="actif">Actif</option>
                 <option value="inactif">Inactif</option>
-                <option value="conge">Congé</option>
+                <option value="conge">En congé</option>
                 <option value="suspendu">Suspendu</option>
               </select>
             </div>
@@ -126,8 +210,11 @@
 
           <div class="form-actions">
             <button type="button" class="btn-secondary" (click)="fermerFormulaire()">Annuler</button>
-            <button type="submit" class="btn-primary" [disabled]="formulaireAjout.invalid">
-              {{ modeEdition ? 'Modifier' : 'Ajouter' }}
+            <button type="submit" class="btn-primary" [disabled]="formulaireAjout.invalid || enregistrementEnCours">
+              @if (enregistrementEnCours) {
+                <i class="bi bi-arrow-repeat per-spin"></i>
+              }
+              {{ modeEdition ? 'Enregistrer' : 'Ajouter' }}
             </button>
           </div>
         </form>
@@ -135,6 +222,7 @@
     </div>
   }
 
+  <!-- ===== LISTE ===== -->
   @if (chargement) {
     <div class="loading">
       <div class="spinner"></div>
@@ -150,14 +238,16 @@
     <div class="personnel-books">
       @for (person of personnelFiltre; track person.id) {
         <div class="personnel-book" (click)="voirDetails(person)">
-          <!-- Couverture du livre (carnet) -->
           <div class="book-cover">
-            <!-- Avatar avec initiales et icône de rôle -->
             <div class="personnel-avatar">
-              <div class="cercle-initiales"
-                   [attr.aria-label]="getInitialesPersonnel(person) + ' initiales de ' + person.prenom + ' ' + person.nom">
-                {{ getInitialesPersonnel(person) }}
-              </div>
+              @if (person.photo) {
+                <img [src]="person.photo" [alt]="person.prenom" class="avatar-photo">
+              } @else {
+                <div class="cercle-initiales"
+                     [attr.aria-label]="getInitialesPersonnel(person) + ' initiales de ' + person.prenom + ' ' + person.nom">
+                  {{ getInitialesPersonnel(person) }}
+                </div>
+              }
               <div class="role-badge">
                 <img [src]="getRoleIcon(person.role)" [alt]="person.role" class="role-img">
               </div>
@@ -175,7 +265,6 @@
             <div class="book-spine"></div>
           </div>
 
-          <!-- Contenu du carnet (visible au survol) -->
           <div class="book-content">
             <div class="content-page">
               <div class="contact-info">
@@ -211,7 +300,7 @@
                 <button type="button" class="btn-edit" (click)="modifierPersonnel(person); $event.stopPropagation()">
                   <i class="bi bi-pencil"></i> Modifier
                 </button>
-                <button type="button" class="btn-delete" (click)="supprimerPersonnel(person); $event.stopPropagation()">
+                <button type="button" class="btn-delete" (click)="demanderSuppression(person); $event.stopPropagation()">
                   <i class="bi bi-trash"></i> Supprimer
                 </button>
               </div>
@@ -222,12 +311,12 @@
     </div>
   }
 
-  <!-- Modal détail -->
+  <!-- ===== MODAL DÉTAIL ===== -->
   @if (detailOuvert) {
     <div class="modal-overlay" (click)="fermerDetails()">
       <div class="modal-content detail-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>Fiche personnel</h3>
+          <h3><i class="bi bi-person-vcard"></i> Fiche personnel</h3>
           <button type="button" class="btn-close" (click)="fermerDetails()">
             <i class="bi bi-x-lg"></i>
           </button>
@@ -235,7 +324,11 @@
         @if (personnelDetail; as p) {
           <div class="detail-body">
             <div class="detail-avatar">
-              <span class="cercle-initiales large">{{ getInitialesPersonnel(p) }}</span>
+              @if (p.photo) {
+                <img [src]="p.photo" [alt]="p.prenom" class="detail-photo">
+              } @else {
+                <span class="cercle-initiales large">{{ getInitialesPersonnel(p) }}</span>
+              }
               <img [src]="getRoleIcon(p.role)" [alt]="p.role" class="role-img">
             </div>
             <h4>{{ p.prenom }} {{ p.nom }}</h4>
@@ -243,8 +336,9 @@
             <span class="status-badge" [style.background-color]="getStatutColor(p.statut)">
               {{ getStatutBadge(p.statut) }}
             </span>
+
             @if (detailChargement) {
-              <p>Chargement des détails…</p>
+              <p class="per-chargement-detail">Chargement des détails…</p>
             } @else {
               <ul class="detail-list">
                 <li><i class="bi bi-envelope"></i> {{ p.email || '—' }}</li>
@@ -262,14 +356,54 @@
                   <li><i class="bi bi-clock"></i> Dernière connexion : {{ p.derniere_connexion }}</li>
                 }
               </ul>
+
+              <div class="per-statut-rapide">
+                <span class="per-statut-rapide-label">Changer le statut :</span>
+                <div class="per-statut-boutons">
+                  <button type="button" class="per-statut-btn" [class.actif]="p.statut === 'actif'"
+                          [style.--c]="'#22c55e'" (click)="changerStatutRapide(p, 'actif')">Actif</button>
+                  <button type="button" class="per-statut-btn" [class.actif]="p.statut === 'conge'"
+                          [style.--c]="'#f59e0b'" (click)="changerStatutRapide(p, 'conge')">Congé</button>
+                  <button type="button" class="per-statut-btn" [class.actif]="p.statut === 'suspendu'"
+                          [style.--c]="'#6b7280'" (click)="changerStatutRapide(p, 'suspendu')">Suspendu</button>
+                  <button type="button" class="per-statut-btn" [class.actif]="p.statut === 'inactif'"
+                          [style.--c]="'#ef4444'" (click)="changerStatutRapide(p, 'inactif')">Inactif</button>
+                </div>
+              </div>
             }
+
             <div class="detail-actions">
-              <button type="button" class="btn-edit" (click)="modifierPersonnel(p); fermerDetails()">
+              <button type="button" class="btn-edit" (click)="modifierPersonnel(p)">
                 <i class="bi bi-pencil"></i> Modifier
+              </button>
+              <button type="button" class="btn-delete" (click)="demanderSuppression(p)">
+                <i class="bi bi-trash"></i> Supprimer
               </button>
             </div>
           </div>
         }
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL CONFIRMATION SUPPRESSION ===== -->
+  @if (personnelASupprimer; as p) {
+    <div class="modal-overlay" (click)="annulerSuppression()">
+      <div class="modal-content per-confirm-modal" (click)="$event.stopPropagation()">
+        <div class="per-confirm-icone"><i class="bi bi-trash3-fill"></i></div>
+        <h3>Supprimer ce membre ?</h3>
+        <p>
+          <strong>{{ p.prenom }} {{ p.nom }}</strong> sera définitivement supprimé(e) du personnel.
+          Cette action est irréversible.
+        </p>
+        <div class="per-confirm-actions">
+          <button type="button" class="btn-secondary" (click)="annulerSuppression()">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button type="button" class="btn-delete-confirm" (click)="confirmerSuppression()">
+            <i class="bi bi-trash3"></i> Supprimer
+          </button>
+        </div>
       </div>
     </div>
   }

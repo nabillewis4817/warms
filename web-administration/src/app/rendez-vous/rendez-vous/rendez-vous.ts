@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { RendezVousService, RendezVous } from '../../noyau/services/rendez-vous';
 import { Patients } from '../../noyau/services/patients';
+import { DialogueService } from '../../noyau/services/dialogue.service';
 
 @Component({
   selector: 'app-rendez-vous',
@@ -15,6 +16,7 @@ export class RendezVousComponent implements OnInit {
   private readonly rendezVousService = inject(RendezVousService);
   private readonly patientsService = inject(Patients);
   private readonly fb = inject(FormBuilder);
+  private readonly dialogueService = inject(DialogueService);
 
   rendezVousList: RendezVous[] = [];
   patientsList: any[] = [];
@@ -126,7 +128,13 @@ export class RendezVousComponent implements OnInit {
   }
 
   delete(item: RendezVous): void {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le rendez-vous du ${item.date_heure} ?`)) {
+    this.dialogueService.confirmer({
+      titre: 'Confirmation de suppression',
+      message: `Êtes-vous sûr de vouloir supprimer le rendez-vous du ${item.date_heure} ?`,
+      boutonOk: 'Supprimer',
+      boutonAnnuler: 'Annuler'
+    }).subscribe(confirme => {
+      if (!confirme) return;
       this.rendezVousService.supprimer(item.id).subscribe({
         next: () => {
           this.message = 'Rendez-vous supprimé avec succès';
@@ -134,10 +142,13 @@ export class RendezVousComponent implements OnInit {
         },
         error: (err) => {
           console.error('Erreur lors de la suppression:', err);
-          this.message = 'Erreur lors de la suppression du rendez-vous';
+          this.dialogueService.erreur({
+            titre: 'Erreur',
+            message: 'Impossible de supprimer le rendez-vous.'
+          });
         }
       });
-    }
+    });
   }
 
   getStatutColor(statut: string): string {

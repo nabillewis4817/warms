@@ -45,9 +45,10 @@ def me(request):
             "nom": user.last_name,
             "role": getattr(user, "role", None),
             "telephone": getattr(user, "telephone", ""),
-            "photo_profil": user.photo_profil.url if getattr(user, "photo_profil", None) else None,
+            "photo_profil": request.build_absolute_uri(user.photo_profil.url) if getattr(user, "photo_profil", None) else None,
             "langue_interface": getattr(user, "langue_interface", "fr"),
             "mode_sombre": getattr(user, "mode_sombre", False),
+            "theme_couleur": getattr(user, "theme_couleur", "bleu"),
             "preferences_notifications": getattr(user, "preferences_notifications", {}),
         }
     )
@@ -59,7 +60,7 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy", "desactiver"]:
+        if self.action in ["create", "update", "partial_update", "destroy", "desactiver", "changer_mot_de_passe"]:
             self.permission_classes = [PeutGererComptes]
         elif self.action in ["valider"]:
             self.permission_classes = [EstChirurgienDentiste]
@@ -181,6 +182,113 @@ def me_preferences(request):
         message="Mise à jour des préférences utilisateur.",
     )
     return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def changer_mon_mot_de_passe(request):
+    """Changement de mot de passe en self-service (vérifie l'ancien mot de passe)."""
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    user = request.user
+    ancien = request.data.get("ancien_mot_de_passe", "")
+    nouveau = request.data.get("nouveau_mot_de_passe", "")
+
+    if not ancien or not user.check_password(ancien):
+        return Response({"detail": "Mot de passe actuel incorrect."}, status=status.HTTP_400_BAD_REQUEST)
+    if not nouveau:
+        return Response({"detail": "Le nouveau mot de passe est requis."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        validate_password(nouveau, user=user)
+    except DjangoValidationError as exc:
+        return Response({"detail": " ".join(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(nouveau)
+    user.save(update_fields=["password"])
+    journaliser(
+        acteur=user,
+        action="user.password_self_changed",
+        objet_type="Utilisateur",
+        objet_id=user.id,
+        message=f"Changement de mot de passe par {user.username} (self-service).",
+    )
+    return Response({"detail": "Mot de passe modifié avec succès."})
+
+
+@api_view(["GET"])
+@permission_classes([EstChirurgienDentiste])
+def exporter_sauvegarde(request):
+    """Exporte une sauvegarde JSON complète des données métier du cabinet."""
+    from django.apps import apps
+    from django.core import serializers as django_serializers
+    from django.http import HttpResponse
+    from django.utils import timezone
+
+    apps_a_sauvegarder = [
+        "personnel", "patients", "rendez_vous", "consultations",
+        "messagerie", "journaux", "avis", "prescriptions", "qr_codes",
+    ]
+    objets = []
+    for app_label in apps_a_sauvegarder:
+        try:
+            config = apps.get_app_config(app_label)
+        except LookupError:
+            continue
+        for model in config.get_models():
+            objets.extend(model.objects.all())
+
+    donnees = django_serializers.serialize("json", objets, indent=2)
+    horodatage = timezone.now().strftime("%Y%m%d_%H%M%S")
+    reponse = HttpResponse(donnees, content_type="application/json")
+    reponse["Content-Disposition"] = f'attachment; filename="warms_sauvegarde_{horodatage}.json"'
+
+    journaliser(
+        acteur=request.user,
+        action="systeme.sauvegarde_exportee",
+        objet_type="Sauvegarde",
+        objet_id=0,
+        message=f"Export d'une sauvegarde complète ({len(objets)} enregistrement(s)).",
+    )
+    return reponse
+
+
+@api_view(["POST"])
+@permission_classes([EstChirurgienDentiste])
+@parser_classes([MultiPartParser, FormParser])
+def restaurer_sauvegarde(request):
+    """Restaure les données métier à partir d'un fichier de sauvegarde JSON."""
+    from django.core import serializers as django_serializers
+    from django.db import transaction
+
+    fichier = request.FILES.get("fichier")
+    if not fichier:
+        return Response({"detail": "Aucun fichier de sauvegarde fourni."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        contenu = fichier.read().decode("utf-8")
+        objets = list(django_serializers.deserialize("json", contenu))
+    except Exception as exc:
+        return Response({"detail": f"Fichier de sauvegarde invalide : {exc}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with transaction.atomic():
+            for objet in objets:
+                objet.save()
+    except Exception as exc:
+        return Response(
+            {"detail": f"Erreur lors de la restauration, aucune modification appliquée : {exc}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    journaliser(
+        acteur=request.user,
+        action="systeme.sauvegarde_restauree",
+        objet_type="Sauvegarde",
+        objet_id=0,
+        message=f"Restauration d'une sauvegarde ({len(objets)} enregistrement(s)).",
+    )
+    return Response({"detail": f"{len(objets)} enregistrement(s) restauré(s) avec succès."})
 
 
 @api_view(["POST"])
@@ -532,6 +640,7 @@ def roles_list(request):
         {"id": "secretaire", "nom": "Secrétaire", "description": "Personnel administratif"},
         {"id": "infirmiere", "nom": "Infirmière", "description": "Personnel infirmier"},
         {"id": "assistant", "nom": "Assistant", "description": "Assistant dentaire"},
+        {"id": "admin", "nom": "Administrateur", "description": "Administration générale"},
     ]
     return Response(roles)
 

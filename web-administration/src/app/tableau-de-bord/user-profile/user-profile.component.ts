@@ -10,7 +10,7 @@ export interface UtilisateurConnecte {
   prenom: string;
   nom: string;
   role: string;
-  photo_profil?: string;
+  photo_profil?: string | null;
   telephone?: string;
   specialite?: string;
   derniere_connexion?: string;
@@ -65,7 +65,10 @@ export class UserProfileComponent implements OnInit {
   private genererPhotoUrl(): void {
     const user = this.utilisateur();
     if (user?.photo_profil) {
-      this.photoUrl.set(`http://127.0.0.1:8000${user.photo_profil}`);
+      const url = user.photo_profil.startsWith('http')
+        ? user.photo_profil
+        : `http://127.0.0.1:8000${user.photo_profil}`;
+      this.photoUrl.set(url);
     } else {
       // Générer avatar basé sur les initiales
       const initiales = this.genererInitiales();

@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { AppelsService } from '../../noyau/services/appels';
 import { Appel } from '../../noyau/services/appels';
 import { Patients } from '../../noyau/services/patients';
+import { DialogueService } from '../../noyau/services/dialogue.service';
 
 @Component({
   selector: 'app-appels',
@@ -18,6 +19,7 @@ export class AppelsComponent implements OnInit {
   private readonly patientsService = inject(Patients);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly dialogueService = inject(DialogueService);
 
   appelsList: Appel[] = [];
   patientsList: any[] = [];
@@ -148,7 +150,13 @@ export class AppelsComponent implements OnInit {
   }
 
   delete(item: Appel): void {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer cet appel du ${item.date_appel} ?`)) {
+    this.dialogueService.confirmer({
+      titre: 'Confirmation de suppression',
+      message: `Êtes-vous sûr de vouloir supprimer cet appel du ${item.date_appel} ?`,
+      boutonOk: 'Supprimer',
+      boutonAnnuler: 'Annuler'
+    }).subscribe(confirme => {
+      if (!confirme) return;
       this.appelsService.supprimer(item.id).subscribe({
         next: () => {
           this.message = 'Appel supprimé avec succès';
@@ -156,10 +164,13 @@ export class AppelsComponent implements OnInit {
         },
         error: (err: any) => {
           console.error('Erreur lors de la suppression:', err);
-          this.message = 'Erreur lors de la suppression de l\'appel';
+          this.dialogueService.erreur({
+            titre: 'Erreur',
+            message: "Impossible de supprimer l'appel."
+          });
         }
       });
-    }
+    });
   }
 
   getStatutColor(statut: string): string {

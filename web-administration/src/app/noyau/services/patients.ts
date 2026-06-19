@@ -10,6 +10,7 @@ export interface Patient {
   nom: string;
   telephone: string;
   email: string;
+  photo?: string;
   numero_dossier?: string;
   dossier_id?: string;
   qr_token?: string;
@@ -71,8 +72,18 @@ export class Patients {
       );
   }
 
-  creer(payload: CreerPatientPayload): Observable<Patient> {
-    return this.http.post<Patient>(`${this.baseUrl}/patients/`, payload);
+  creer(payload: CreerPatientPayload, photo?: File | null): Observable<Patient> {
+    if (!photo) {
+      return this.http.post<Patient>(`${this.baseUrl}/patients/`, payload);
+    }
+    const formData = new FormData();
+    Object.entries(payload).forEach(([cle, valeur]) => {
+      if (valeur !== undefined && valeur !== null && valeur !== '') {
+        formData.append(cle, String(valeur));
+      }
+    });
+    formData.append('photo', photo, photo.name);
+    return this.http.post<Patient>(`${this.baseUrl}/patients/`, formData);
   }
 
   detail(id: number): Observable<Patient> {

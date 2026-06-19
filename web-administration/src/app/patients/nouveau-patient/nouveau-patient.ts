@@ -6,6 +6,7 @@ import QRCode from 'qrcode';
 
 import { Patient, Patients } from '../../noyau/services/patients';
 import { DialogueService } from '../../noyau/services/dialogue.service';
+import { CapturePhoto } from '../../noyau/composants/capture-photo/capture-photo';
 
 function telephoneValidator(control: AbstractControl): ValidationErrors | null {
   const valeur = control.value;
@@ -18,7 +19,7 @@ type CleEtape = 'identite' | 'contact' | 'medical' | 'compte';
 
 @Component({
   selector: 'app-nouveau-patient',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CapturePhoto],
   templateUrl: './nouveau-patient.html',
   styleUrl: './nouveau-patient.scss',
 })
@@ -35,6 +36,7 @@ export class NouveauPatient {
   qrImageData = '';
   showPassword = false;
   showSuccessModal = false;
+  photoFichier: File | null = null;
 
   readonly etapes: { cle: CleEtape; label: string; icone: string }[] = [
     { cle: 'identite', label: 'Identité', icone: 'bi-person-vcard' },
@@ -129,6 +131,16 @@ export class NouveauPatient {
     return !!champ && champ.touched && champ.invalid;
   }
 
+  get initialesPatient(): string {
+    const prenom = (this.form.get('prenom')?.value ?? '').charAt(0);
+    const nom = (this.form.get('nom')?.value ?? '').charAt(0);
+    return (prenom + nom).toUpperCase();
+  }
+
+  onPhotoChange(fichier: File | null): void {
+    this.photoFichier = fichier;
+  }
+
   creer(): void {
     this.etapes.forEach((_, index) => this.marquerEtapeTouchee(index));
 
@@ -148,7 +160,7 @@ export class NouveauPatient {
       Object.entries(brut).filter(([, valeur]) => valeur !== null && valeur !== '')
     ) as any;
 
-    this.patientsService.creer(payload).subscribe({
+    this.patientsService.creer(payload, this.photoFichier).subscribe({
       next: async (patient) => {
         this.patientCree = patient;
         this.message = 'Patient créé avec succès (dossier + QR auto générés).';
@@ -229,6 +241,7 @@ export class NouveauPatient {
     this.message = '';
     this.patientCree = null;
     this.qrImageData = '';
+    this.photoFichier = null;
     this.etapeActive = 0;
   }
 

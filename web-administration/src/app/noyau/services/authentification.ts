@@ -25,6 +25,7 @@ export interface UtilisateurConnecte {
   prenom: string;
   nom: string;
   email: string;
+  photo_profil?: string | null;
 }
 
 @Injectable({

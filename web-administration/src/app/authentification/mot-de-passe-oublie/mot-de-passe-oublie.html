@@ -1,21 +1,208 @@
-<section class="auth-card">
-  <h2>Mot de passe oublié</h2>
-  <form [formGroup]="formEmail" (ngSubmit)="demanderToken()">
-    <input placeholder="Email du compte" formControlName="email" />
-    <button type="submit" [disabled]="loading" [class.loading]="loading">
-      @if (loading) { Génération... } @else { Générer un token }
-    </button>
-  </form>
+<div class="page-mdp">
 
-  <form [formGroup]="formReset" (ngSubmit)="reset()">
-    <input placeholder="Token de réinitialisation" formControlName="token" />
-    <input placeholder="Nouveau mot de passe" type="password" formControlName="nouveau_mot_de_passe" />
-    <button type="submit" [disabled]="loading" [class.loading]="loading">
-      @if (loading) { Réinitialisation... } @else { Réinitialiser }
-    </button>
-  </form>
+  <!-- ---- Panel gauche illustré ---- -->
+  <div class="panneau-gauche">
+    <div class="pg-orb pg-orb-1"></div>
+    <div class="pg-orb pg-orb-2"></div>
+    <div class="pg-ring"></div>
 
-  <a routerLink="/connexion">Retour connexion</a>
-  @if (tokenRecu) { <p class="token">Token (dev): {{ tokenRecu }}</p> }
-  @if (message) { <p class="msg">{{ message }}</p> }
-</section>
+    <div class="pg-logo">
+      <div class="pg-logo-icone">
+        <i class="bi bi-heart-pulse-fill"></i>
+      </div>
+      <span>WAM'S</span>
+    </div>
+
+    <div class="pg-illustration">
+      <i class="bi bi-shield-lock-fill pg-icone-geante"></i>
+    </div>
+
+    <div class="pg-tagline">
+      <h2>Récupération de compte</h2>
+      <p>Réinitialisez votre mot de passe en toute sécurité en quelques étapes</p>
+    </div>
+
+    <div class="pg-etapes">
+      <div class="pg-etape" [class.actif]="etape === 'email'" [class.fait]="etape !== 'email'">
+        <span class="pg-etape-cercle">
+          @if (etape !== 'email') { <i class="bi bi-check-lg"></i> } @else { 1 }
+        </span>
+        <span>Vérification de l'email</span>
+      </div>
+      <div class="pg-etape" [class.actif]="etape === 'reset'" [class.fait]="etape === 'succes'">
+        <span class="pg-etape-cercle">
+          @if (etape === 'succes') { <i class="bi bi-check-lg"></i> } @else { 2 }
+        </span>
+        <span>Nouveau mot de passe</span>
+      </div>
+      <div class="pg-etape" [class.actif]="etape === 'succes'">
+        <span class="pg-etape-cercle">3</span>
+        <span>Confirmation</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- Panel droit formulaire ---- -->
+  <div class="panneau-droit">
+    <div class="form-carte">
+
+      <!-- ===== ÉTAPE 1 : EMAIL ===== -->
+      @if (etape === 'email') {
+        <div class="carte-entete">
+          <div class="carte-icone">
+            <i class="bi bi-envelope-paper-fill"></i>
+          </div>
+          <h1>Mot de passe oublié</h1>
+          <p>Entrez l'adresse email associée à votre compte WARMS</p>
+        </div>
+
+        <form [formGroup]="formEmail" (ngSubmit)="demanderToken()">
+          <div class="champ-groupe">
+            <label class="champ-label">
+              <i class="bi bi-envelope"></i>
+              Adresse email
+            </label>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="ex: dr.martin@warms.com"
+              class="champ-input"
+            />
+            @if (formEmail.get('email')?.invalid && formEmail.get('email')?.touched) {
+              <small class="erreur-champ">Adresse email valide requise</small>
+            }
+          </div>
+
+          @if (erreur) {
+            <div class="alerte-erreur">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <span>{{ erreur }}</span>
+            </div>
+          }
+
+          <button type="submit" class="btn-action" [disabled]="loading">
+            @if (loading) {
+              <i class="bi bi-arrow-clockwise tourne"></i> <span>Envoi en cours…</span>
+            } @else {
+              <i class="bi bi-send-fill"></i> <span>Envoyer le lien de réinitialisation</span>
+            }
+          </button>
+        </form>
+      }
+
+      <!-- ===== ÉTAPE 2 : RÉINITIALISATION ===== -->
+      @if (etape === 'reset') {
+        <div class="carte-entete">
+          <div class="carte-icone carte-icone-vert">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <h1>Créer un nouveau mot de passe</h1>
+          <p>{{ message }}</p>
+        </div>
+
+        @if (tokenRecu) {
+          <div class="dev-token-box">
+            <div class="dev-token-label">
+              <i class="bi bi-code-square"></i>
+              Mode développement — token généré
+            </div>
+            <div class="dev-token-valeur">
+              <code>{{ tokenRecu }}</code>
+              <button type="button" class="btn-copier" (click)="copierToken()" [title]="tokenCopie ? 'Copié !' : 'Copier'">
+                <i class="bi" [ngClass]="tokenCopie ? 'bi-check-lg' : 'bi-clipboard'"></i>
+              </button>
+            </div>
+          </div>
+        }
+
+        <form [formGroup]="formReset" (ngSubmit)="reset()">
+          <div class="champ-groupe">
+            <label class="champ-label">
+              <i class="bi bi-key"></i>
+              Token de réinitialisation
+            </label>
+            <input type="text" formControlName="token" placeholder="Collez votre token ici" class="champ-input" />
+          </div>
+
+          <div class="champ-groupe">
+            <label class="champ-label">
+              <i class="bi bi-shield-lock"></i>
+              Nouveau mot de passe
+            </label>
+            <div class="champ-mdp">
+              <input
+                [type]="afficherMotDePasse ? 'text' : 'password'"
+                formControlName="nouveau_mot_de_passe"
+                placeholder="Min. 8 caractères"
+                class="champ-input"
+              />
+              <button type="button" class="btn-oeil" (click)="afficherMotDePasse = !afficherMotDePasse">
+                <i class="bi" [ngClass]="afficherMotDePasse ? 'bi-eye-slash' : 'bi-eye'"></i>
+              </button>
+            </div>
+            @if (formReset.get('nouveau_mot_de_passe')?.invalid && formReset.get('nouveau_mot_de_passe')?.touched) {
+              <small class="erreur-champ">Le mot de passe doit contenir au moins 8 caractères</small>
+            }
+          </div>
+
+          <div class="champ-groupe">
+            <label class="champ-label">
+              <i class="bi bi-shield-lock"></i>
+              Confirmer le mot de passe
+            </label>
+            <input
+              [type]="afficherMotDePasse ? 'text' : 'password'"
+              formControlName="confirmation"
+              placeholder="Retapez le mot de passe"
+              class="champ-input"
+            />
+            @if (motsDePasseDifferents) {
+              <small class="erreur-champ">Les mots de passe ne correspondent pas</small>
+            }
+          </div>
+
+          @if (erreur) {
+            <div class="alerte-erreur">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <span>{{ erreur }}</span>
+            </div>
+          }
+
+          <button type="submit" class="btn-action" [disabled]="loading">
+            @if (loading) {
+              <i class="bi bi-arrow-clockwise tourne"></i> <span>Réinitialisation…</span>
+            } @else {
+              <i class="bi bi-check-circle-fill"></i> <span>Réinitialiser le mot de passe</span>
+            }
+          </button>
+
+          <button type="button" class="btn-lien-retour" (click)="revenirEtapeEmail()">
+            <i class="bi bi-arrow-left"></i> Recommencer avec un autre email
+          </button>
+        </form>
+      }
+
+      <!-- ===== ÉTAPE 3 : SUCCÈS ===== -->
+      @if (etape === 'succes') {
+        <div class="carte-succes">
+          <div class="succes-icone">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <h1>Mot de passe réinitialisé !</h1>
+          <p>Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter avec vos nouveaux identifiants.</p>
+          <a routerLink="/connexion" class="btn-action btn-action-link">
+            <i class="bi bi-box-arrow-in-right"></i> <span>Aller à la connexion</span>
+          </a>
+        </div>
+      }
+
+      @if (etape !== 'succes') {
+        <a routerLink="/connexion" class="lien-accueil">
+          <i class="bi bi-arrow-left"></i>
+          Retour à la connexion
+        </a>
+      }
+    </div>
+  </div>
+
+</div>

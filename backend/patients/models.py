@@ -37,6 +37,12 @@ class Patient(models.Model):
 
     prenom = models.CharField(max_length=100)
     nom = models.CharField(max_length=100)
+    photo = models.ImageField(
+        upload_to="patients/photos/",
+        null=True,
+        blank=True,
+        help_text="Photo du patient (identification visuelle).",
+    )
     date_naissance = models.DateField(null=True, blank=True)
     sexe = models.CharField(max_length=16, blank=True)
 

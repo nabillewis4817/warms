@@ -1,8 +1,13 @@
 <section class="parametres-page">
-  <header class="page-header">
-    <div>
-      <h1><i class="bi bi-gear-wide-connected"></i> Paramètres</h1>
-      <p class="hint">Profil, apparence, notifications et sécurité de votre compte WARMS.</p>
+
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="param-header">
+    <div class="param-blob param-blob-1"></div>
+    <div class="param-blob param-blob-2"></div>
+    <div class="param-header-content">
+      <span class="param-badge"><i class="bi bi-gear-wide-connected"></i> Compte WARMS</span>
+      <h1>Paramètres</h1>
+      <p>Profil, apparence, notifications, sécurité et sauvegarde de votre compte</p>
     </div>
     @if (profil) {
       <div class="role-chip">{{ profil.role }}</div>
@@ -11,6 +16,7 @@
 
   @if (message) {
     <div class="toast" [class.success]="message.includes('succès') || message.includes('export')">
+      <i class="bi" [ngClass]="message.includes('succès') ? 'bi-check-circle-fill' : 'bi-info-circle-fill'"></i>
       {{ message }}
     </div>
   }
@@ -21,79 +27,274 @@
       <p>Chargement de vos préférences…</p>
     </div>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="enregistrer()" class="settings-layout">
-      <article class="card profile-card">
-        <h2><i class="bi bi-person-badge"></i> Identité</h2>
-        <div class="photo-row">
-          @if (photoPreview) {
-            <img class="avatar" [src]="photoPreview" alt="Photo profil" (error)="photoPreview = null" />
-          } @else {
-            <div class="avatar placeholder">{{ (profil?.prenom || '?')[0] }}{{ (profil?.nom || '')[0] }}</div>
+    <div class="param-layout">
+
+      <!-- ===== ONGLETS ===== -->
+      <nav class="param-tabs">
+        @for (onglet of onglets; track onglet.cle) {
+          @if (onglet.cle !== 'sauvegarde' || estChirurgien) {
+            <button
+              type="button"
+              class="param-tab"
+              [class.actif]="ongletActif === onglet.cle"
+              (click)="changerOnglet(onglet.cle)"
+            >
+              <i class="bi" [ngClass]="onglet.icone"></i>
+              <span>{{ onglet.label }}</span>
+            </button>
           }
-          <div class="photo-actions">
-            <label class="btn-secondary">
-              <i class="bi bi-camera"></i> Changer photo
-              <input type="file" accept="image/*" (change)="onPhotoSelected($event)" hidden />
+        }
+      </nav>
+
+      <!-- ===== CONTENU ===== -->
+      <div class="param-contenu">
+
+        <form [formGroup]="form" (ngSubmit)="enregistrer()">
+
+          <!-- ----- PROFIL ----- -->
+          @if (ongletActif === 'profil') {
+            <article class="card">
+              <h2><i class="bi bi-person-badge"></i> Identité</h2>
+
+              <div class="photo-row">
+                <app-capture-photo
+                  [photoUrl]="photoPreview"
+                  [initiales]="initiales"
+                  taille="grande"
+                  (fichierChange)="onPhotoChange($event)"
+                />
+                <div class="photo-meta">
+                  <strong>{{ profil?.prenom }} {{ profil?.nom }}</strong>
+                  <span>{{ profil?.username }}</span>
+                </div>
+              </div>
+
+              <div class="fields-grid">
+                <label>Prénom <input type="text" formControlName="first_name" /></label>
+                <label>Nom <input type="text" formControlName="last_name" /></label>
+                <label>Email <input type="email" formControlName="email" /></label>
+                <label>Téléphone <input type="text" formControlName="telephone" /></label>
+              </div>
+            </article>
+          }
+
+          <!-- ----- APPARENCE ----- -->
+          @if (ongletActif === 'apparence') {
+            <article class="card">
+              <div class="card-titre-action">
+                <h2><i class="bi bi-palette"></i> Apparence et langue</h2>
+                @if (apparenceEnCours) {
+                  <span class="apparence-statut"><i class="bi bi-arrow-repeat tourne"></i> Application...</span>
+                } @else {
+                  <span class="apparence-statut apparence-ok"><i class="bi bi-check-circle-fill"></i> Appliqué instantanément</span>
+                }
+              </div>
+              <p class="meta">Chaque changement ci-dessous s'applique immédiatement à toute l'application, sans bouton « Enregistrer ».</p>
+
+              <h3 class="sous-titre">Langue de l'interface</h3>
+              <div class="langue-choice">
+                <button type="button" class="langue-option" [class.actif]="form.value.langue_interface === 'fr'" (click)="changerLangueImmediat('fr')">
+                  🇫🇷 <span>Français</span>
+                </button>
+                <button type="button" class="langue-option" [class.actif]="form.value.langue_interface === 'en'" (click)="changerLangueImmediat('en')">
+                  🇬🇧 <span>English</span>
+                </button>
+              </div>
+
+              <h3 class="sous-titre">Thème clair / sombre</h3>
+              <div class="theme-choice">
+                <button type="button" class="theme-option" [class.actif]="!form.value.mode_sombre" (click)="choisirModeSombre(false)">
+                  <i class="bi bi-sun-fill"></i>
+                  <span>Mode clair</span>
+                </button>
+                <button type="button" class="theme-option" [class.actif]="form.value.mode_sombre" (click)="choisirModeSombre(true)">
+                  <i class="bi bi-moon-stars-fill"></i>
+                  <span>Mode sombre</span>
+                </button>
+              </div>
+
+              <h3 class="sous-titre">Thème de couleur</h3>
+              <div class="couleur-choice">
+                @for (c of couleursDisponibles; track c.valeur) {
+                  <button
+                    type="button"
+                    class="couleur-option"
+                    [class.actif]="form.value.theme_couleur === c.valeur"
+                    (click)="choisirCouleur(c.valeur)"
+                  >
+                    <span class="couleur-swatch" [style.background]="c.degrade"></span>
+                    <span>{{ c.label }}</span>
+                    @if (form.value.theme_couleur === c.valeur) {
+                      <i class="bi bi-check-circle-fill couleur-check"></i>
+                    }
+                  </button>
+                }
+              </div>
+            </article>
+          }
+
+          <!-- ----- NOTIFICATIONS ----- -->
+          @if (ongletActif === 'notifications') {
+            <article class="card">
+              <h2><i class="bi bi-bell"></i> Notifications</h2>
+              <div class="switch-grid">
+                <label class="switch-row">
+                  <span><i class="bi bi-envelope"></i> Email</span>
+                  <span class="switch"><input type="checkbox" formControlName="notif_email" /><span class="switch-track"><span class="switch-thumb"></span></span></span>
+                </label>
+                <label class="switch-row">
+                  <span><i class="bi bi-chat-dots"></i> SMS</span>
+                  <span class="switch"><input type="checkbox" formControlName="notif_sms" /><span class="switch-track"><span class="switch-thumb"></span></span></span>
+                </label>
+                <label class="switch-row">
+                  <span><i class="bi bi-phone"></i> Push</span>
+                  <span class="switch"><input type="checkbox" formControlName="notif_push" /><span class="switch-track"><span class="switch-thumb"></span></span></span>
+                </label>
+                <label class="switch-row">
+                  <span><i class="bi bi-clock-history"></i> Rappels automatiques</span>
+                  <span class="switch"><input type="checkbox" formControlName="notif_rappels_auto" /><span class="switch-track"><span class="switch-thumb"></span></span></span>
+                </label>
+              </div>
+            </article>
+          }
+
+          @if (ongletActif === 'profil' || ongletActif === 'notifications') {
+            <div class="param-actions">
+              <button type="submit" class="btn-primary" [disabled]="enregistrementEnCours">
+                @if (enregistrementEnCours) {
+                  <i class="bi bi-arrow-repeat tourne"></i> Enregistrement...
+                } @else {
+                  <i class="bi bi-save"></i> Enregistrer
+                }
+              </button>
+            </div>
+          }
+        </form>
+
+        <!-- ----- CONFIDENTIALITÉ ----- -->
+        @if (ongletActif === 'confidentialite') {
+          <article class="card">
+            <h2><i class="bi bi-shield-lock"></i> Modifier le mot de passe</h2>
+            <p class="meta">Pour votre sécurité, saisissez votre mot de passe actuel avant de le modifier.</p>
+
+            <form [formGroup]="formMotDePasse" (ngSubmit)="changerMotDePasse()" class="fields-grid">
+              <label>
+                Mot de passe actuel
+                <div class="password-wrapper">
+                  <input [type]="afficherAncien ? 'text' : 'password'" formControlName="ancien_mot_de_passe" />
+                  <button type="button" class="password-toggle" (click)="afficherAncien = !afficherAncien">
+                    <i class="bi" [ngClass]="afficherAncien ? 'bi-eye-slash' : 'bi-eye'"></i>
+                  </button>
+                </div>
+              </label>
+              <label>
+                Nouveau mot de passe
+                <div class="password-wrapper">
+                  <input [type]="afficherNouveau ? 'text' : 'password'" formControlName="nouveau_mot_de_passe" />
+                  <button type="button" class="password-toggle" (click)="afficherNouveau = !afficherNouveau">
+                    <i class="bi" [ngClass]="afficherNouveau ? 'bi-eye-slash' : 'bi-eye'"></i>
+                  </button>
+                </div>
+                <small class="hint-champ">Minimum 6 caractères</small>
+              </label>
+              <label class="pleine-largeur">
+                Confirmer le nouveau mot de passe
+                <input [type]="afficherNouveau ? 'text' : 'password'" formControlName="confirmation_mot_de_passe" />
+                @if (motsDePasseDifferents) {
+                  <small class="error-text">Les mots de passe ne correspondent pas</small>
+                }
+              </label>
+
+              @if (messageSecurite) {
+                <div class="toast pleine-largeur" [class.success]="securiteSucces" [class.erreur]="!securiteSucces">
+                  <i class="bi" [ngClass]="securiteSucces ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"></i>
+                  {{ messageSecurite }}
+                </div>
+              }
+
+              <div class="param-actions pleine-largeur">
+                <button type="submit" class="btn-primary" [disabled]="securiteEnCours">
+                  @if (securiteEnCours) {
+                    <i class="bi bi-arrow-repeat tourne"></i> Modification...
+                  } @else {
+                    <i class="bi bi-key"></i> Modifier le mot de passe
+                  }
+                </button>
+              </div>
+            </form>
+          </article>
+
+          <article class="card">
+            <h2><i class="bi bi-person-vcard"></i> Connexion</h2>
+            <p class="meta">
+              Connecté en tant que <strong>{{ profil?.username }}</strong> ({{ profil?.email }}).
+            </p>
+            <div class="param-actions">
+              <button type="button" class="btn-danger" (click)="demanderDeconnexion()">
+                <i class="bi bi-box-arrow-right"></i> Se déconnecter de cet appareil
+              </button>
+            </div>
+          </article>
+        }
+
+        <!-- ----- SAUVEGARDE ----- -->
+        @if (ongletActif === 'sauvegarde' && estChirurgien) {
+          <article class="card">
+            <h2><i class="bi bi-cloud-arrow-down"></i> Exporter une sauvegarde</h2>
+            <p class="meta">
+              Téléchargez une copie complète des données du cabinet (patients, personnel, rendez-vous,
+              consultations, messagerie, journaux) au format JSON.
+            </p>
+            <div class="param-actions">
+              <button type="button" class="btn-primary" (click)="exporterSauvegarde()" [disabled]="sauvegardeEnCours">
+                @if (sauvegardeEnCours) {
+                  <i class="bi bi-arrow-repeat tourne"></i> Export en cours...
+                } @else {
+                  <i class="bi bi-download"></i> Exporter la sauvegarde
+                }
+              </button>
+            </div>
+          </article>
+
+          <article class="card sauvegarde-danger">
+            <h2><i class="bi bi-cloud-arrow-up"></i> Restaurer une sauvegarde</h2>
+            <p class="meta">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              Opération sensible : restaurer un fichier de sauvegarde réécrit les données existantes.
+              Assurez-vous d'utiliser un fichier exporté depuis WARMS.
+            </p>
+
+            <label class="fichier-restauration">
+              <i class="bi bi-file-earmark-arrow-up"></i>
+              <span>{{ restaurationFichier?.name || 'Choisir un fichier de sauvegarde (.json)' }}</span>
+              <input type="file" accept=".json,application/json" (change)="onFichierRestaurationSelectionne($event)" hidden />
             </label>
-            @if (photoPreview) {
-              <button type="button" class="btn-danger" (click)="supprimerPhoto()">Supprimer</button>
+
+            @if (messageSauvegarde) {
+              <div class="toast" [class.success]="sauvegardeSucces" [class.erreur]="!sauvegardeSucces">
+                <i class="bi" [ngClass]="sauvegardeSucces ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"></i>
+                {{ messageSauvegarde }}
+              </div>
             }
-          </div>
-        </div>
-        <div class="fields-grid">
-          <label>Prénom <input type="text" formControlName="first_name" /></label>
-          <label>Nom <input type="text" formControlName="last_name" /></label>
-          <label>Email <input type="email" formControlName="email" /></label>
-          <label>Téléphone <input type="text" formControlName="telephone" /></label>
-        </div>
-      </article>
 
-      <article class="card prefs-card">
-        <h2><i class="bi bi-palette"></i> Interface</h2>
-        <div class="fields-grid">
-          <label>
-            Langue
-            <select formControlName="langue_interface">
-              <option value="fr">Français</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <label class="switch-row">
-            <span>Mode sombre</span>
-            <input type="checkbox" formControlName="mode_sombre" />
-          </label>
-        </div>
-      </article>
+            <div class="param-actions">
+              <button
+                type="button"
+                class="btn-danger"
+                [disabled]="!restaurationFichier || sauvegardeEnCours"
+                (click)="demanderRestauration()"
+              >
+                @if (sauvegardeEnCours) {
+                  <i class="bi bi-arrow-repeat tourne"></i> Restauration en cours...
+                } @else {
+                  <i class="bi bi-arrow-counterclockwise"></i> Restaurer la sauvegarde
+                }
+              </button>
+            </div>
+          </article>
+        }
 
-      <article class="card notif-card">
-        <h2><i class="bi bi-bell"></i> Notifications</h2>
-        <div class="switch-grid">
-          <label class="switch-row"><span>Email</span><input type="checkbox" formControlName="notif_email" /></label>
-          <label class="switch-row"><span>SMS</span><input type="checkbox" formControlName="notif_sms" /></label>
-          <label class="switch-row"><span>Push</span><input type="checkbox" formControlName="notif_push" /></label>
-          <label class="switch-row"><span>Rappels automatiques</span><input type="checkbox" formControlName="notif_rappels_auto" /></label>
-        </div>
-      </article>
-
-      <article class="card security-card">
-        <h2><i class="bi bi-shield-lock"></i> Compte</h2>
-        <p class="meta">Utilisateur : <strong>{{ profil?.username }}</strong></p>
-        <div class="actions-row">
-          <button type="submit" class="btn-primary">
-            <i class="bi bi-save"></i> {{ traductionService.t('save') }}
-          </button>
-          <button type="button" class="btn-secondary" (click)="exporterPreferences()">
-            <i class="bi bi-download"></i> Exporter
-          </button>
-          <label class="btn-secondary">
-            <i class="bi bi-upload"></i> Importer
-            <input type="file" accept=".json,application/json" (change)="importerPreferences($event)" hidden />
-          </label>
-          <button type="button" class="btn-danger" (click)="deconnexion()">
-            <i class="bi bi-box-arrow-right"></i> Déconnexion
-          </button>
-        </div>
-      </article>
-    </form>
+      </div>
+    </div>
   }
 </section>

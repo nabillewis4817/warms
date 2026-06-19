@@ -19,7 +19,22 @@ class Utilisateur(AbstractUser):
         CHIRURGIEN_DENTISTE = "chirurgien_dentiste", "Chirurgien-dentiste"
         SECRETAIRE = "secretaire", "Secrétaire"
         INFIRMIERE = "infirmiere", "Infirmière"
+        ASSISTANT = "assistant", "Assistant"
+        ADMIN = "admin", "Administrateur"
         PATIENT = "patient", "Patient"
+
+    class StatutRH(models.TextChoices):
+        ACTIF = "actif", "Actif"
+        INACTIF = "inactif", "Inactif"
+        EN_CONGE = "conge", "En congé"
+        SUSPENDU = "suspendu", "Suspendu"
+
+    class ThemeCouleur(models.TextChoices):
+        BLEU = "bleu", "Bleu"
+        VERT = "vert", "Vert"
+        ROUGE = "rouge", "Rouge"
+        ROSE = "rose", "Rose"
+        JAUNE = "jaune", "Jaune"
 
     role = models.CharField(
         max_length=32,
@@ -39,12 +54,39 @@ class Utilisateur(AbstractUser):
         blank=True,
         help_text="Photo de profil utilisateur.",
     )
+    service = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Service de rattachement (personnel uniquement).",
+    )
+    specialite = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Spécialité médicale (personnel uniquement).",
+    )
+    date_embauche = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date d'embauche (personnel uniquement).",
+    )
+    statut = models.CharField(
+        max_length=16,
+        choices=StatutRH.choices,
+        default=StatutRH.ACTIF,
+        help_text="Statut RH (distinct de is_active, qui contrôle la connexion).",
+    )
     langue_interface = models.CharField(
         max_length=8,
         default="fr",
         help_text="Langue préférée de l'interface (fr/en).",
     )
     mode_sombre = models.BooleanField(default=False)
+    theme_couleur = models.CharField(
+        max_length=16,
+        choices=ThemeCouleur.choices,
+        default=ThemeCouleur.BLEU,
+        help_text="Thème de couleur appliqué à l'interface.",
+    )
     preferences_notifications = models.JSONField(
         default=dict,
         blank=True,

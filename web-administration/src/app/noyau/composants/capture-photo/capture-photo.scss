@@ -1,0 +1,227 @@
+.capture-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.cp-cercle {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px rgba(30, 77, 183, 0.25);
+  border: 3px solid #fff;
+  outline: 2px solid #e2e8f0;
+  transition: outline-color 0.2s ease;
+
+  &:hover {
+    outline-color: #1e4db7;
+
+    .cp-overlay { opacity: 1; }
+  }
+}
+
+.capture-photo-grande .cp-cercle {
+  width: 140px;
+  height: 140px;
+}
+
+.cp-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cp-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e4db7, #3b82f6);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 800;
+
+  i { font-size: 36px; opacity: 0.85; }
+}
+
+.cp-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 20, 60, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.cp-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e4db7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.18s ease;
+
+  &:hover { background: #1e4db7; color: #fff; transform: scale(1.1); }
+
+  &.cp-btn-danger {
+    color: #e11d48;
+    &:hover { background: #e11d48; color: #fff; }
+  }
+}
+
+.cp-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  text-align: center;
+
+  i { font-size: 12px; }
+}
+
+// ===== Modal caméra =====
+
+.cp-camera-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 30, 0.78);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200500;
+  animation: cpFadeIn 0.2s ease;
+}
+
+.cp-camera-modal {
+  background: #0d1428;
+  border-radius: 20px;
+  overflow: hidden;
+  width: 460px;
+  max-width: 92vw;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+  animation: cpSlideUp 0.25s ease;
+}
+
+.cp-camera-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #1a2e6b;
+
+  h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cp-camera-close {
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    &:hover { background: #e11d48; }
+  }
+}
+
+.cp-video-wrapper {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+}
+
+.cp-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.cp-camera-erreur {
+  padding: 50px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  color: #fca5a5;
+
+  i { font-size: 32px; }
+  p { margin: 0; font-size: 13px; }
+}
+
+.cp-camera-actions {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #111827;
+
+  button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all 0.2s ease;
+  }
+
+  .cp-btn-annuler {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    &:hover { background: rgba(255, 255, 255, 0.15); }
+  }
+
+  .cp-btn-capturer {
+    background: linear-gradient(135deg, #1e4db7, #3b82f6);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(30, 77, 183, 0.4);
+    &:hover { opacity: 0.92; transform: translateY(-1px); }
+  }
+}
+
+@keyframes cpFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cpSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}

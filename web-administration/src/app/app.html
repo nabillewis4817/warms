@@ -1,20 +1,69 @@
 <div class="layout" [class.layout-auth]="estPageConnexion">
   @if (!estPageConnexion) {
   <aside class="sidebar">
-    <h1>{{ traductionService.t('appTitle') }}</h1>
-    <a routerLink="/tableau-de-bord" routerLinkActive="active">{{ traductionService.t('dashboard') }}</a>
-    <a routerLink="/statistiques" routerLinkActive="active">Statistiques</a>
-    <a routerLink="/patients" routerLinkActive="active">Patients</a>
-    <a routerLink="/patients/nouveau" routerLinkActive="active">Nouveau patient</a>
-    <a routerLink="/carnets" routerLinkActive="active">Carnets</a>
-    <a routerLink="/messagerie" routerLinkActive="active">Messagerie</a>
-    @if (badges.message > 0) { <span class="badge badge-green">{{ badges.message }}</span> }
-    <a routerLink="/journaux" routerLinkActive="active">Journaux</a>
-    @if (badges.critique > 0) { <span class="badge badge-red">{{ badges.critique }}</span> }
-    <a routerLink="/avis" routerLinkActive="active">Avis</a>
-    @if (badges.rappel > 0) { <span class="badge badge-yellow">{{ badges.rappel }}</span> }
-    <a routerLink="/personnel" routerLinkActive="active">Personnel</a>
-    <a routerLink="/parametres/profil" routerLinkActive="active">{{ traductionService.t('settings') }}</a>
+    <div class="sidebar-brand">
+      <div class="brand-icone"><i class="bi bi-emoji-smile-fill"></i></div>
+      <div>
+        <h1>{{ traductionService.t('appTitle') }}</h1>
+        <span class="brand-sous-titre">{{ traductionService.t('clinicSubtitle') }}</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-groupe-titre">{{ traductionService.t('navGeneral') }}</span>
+      <a routerLink="/tableau-de-bord" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-speedometer2"></i> <span>{{ traductionService.t('dashboard') }}</span>
+      </a>
+      <a routerLink="/statistiques" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-bar-chart-line-fill"></i> <span>{{ traductionService.t('statistics') }}</span>
+      </a>
+
+      <span class="nav-groupe-titre">{{ traductionService.t('navPatients') }}</span>
+      <a routerLink="/patients" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-people-fill"></i> <span>{{ traductionService.t('patients') }}</span>
+      </a>
+      <a routerLink="/patients/nouveau" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-person-plus-fill"></i> <span>{{ traductionService.t('newPatient') }}</span>
+      </a>
+      <a routerLink="/carnets" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-journal-bookmark-fill"></i> <span>{{ traductionService.t('notebooks') }}</span>
+      </a>
+
+      <span class="nav-groupe-titre">{{ traductionService.t('navCommunication') }}</span>
+      <a routerLink="/messagerie" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-chat-dots-fill"></i> <span>{{ traductionService.t('messaging') }}</span>
+        @if (badges.message > 0) { <span class="badge badge-green">{{ badges.message }}</span> }
+      </a>
+      <a routerLink="/avis" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-star-fill"></i> <span>{{ traductionService.t('reviews') }}</span>
+        @if (badges.rappel > 0) { <span class="badge badge-yellow">{{ badges.rappel }}</span> }
+      </a>
+
+      <span class="nav-groupe-titre">{{ traductionService.t('navAdministration') }}</span>
+      <a routerLink="/personnel" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-person-badge-fill"></i> <span>{{ traductionService.t('staff') }}</span>
+      </a>
+      <a routerLink="/journaux" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-clipboard-data-fill"></i> <span>{{ traductionService.t('logs') }}</span>
+        @if (badges.critique > 0) { <span class="badge badge-red">{{ badges.critique }}</span> }
+      </a>
+      <a routerLink="/parametres/profil" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-gear-fill"></i> <span>{{ traductionService.t('settings') }}</span>
+      </a>
+    </nav>
+
+    <a routerLink="/parametres/profil" class="sidebar-profil">
+      @if (authService.utilisateur()?.photo_profil) {
+        <img [src]="authService.utilisateur()?.photo_profil" alt="Photo de profil" class="sidebar-profil-photo">
+      } @else {
+        <span class="sidebar-profil-initiales">{{ initialesUtilisateur }}</span>
+      }
+      <div class="sidebar-profil-info">
+        <strong>{{ authService.utilisateur()?.prenom }} {{ authService.utilisateur()?.nom }}</strong>
+        <span>{{ roleLabelUtilisateur }}</span>
+      </div>
+      <i class="bi bi-chevron-right"></i>
+    </a>
   </aside>
   }
 
@@ -81,21 +130,27 @@
           }
         </div>
 
-        <label>
-          {{ traductionService.t('darkMode') }}
-          <input type="checkbox" [checked]="themeService.modeSombre()" (change)="basculerTheme($event)" />
-        </label>
+        <div class="topbar-preferences">
+          <label class="pref-toggle" [title]="traductionService.t('darkMode')">
+            <i class="bi" [ngClass]="themeService.modeSombre() ? 'bi-moon-stars-fill' : 'bi-sun-fill'"></i>
+            <span class="switch">
+              <input type="checkbox" [checked]="themeService.modeSombre()" (change)="basculerTheme($event)" />
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </span>
+          </label>
 
-        <label>
-          {{ traductionService.t('language') }}
-          <select [value]="traductionService.langue()" (change)="changerLangue($any($event.target).value)">
-            <option value="fr">FR</option>
-            <option value="en">EN</option>
-          </select>
-        </label>
+          <label class="pref-langue" [title]="traductionService.t('language')">
+            <i class="bi bi-translate"></i>
+            <select [value]="traductionService.langue()" (change)="changerLangue($any($event.target).value)">
+              <option value="fr">FR</option>
+              <option value="en">EN</option>
+            </select>
+          </label>
+        </div>
+
         <div class="quick-actions-dropdown" [class.open]="menuActionsOuvert">
         <button class="quick-action" (click)="basculerMenuActions()" [style.cursor]="menuActionsOuvert ? 'pointer' : 'pointer'">
-          <i class="bi bi-lightning-charge-fill"></i> Actions rapides <i class="bi bi-chevron-down"></i>
+          <i class="bi bi-lightning-charge-fill"></i> {{ traductionService.t('quickActions') }} <i class="bi bi-chevron-down"></i>
         </button>
         <div class="dropdown-menu">
           <a href="#" (click)="actionRapide('nouveau-patient'); $event.preventDefault()">
@@ -116,8 +171,8 @@
         </div>
       </div>
         <a routerLink="/ocr" class="ocr-link"><i class="bi bi-camera"></i> OCR</a>
-        <button class="logout-btn" (click)="seDeconnecter()" title="Se déconnecter">
-          <i class="bi bi-box-arrow-right"></i> Déconnexion
+        <button class="logout-btn" (click)="seDeconnecter()" [title]="traductionService.t('logout')">
+          <i class="bi bi-box-arrow-right"></i> {{ traductionService.t('logout') }}
         </button>
       </header>
     }

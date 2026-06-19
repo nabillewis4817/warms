@@ -2,9 +2,15 @@
 @import 'bootstrap-icons/font/bootstrap-icons.css';
 
 :root {
+  // Sidebar : toujours sombre et saturée, ne change jamais avec le mode clair/sombre
   --warms-navy: #0d1b3e;
+  --warms-sidebar-to: #1a2e6b;
+
   --warms-blue: #1a2e6b;
   --warms-accent: #1e4db7;
+  --warms-accent-2: #3b82f6;
+  --warms-accent-rgb: 30, 77, 183;
+  --warms-tint: #eef3ff;
   --warms-bg: #f0f4ff;
   --warms-card: #ffffff;
   --warms-gray: #4a5568;
@@ -17,6 +23,73 @@
   --warms-shadow: rgba(26, 46, 107, 0.15);
 }
 
+// ===================================================
+// THÈMES DE COULEUR (dégradés couleur-blanc appliqués à toute l'app)
+// Ces variables ne sont JAMAIS redéfinies en mode sombre :
+// la sidebar reste sombre et colorée dans les deux modes.
+// ===================================================
+
+body[data-couleur='vert'] {
+  --warms-navy: #07331f;
+  --warms-sidebar-to: #15803d;
+}
+
+body[data-couleur='rouge'] {
+  --warms-navy: #4c0a0a;
+  --warms-sidebar-to: #991b1b;
+}
+
+body[data-couleur='rose'] {
+  --warms-navy: #500724;
+  --warms-sidebar-to: #a8285f;
+}
+
+body[data-couleur='jaune'] {
+  --warms-navy: #422006;
+  --warms-sidebar-to: #92660a;
+}
+
+// Couleurs « contenu » (accent/texte) par thème — celles-ci changent avec le mode sombre
+body[data-couleur='vert'] {
+  --warms-blue: #15803d;
+  --warms-accent: #16a34a;
+  --warms-accent-2: #22c55e;
+  --warms-accent-rgb: 22, 163, 74;
+  --warms-tint: #ecfdf3;
+  --warms-border: #bbf7d0;
+  --warms-shadow: rgba(21, 128, 61, 0.15);
+}
+
+body[data-couleur='rouge'] {
+  --warms-blue: #991b1b;
+  --warms-accent: #dc2626;
+  --warms-accent-2: #ef4444;
+  --warms-accent-rgb: 220, 38, 38;
+  --warms-tint: #fef2f2;
+  --warms-border: #fecaca;
+  --warms-shadow: rgba(153, 27, 27, 0.15);
+}
+
+body[data-couleur='rose'] {
+  --warms-blue: #a8285f;
+  --warms-accent: #ec4899;
+  --warms-accent-2: #f472b6;
+  --warms-accent-rgb: 236, 72, 153;
+  --warms-tint: #fdf2f8;
+  --warms-border: #fbcfe8;
+  --warms-shadow: rgba(168, 40, 95, 0.15);
+}
+
+body[data-couleur='jaune'] {
+  --warms-blue: #92660a;
+  --warms-accent: #d97706;
+  --warms-accent-2: #f59e0b;
+  --warms-accent-rgb: 217, 119, 6;
+  --warms-tint: #fffbeb;
+  --warms-border: #fde68a;
+  --warms-shadow: rgba(146, 102, 10, 0.15);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -27,15 +100,22 @@ body {
   background: var(--warms-bg);
   color: var(--warms-text);
   background-image:
-    radial-gradient(circle at 10% 10%, rgba(30, 77, 183, 0.10), transparent 26%),
-    radial-gradient(circle at 90% 8%, rgba(26, 46, 107, 0.11), transparent 28%);
+    radial-gradient(circle at 10% 10%, rgba(var(--warms-accent-rgb), 0.1), transparent 26%),
+    radial-gradient(circle at 90% 8%, rgba(var(--warms-accent-rgb), 0.11), transparent 28%);
   transition: background 0.3s ease, color 0.3s ease;
 }
 
+// ===================================================
+// MODE SOMBRE — valeurs neutres communes à tous les thèmes
+// (la sidebar n'est pas concernée, elle garde --warms-navy / --warms-sidebar-to)
+// ===================================================
+
 body.theme-sombre {
-  --warms-navy: #e8f0ff;
   --warms-blue: #b8c9f0;
   --warms-accent: #5b8def;
+  --warms-accent-2: #7ea8f5;
+  --warms-accent-rgb: 91, 141, 239;
+  --warms-tint: #16223f;
   --warms-bg: #0b1530;
   --warms-card: #182543;
   --warms-gray: #d6deef;
@@ -45,8 +125,46 @@ body.theme-sombre {
   --warms-input-bg: #121e38;
   --warms-shadow: rgba(0, 0, 0, 0.35);
   background-image:
-    radial-gradient(circle at 10% 10%, rgba(91, 141, 239, 0.12), transparent 26%),
-    radial-gradient(circle at 90% 8%, rgba(26, 46, 107, 0.25), transparent 28%);
+    radial-gradient(circle at 10% 10%, rgba(var(--warms-accent-rgb), 0.12), transparent 26%),
+    radial-gradient(circle at 90% 8%, rgba(var(--warms-accent-rgb), 0.2), transparent 28%);
+}
+
+// ---- Mode sombre : variantes par thème de couleur (hue conservée, luminosité adaptée) ----
+
+body.theme-sombre[data-couleur='vert'] {
+  --warms-blue: #86efac;
+  --warms-accent: #4ade80;
+  --warms-accent-2: #6ee7a8;
+  --warms-accent-rgb: 74, 222, 128;
+  --warms-tint: #102218;
+  --warms-border: #1f3d2a;
+}
+
+body.theme-sombre[data-couleur='rouge'] {
+  --warms-blue: #fca5a5;
+  --warms-accent: #f87171;
+  --warms-accent-2: #fb9a9a;
+  --warms-accent-rgb: 248, 113, 113;
+  --warms-tint: #2a1313;
+  --warms-border: #4a1d1d;
+}
+
+body.theme-sombre[data-couleur='rose'] {
+  --warms-blue: #f9a8d4;
+  --warms-accent: #f472b6;
+  --warms-accent-2: #f7a6cd;
+  --warms-accent-rgb: 244, 114, 182;
+  --warms-tint: #2a1422;
+  --warms-border: #471f37;
+}
+
+body.theme-sombre[data-couleur='jaune'] {
+  --warms-blue: #fcd34d;
+  --warms-accent: #fbbf24;
+  --warms-accent-2: #fcd34d;
+  --warms-accent-rgb: 251, 191, 36;
+  --warms-tint: #2a2210;
+  --warms-border: #473a17;
 }
 
 body.theme-sombre h1,
@@ -84,8 +202,14 @@ body.theme-sombre textarea {
 body.theme-sombre .card,
 body.theme-sombre article,
 body.theme-sombre .modal-content,
+body.theme-sombre .modal-overlay .card,
 body.theme-sombre .kpi-card,
-body.theme-sombre .chart-card {
+body.theme-sombre .chart-card,
+body.theme-sombre .param-tabs,
+body.theme-sombre .loading-card,
+body.theme-sombre .fichier-restauration,
+body.theme-sombre .theme-option,
+body.theme-sombre .switch-row {
   background: var(--warms-card) !important;
   color: var(--warms-text);
   border-color: var(--warms-border);
@@ -96,7 +220,7 @@ body.theme-sombre table {
 }
 
 body.theme-sombre table thead {
-  background: rgba(91, 141, 239, 0.15);
+  background: rgba(var(--warms-accent-rgb), 0.15);
 }
 
 body.theme-sombre table tbody tr:nth-child(even) {

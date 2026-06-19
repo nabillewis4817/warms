@@ -5,12 +5,15 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     UtilisateurViewSet,
     CustomTokenObtainPairView,
+    changer_mon_mot_de_passe,
     dashboard_stats,
+    exporter_sauvegarde,
     forgot_password,
     me,
     me_preferences,
     ping,
     register,
+    restaurer_sauvegarde,
     reset_password,
     services_list,
     roles_list,
@@ -37,6 +40,10 @@ urlpatterns = [
     # Profil utilisateur
     path("me/", me, name="me"),
     path("me/preferences/", me_preferences, name="me-preferences"),
+    path("me/mot-de-passe/", changer_mon_mot_de_passe, name="me-mot-de-passe"),
+    # Sauvegarde et restauration (réservé chirurgien-dentiste)
+    path("sauvegarde/exporter/", exporter_sauvegarde, name="sauvegarde-exporter"),
+    path("sauvegarde/restaurer/", restaurer_sauvegarde, name="sauvegarde-restaurer"),
     # Données de référence
     path("services/", services_list, name="services-list"),
     path("roles/", roles_list, name="roles-list"),

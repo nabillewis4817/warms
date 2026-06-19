@@ -17,6 +17,7 @@ class PatientSerializer(serializers.ModelSerializer):
             "id",
             "prenom",
             "nom",
+            "photo",
             "date_naissance",
             "sexe",
             "telephone",
