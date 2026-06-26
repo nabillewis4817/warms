@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:lottie/lottie.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/ia_service.dart';
+import '../services/secure_storage_service.dart';
+import '../themes/warms_theme.dart';
 import 'package:flutter/foundation.dart';
 
 /// Écran de Recherche Médicale IA pour WARMS Mobile
@@ -108,16 +109,11 @@ class _IARechercheScreenState extends State<IARechercheScreen>
     );
   }
 
-  /// Charge l'historique des recherches
+  /// Charge l'historique des recherches, persisté localement sur l'appareil.
   Future<void> _loadSearchHistory() async {
-    // TODO: Charger depuis le stockage local
-    setState(() {
-      _searchHistory = [
-        'Grippe symptômes',
-        'Maux de tête',
-        'Allergies saisonnières',
-      ];
-    });
+    final historique = await SecureStorageService.instance.lireHistoriqueRecherche();
+    if (!mounted) return;
+    setState(() => _searchHistory = historique);
   }
 
   // ==================== GESTION DE LA RECHERCHE ====================
@@ -214,20 +210,16 @@ class _IARechercheScreenState extends State<IARechercheScreen>
     }
   }
 
-  /// Ajoute une recherche à l'historique
+  /// Ajoute une recherche à l'historique et le persiste sur l'appareil.
   void _addToSearchHistory(String query) {
     setState(() {
-      // Supprimer si déjà présent
       _searchHistory.remove(query);
-      // Ajouter au début
       _searchHistory.insert(0, query);
-      // Limiter à 10 éléments
       if (_searchHistory.length > 10) {
         _searchHistory = _searchHistory.take(10).toList();
       }
     });
-    
-    // TODO: Sauvegarder dans le stockage local
+    SecureStorageService.instance.sauvegarderHistoriqueRecherche(_searchHistory);
   }
 
   // ==================== INTERFACE UTILISATEUR ====================
@@ -262,7 +254,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.blue[600],
+              color: WarmsTheme.warmsAccent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -323,7 +315,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue[600]!),
+                borderSide: BorderSide(color: WarmsTheme.warmsAccent),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -454,7 +446,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.blue[600],
+                    color: WarmsTheme.warmsAccent,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: const Icon(
@@ -614,22 +606,22 @@ class _IARechercheScreenState extends State<IARechercheScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: WarmsTheme.warmsBg,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue[200]!),
+        border: Border.all(color: WarmsTheme.warmsAccent.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.blue[600], size: 16),
+              Icon(icon, color: WarmsTheme.warmsAccent, size: 16),
               const SizedBox(width: 4),
               Text(
                 name,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Colors.blue[800],
+                  color: WarmsTheme.warmsBlue,
                   fontSize: 14,
                 ),
               ),
@@ -639,7 +631,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
           Text(
             description,
             style: TextStyle(
-              color: Colors.blue[600],
+              color: WarmsTheme.warmsAccent,
               fontSize: 12,
             ),
           ),
@@ -706,7 +698,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               onPressed: _clearHistory,
               child: Text(
                 'Effacer',
-                style: TextStyle(color: Colors.blue[600]),
+                style: TextStyle(color: WarmsTheme.warmsAccent),
               ),
             ),
           ],
@@ -935,13 +927,13 @@ class _IARechercheScreenState extends State<IARechercheScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.blue[100],
+        color: WarmsTheme.warmsAccentTint,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         source,
         style: TextStyle(
-          color: Colors.blue[800],
+          color: WarmsTheme.warmsBlue,
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
@@ -1012,23 +1004,65 @@ class _IARechercheScreenState extends State<IARechercheScreen>
     );
   }
 
-  /// Ouvre un résultat détaillé
-  void _openResult(Map<String, dynamic> result) {
-    // TODO: Implémenter l'ouverture du détail
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ouverture de: ${result['title']}'),
-        duration: const Duration(seconds: 2),
+  /// Ouvre le lien externe du résultat s'il y en a un, sinon affiche le
+  /// résumé complet dans un détail plein écran (les recherches scientifiques
+  /// n'ont pas toujours d'URL directe exploitable).
+  Future<void> _openResult(Map<String, dynamic> result) async {
+    final lien = (result['url'] ?? result['lien'] ?? result['link'] ?? '').toString();
+    if (lien.isNotEmpty) {
+      final uri = Uri.tryParse(lien);
+      if (uri != null && await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    }
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Text(
+                result['title'] ?? 'Sans titre',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              _buildSourceChip(result['source'] ?? 'Inconnue'),
+              const SizedBox(height: 16),
+              Text(
+                result['summary'] ?? 'Aucun résumé disponible',
+                style: const TextStyle(height: 1.5),
+              ),
+              if (lien.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                SelectableText(lien, style: const TextStyle(color: WarmsTheme.warmsAccent)),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  /// Efface l'historique de recherche
+  /// Efface l'historique de recherche (et le retire du stockage local).
   void _clearHistory() {
     setState(() {
       _searchHistory.clear();
     });
-    
+    SecureStorageService.instance.sauvegarderHistoriqueRecherche(const []);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Historique effacé'),

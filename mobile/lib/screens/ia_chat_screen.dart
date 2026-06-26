@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import '../services/ia_service.dart';
-import 'package:flutter/foundation.dart';
+import '../themes/warms_theme.dart';
 
 /// Écran de Chat IA pour WARMS Mobile
 /// 
@@ -57,6 +56,10 @@ class _IAChatScreenState extends State<IAChatScreen>
   /// Message d'erreur à afficher
   String? _errorMessage;
 
+  /// Identifiant de la conversation IA en cours (créée ou réutilisée au
+  /// premier chargement) ; nécessaire pour y ajouter des messages.
+  String? _conversationId;
+
   // ==================== SUGGESTIONS RAPIDES ====================
   
   /// Suggestions prédéfinies pour aider l'utilisateur
@@ -102,16 +105,21 @@ class _IAChatScreenState extends State<IAChatScreen>
     );
   }
 
-  /// Charge l'historique des conversations depuis le service IA
+  /// Récupère (ou crée) la conversation IA de l'utilisateur et charge son
+  /// historique de messages depuis le service IA.
   Future<void> _loadConversationHistory() async {
     try {
       setState(() => _isLoading = true);
-      
-      final conversations = await IAService().getConversations();
-      
-      if (conversations.isNotEmpty) {
+
+      final conversation = await IAService().obtenirOuCreerConversation(plateforme: 'mobile');
+      _conversationId = conversation['id'] as String?;
+      final messages = (conversation['messages'] as List<dynamic>? ?? [])
+          .map((m) => _depuisMessageIA(m as Map<String, dynamic>))
+          .toList();
+
+      if (messages.isNotEmpty) {
         setState(() {
-          _messages.addAll(conversations.reversed);
+          _messages.addAll(messages);
           _isLoading = false;
         });
         _scrollToBottom();
@@ -127,6 +135,20 @@ class _IAChatScreenState extends State<IAChatScreen>
       });
       _addWelcomeMessage();
     }
+  }
+
+  /// Convertit un message renvoyé par le backend (`MessageIASerializer`)
+  /// vers la forme attendue par les bulles de cet écran.
+  Map<String, dynamic> _depuisMessageIA(Map<String, dynamic> message) {
+    final metadonnees = message['metadonnees'] as Map<String, dynamic>? ?? const {};
+    return {
+      'id': message['id'],
+      'type': message['type_message'] == 'user' ? 'user' : 'ia',
+      'contenu': message['contenu'] ?? '',
+      'timestamp': DateTime.tryParse(message['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      'confidence': (metadonnees['confidence'] as num?)?.toDouble() ?? 0.8,
+      'urgence': metadonnees['niveau_urgence'],
+    };
   }
 
   /// Ajoute un message de bienvenue pour démarrer la conversation
@@ -189,25 +211,17 @@ class _IAChatScreenState extends State<IAChatScreen>
     _scrollToBottom();
 
     try {
-      // Envoyer le message à l'IA
-      final response = await IAService().envoyerMessageIA(
-        message: message,
-        plateforme: 'mobile',
-        contexte: {
-          'user_id': 'current_user', // À remplacer avec l'ID utilisateur réel
-          'session_id': 'mobile_session_${DateTime.now().day}',
-        },
-      );
+      final conversationId = _conversationId;
+      if (conversationId == null) {
+        throw Exception('Conversation non initialisée');
+      }
 
-      // Ajouter la réponse de l'IA
-      final iaMessage = {
-        'id': response['id'] ?? DateTime.now().millisecondsSinceEpoch + 1,
-        'type': 'ia',
-        'contenu': response['reponse'] ?? 'Désolé, je n\'ai pas pu traiter votre demande.',
-        'timestamp': DateTime.now(),
-        'confidence': response['confidence'] ?? 0.8,
-        'urgence': response['niveau_urgence'],
-      };
+      // Envoyer le message à l'IA et ajouter sa réponse
+      final response = await IAService().envoyerMessageIA(
+        conversationId: conversationId,
+        message: message,
+      );
+      final iaMessage = _depuisMessageIA(response['message_ia'] as Map<String, dynamic>);
 
       setState(() {
         _messages.add(iaMessage);
@@ -216,8 +230,8 @@ class _IAChatScreenState extends State<IAChatScreen>
       });
 
       // Alerte spéciale si urgence détectée
-      if (response['niveau_urgence'] == 'critique') {
-        _showUrgencyAlert(response['alerte_urgence'] ?? 'Urgence médicale détectée');
+      if (iaMessage['urgence'] == 'critique') {
+        _showUrgencyAlert('Urgence détectée : contactez le cabinet ou les urgences sans attendre.');
       }
 
       _scrollToBottom();
@@ -286,7 +300,7 @@ class _IAChatScreenState extends State<IAChatScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.blue[600],
+              color: WarmsTheme.warmsAccent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -429,7 +443,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                     Container(
                       margin: const EdgeInsets.only(right: 8),
                       child: CircleAvatar(
-                        backgroundColor: Colors.blue[600],
+                        backgroundColor: WarmsTheme.warmsAccent,
                         radius: 16,
                         child: const Icon(
                           Icons.smart_toy,
@@ -452,7 +466,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                       ),
                       decoration: BoxDecoration(
                         color: isUserMessage 
-                            ? Colors.blue[600]
+                            ? WarmsTheme.warmsAccent
                             : isErrorMessage 
                                 ? Colors.red[100]
                                 : Colors.white,
@@ -600,7 +614,7 @@ class _IAChatScreenState extends State<IAChatScreen>
         children: [
           // Avatar de l'IA
           CircleAvatar(
-            backgroundColor: Colors.blue[600],
+            backgroundColor: WarmsTheme.warmsAccent,
             radius: 16,
             child: const Icon(
               Icons.smart_toy,
@@ -704,7 +718,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide(color: Colors.blue[600]!),
+                      borderSide: BorderSide(color: WarmsTheme.warmsAccent),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -719,7 +733,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.blue[600]!,
+                                  WarmsTheme.warmsAccent,
                                 ),
                               ),
                             ),
@@ -735,7 +749,7 @@ class _IAChatScreenState extends State<IAChatScreen>
               // Bouton d'envoi
               FloatingActionButton(
                 onPressed: _isLoading ? null : _sendMessage,
-                backgroundColor: Colors.blue[600],
+                backgroundColor: WarmsTheme.warmsAccent,
                 mini: true,
                 child: const Icon(
                   Icons.send,
@@ -770,8 +784,8 @@ class _IAChatScreenState extends State<IAChatScreen>
                 _messageController.text = _suggestions[index];
                 _sendMessage();
               },
-              backgroundColor: Colors.blue[50],
-              side: BorderSide(color: Colors.blue[200]!),
+              backgroundColor: WarmsTheme.warmsBg,
+              side: BorderSide(color: WarmsTheme.warmsAccent.withValues(alpha: 0.3)),
             ),
           );
         },

@@ -224,6 +224,10 @@ AUTH_USER_MODEL = "personnel.Utilisateur"
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", default="claude-3-5-sonnet-latest")
 
+# Recherche web (Google Custom Search) pour l'écran "Recherche IA"
+GOOGLE_API_KEY = env("GOOGLE_API_KEY", default="")
+GOOGLE_CSE_ID = env("GOOGLE_CSE_ID", default="")
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

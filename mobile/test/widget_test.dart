@@ -1,19 +1,17 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Test de fumée : vérifie que l'application démarre sans exception et
+// affiche directement l'écran de connexion, sans écran de chargement
+// intermédiaire.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:warms_mobile/main.dart';
+import 'package:warms_mobile/app.dart';
+import 'package:warms_mobile/screens/auth/login_screen.dart';
 
 void main() {
-  testWidgets('Warm\'s mobile charge les paramètres', (WidgetTester tester) async {
-    await tester.pumpWidget(const WarmsMobileApp());
-    expect(find.textContaining('Paramètres'), findsOneWidget);
-    expect(find.byType(SwitchListTile), findsWidgets);
+  testWidgets("WARMS démarre directement sur l'écran de connexion", (WidgetTester tester) async {
+    await tester.pumpWidget(const WarmsApp());
+    await tester.pump();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 }

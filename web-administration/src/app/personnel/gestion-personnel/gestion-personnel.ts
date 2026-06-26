@@ -4,10 +4,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { Authentification } from '../../noyau/services/authentification';
 import { PersonnelCompte, PersonnelService } from '../../noyau/services/personnel';
+import { CapturePhoto } from '../../noyau/composants/capture-photo/capture-photo';
 
 @Component({
   selector: 'app-gestion-personnel',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CapturePhoto],
   templateUrl: './gestion-personnel.html',
   styleUrl: './gestion-personnel.scss',
 })
@@ -17,6 +18,8 @@ export class GestionPersonnel implements OnInit {
   readonly auth = inject(Authentification);
   comptes: PersonnelCompte[] = [];
   message = '';
+  photoFichier: File | null = null;
+  photoTouchee = false;
 
   form = this.fb.group({
     username: ['', Validators.required],
@@ -38,12 +41,26 @@ export class GestionPersonnel implements OnInit {
     });
   }
 
+  onPhotoChange(fichier: File | null): void {
+    this.photoFichier = fichier;
+  }
+
+  get initiales(): string {
+    const prenom = (this.form.get('first_name')?.value ?? '').charAt(0);
+    const nom = (this.form.get('last_name')?.value ?? '').charAt(0);
+    return (prenom + nom).toUpperCase();
+  }
+
   creer(): void {
-    if (this.form.invalid) return;
-    this.personnelService.creer(this.form.getRawValue()).subscribe({
+    this.photoTouchee = true;
+    if (this.form.invalid || !this.photoFichier) return;
+
+    this.personnelService.creer(this.form.getRawValue(), this.photoFichier).subscribe({
       next: () => {
         this.message = 'Compte personnel créé.';
         this.form.reset({ role: 'infirmiere' });
+        this.photoFichier = null;
+        this.photoTouchee = false;
         this.recharger();
       },
       error: () => (this.message = 'Erreur de création.'),

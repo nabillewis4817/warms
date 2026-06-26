@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Écran de splash animé pour WARMS Mobile
-/// 
-/// Affiche une animation élégante avec le logo WARMS
-/// et le texte "WARMS" qui apparaît lettre par lettre
-/// avec des effets d'ondes.
+import '../themes/warms_theme.dart';
+
+/// Écran de démarrage (boot) de WARMS Mobile.
+///
+/// Affiche une animation élégante avec le logo WARMS et le texte "WARMS"
+/// qui apparaît lettre par lettre, avec un fond en dégradé turquoise animé.
+/// Affiché tant que [AppGate] restaure la session (voir app.dart) — la
+/// navigation vers l'écran suivant est pilotée par l'appelant, pas par ce
+/// widget (pas de minuteur interne ni de `pushReplacementNamed`).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -90,15 +94,6 @@ class _SplashScreenState extends State<SplashScreen>
     _logoController.forward();
     _textController.forward();
     _waveController.repeat();
-    
-    // Naviguer vers l'écran principal après les animations
-    _navigateToMain();
-  }
-  
-  Future<void> _navigateToMain() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/main');
   }
 
   @override
@@ -112,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: WarmsTheme.warmsBg,
       body: Stack(
         children: [
           // Ondes animées en arrière-plan
@@ -126,8 +121,8 @@ class _SplashScreenState extends State<SplashScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0xFF1E4DB7).withOpacity(_waveOpacity.value ?? 0.3),
-                        const Color(0xFF1A2E6B).withOpacity(_waveOpacity.value ?? 0.1),
+                        WarmsTheme.warmsAccent.withOpacity(_waveOpacity.value ?? 0.3),
+                        WarmsTheme.warmsBlue.withOpacity(_waveOpacity.value ?? 0.1),
                       ],
                     ),
                   ),
@@ -155,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
                           color: Colors.white,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF1A2E6B).withOpacity(0.3),
+                              color: WarmsTheme.warmsBlue.withOpacity(0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -165,7 +160,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Icon(
                             Icons.medical_services,
                             size: 60,
-                            color: const Color(0xFF1E4DB7),
+                            color: WarmsTheme.warmsAccent,
                           ),
                         ),
                       ),
@@ -246,7 +241,7 @@ class _SplashScreenState extends State<SplashScreen>
                       letterSpacing: _letterSpacing.value,
                       shadows: [
                         Shadow(
-                          color: const Color(0xFF0D1B3E).withOpacity(0.3),
+                          color: WarmsTheme.warmsNavy.withOpacity(0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

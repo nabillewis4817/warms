@@ -22,8 +22,18 @@ export class PersonnelService {
     return this.http.get<PersonnelCompte[]>(`${this.baseUrl}/`);
   }
 
-  creer(payload: any): Observable<PersonnelCompte> {
-    return this.http.post<PersonnelCompte>(`${this.baseUrl}/`, payload);
+  creer(payload: any, photo?: File | null): Observable<PersonnelCompte> {
+    if (!photo) {
+      return this.http.post<PersonnelCompte>(`${this.baseUrl}/`, payload);
+    }
+    const formData = new FormData();
+    Object.entries(payload).forEach(([cle, valeur]) => {
+      if (valeur !== undefined && valeur !== null && valeur !== '') {
+        formData.append(cle, String(valeur));
+      }
+    });
+    formData.append('photo_profil', photo, photo.name);
+    return this.http.post<PersonnelCompte>(`${this.baseUrl}/`, formData);
   }
 
   valider(id: number): Observable<PersonnelCompte> {

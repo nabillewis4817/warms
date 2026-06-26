@@ -1,267 +1,126 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:dio/io.dart';
-import 'package:flutter/foundation.dart';
-import '../config/api_config.dart';
 
-/// Service d'Intelligence Artificielle pour WARMS Mobile
-/// 
-/// Ce service gère toutes les interactions avec l'IA backend WARMS :
-/// - Chat conversationnel intelligent
-/// - Recherche médicale multi-sources
-/// - Analyse de symptômes avec détection d'urgence
-/// - Traitement OCR de documents médicaux
-/// - Gestion des préférences utilisateur
-/// 
-/// @author WARMS Team
-/// @version 1.0.0
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
+import 'api_client.dart';
+
+/// Service d'Intelligence Artificielle pour WARMS Mobile : chat
+/// conversationnel, recherche médicale, analyse de symptômes, OCR.
+///
+/// Utilise le client HTTP partagé ([ApiClient]) plutôt qu'une instance Dio
+/// dédiée : avant ce changement, ce service lisait le token sous la clé
+/// `'access_token'`, qui n'a jamais été écrite nulle part (le reste de
+/// l'app utilise `'warms_access'` via [SecureStorageService]) — toutes les
+/// requêtes IA partaient donc sans en-tête `Authorization` et échouaient
+/// silencieusement en 401/403.
 class IAService {
-  /// Instance singleton du service IA
-  /// Pattern Singleton pour garantir une seule instance dans toute l'application
   static final IAService _instance = IAService._internal();
   factory IAService() => _instance;
-  IAService._internal() {
-    _configureDio();
-  }
+  IAService._internal();
 
-  /// Client HTTP pour les appels API
-  /// Configuration optimisée pour les appels backend WARMS
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: ApiConfig.iaSharedBaseUrl,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'User-Agent': 'WARMS-Mobile/1.0.0',
-    },
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 15),
-  ));
-  
-  /// Stockage sécurisé pour les tokens d'authentification
-  /// Utilise FlutterSecureStorage pour la sécurité des données sensibles
-  final FlutterSecureStorage _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-  );
-
-  /// Configuration du client HTTP avec gestion des erreurs et retry
-  void _configureDio() {
-    // Configuration pour le développement (accepter les certificats auto-signés)
-    if (!kReleaseMode) {
-      (_dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate = (client) {
-        client.badCertificateCallback = (cert, host, port) => true;
-        return client;
-      };
-    }
-
-    // Intercepteur pour ajouter automatiquement le token d'authentification
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await _storage.read(key: 'access_token');
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
-        onError: (error, handler) {
-          // Log des erreurs pour le debugging
-          if (kDebugMode) {
-            print('🔴 Erreur API IA: ${error.message}');
-            print('📍 URL: ${error.requestOptions.uri}');
-            print('📊 Status: ${error.response?.statusCode}');
-          }
-          handler.next(error);
-        },
-      ),
-    );
-  }
+  final Dio _dio = ApiClient.instance.dio;
+  static const _prefixe = '/ia-shared';
 
   // ==================== CHAT INTELLIGENT ====================
 
-  /// Envoie un message au chat IA et récupère la réponse
-  /// 
-  /// [message] - Le message de l'utilisateur à analyser
-  /// [plateforme] - La plateforme d'origine ('mobile')
-  /// [contexte] - Contexte additionnel pour personnaliser la réponse
-  /// 
-  /// Retourne une Map contenant la réponse de l'IA et les métadonnées
-  /// 
-  /// Lance une [Exception] en cas d'erreur de communication
-  Future<Map<String, dynamic>> envoyerMessageIA({
-    required String message,
-    required String plateforme,
-    Map<String, dynamic>? contexte,
-  }) async {
+  /// Retourne la conversation IA existante de l'utilisateur pour cette
+  /// plateforme (avec son historique de messages), ou en crée une nouvelle
+  /// s'il n'y en a aucune.
+  Future<Map<String, dynamic>> obtenirOuCreerConversation({required String plateforme}) async {
     try {
-      if (kDebugMode) {
-        print('💬 Envoi message IA: "$message"');
-      }
+      final rep = await _dio.get('$_prefixe/conversations/', queryParameters: {'plateforme': plateforme});
+      final data = rep.data;
+      final liste = data is Map ? (data['results'] as List<dynamic>? ?? []) : data as List<dynamic>;
+      if (liste.isNotEmpty) return liste.first as Map<String, dynamic>;
 
-      final response = await _dio.post(
-        '/conversations/',
-        data: {
-          'message': message.trim(),
-          'plateforme': plateforme,
-          'contexte': {
-            ...?contexte,
-            'timestamp': DateTime.now().toIso8601String(),
-            'user_agent': 'WARMS-Mobile',
-          },
-        },
-      );
-
-      if (kDebugMode) {
-        print('✅ Réponse IA reçue: ${response.data['reponse']?.substring(0, 50)}...');
-      }
-
-      return response.data;
+      final creation = await _dio.post('$_prefixe/conversations/', data: {'plateforme': plateforme});
+      return creation.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final messageErreur = _getDioErrorMessage(e);
-      throw Exception('💬 Erreur chat IA: $messageErreur');
-    } catch (e) {
-      throw Exception('💬 Erreur inattendue chat IA: $e');
+      throw Exception(_messageErreur(e));
     }
   }
 
-  /// Récupère l'historique des conversations de l'utilisateur
-  /// 
-  /// Retourne une liste des conversations avec leurs messages
-  Future<List<Map<String, dynamic>>> getConversations() async {
+  /// Ajoute un message utilisateur à une conversation et récupère la
+  /// réponse de l'IA. Retourne `{message_user, message_ia}`.
+  Future<Map<String, dynamic>> envoyerMessageIA({
+    required String conversationId,
+    required String message,
+  }) async {
     try {
-      final response = await _dio.get('/conversations/');
-      return List<Map<String, dynamic>>.from(response.data);
+      final response = await _dio.post(
+        '$_prefixe/conversations/$conversationId/ajouter_message/',
+        data: {'contenu': message.trim(), 'type_message': 'user'},
+      );
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final messageErreur = _getDioErrorMessage(e);
-      throw Exception('📚 Erreur récupération conversations: $messageErreur');
-    } catch (e) {
-      throw Exception('📚 Erreur inattendue conversations: $e');
+      throw Exception(_messageErreur(e));
     }
   }
 
   // ==================== RECHERCHE MÉDICALE ====================
 
-  /// Effectue une recherche médicale multi-sources
-  /// 
-  /// [query] - La requête de recherche médicale
-  /// [plateforme] - La plateforme d'origine
-  /// [contexte] - Contexte médical du patient si disponible
-  /// 
-  /// Retourne les résultats de recherche avec sources et pertinence
+  /// Effectue une recherche médicale multi-sources.
   Future<Map<String, dynamic>> rechercherMedical({
     required String query,
     required String plateforme,
     Map<String, dynamic>? contexte,
   }) async {
     try {
-      if (kDebugMode) {
-        print('🔍 Recherche médicale: "$query"');
-      }
-
       final response = await _dio.post(
-        '/recherches/',
+        '$_prefixe/recherches/',
         data: {
           'query': query.trim(),
           'plateforme': plateforme,
           'contexte': {
             ...?contexte,
             'timestamp': DateTime.now().toIso8601String(),
-            'sources': ['pubmed', 'google_scholar', 'who'],
           },
         },
       );
-
-      final resultats = response.data;
-      if (kDebugMode) {
-        print('🔍 ${resultats['resultats']?.length ?? 0} résultats trouvés');
-      }
-
-      return resultats;
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final messageErreur = _getDioErrorMessage(e);
-      throw Exception('🔍 Erreur recherche médicale: $messageErreur');
-    } catch (e) {
-      throw Exception('🔍 Erreur inattendue recherche: $e');
+      throw Exception(_messageErreur(e));
     }
   }
 
   // ==================== ANALYSE DE SYMPTÔMES ====================
 
-  /// Analyse les symptômes et fournit des recommandations médicales
-  /// 
-  /// [symptomes] - Liste des symptômes à analyser
-  /// [plateforme] - La plateforme d'origine
-  /// [contexte] - Informations patient (âge, sexe, antécédents)
-  /// 
-  /// Retourne l'analyse avec niveau d'urgence et recommandations
+  /// Analyse les symptômes et fournit des recommandations médicales.
   Future<Map<String, dynamic>> analyserSymptomes({
     required List<String> symptomes,
     required String plateforme,
     Map<String, dynamic>? contexte,
   }) async {
     try {
-      if (kDebugMode) {
-        print('🏥 Analyse symptômes: ${symptomes.join(', ')}');
-      }
-
       final response = await _dio.post(
-        '/analyses/',
+        '$_prefixe/analyses/',
         data: {
           'symptomes': symptomes.where((s) => s.trim().isNotEmpty).toList(),
           'plateforme': plateforme,
           'contexte': {
             ...?contexte,
             'timestamp': DateTime.now().toIso8601String(),
-            'analyse_type': 'symptomes',
           },
         },
       );
-
-      final analyse = response.data;
-      
-      // Alerte immédiate si urgence détectée
-      if (analyse['niveau_urgence'] == 'critique') {
-        if (kDebugMode) {
-          print('🚨 URGENCE DÉTECTÉE: ${analyse['alerte_urgence']}');
-        }
-      }
-
-      return analyse;
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final messageErreur = _getDioErrorMessage(e);
-      throw Exception('🏥 Erreur analyse symptômes: $messageErreur');
-    } catch (e) {
-      throw Exception('🏥 Erreur inattendue analyse: $e');
+      throw Exception(_messageErreur(e));
     }
   }
 
   // ==================== TRAITEMENT OCR ====================
 
-  /// Traite une image avec OCR pour extraire le texte médical
-  /// 
-  /// [imageFile] - Le fichier image à traiter
-  /// [metadonnees] - Métadonnées du document (type, patient, etc.)
-  /// 
-  /// Retourne le texte extrait avec niveau de confiance
+  /// Traite une image avec OCR pour extraire le texte médical.
   Future<Map<String, dynamic>> traiterImageOCR({
     required File imageFile,
     Map<String, dynamic>? metadonnees,
   }) async {
+    if (!await imageFile.exists()) {
+      throw Exception('Fichier image introuvable');
+    }
     try {
-      if (!await imageFile.exists()) {
-        throw Exception('📷 Fichier image introuvable');
-      }
-
-      if (kDebugMode) {
-        print('📷 Traitement OCR: ${imageFile.path}');
-      }
-
       final formData = FormData.fromMap({
         'fichier': await MultipartFile.fromFile(
           imageFile.path,
@@ -271,123 +130,70 @@ class IAService {
           ...?metadonnees,
           'plateforme': 'mobile',
           'timestamp': DateTime.now().toIso8601String(),
-          'file_size': await imageFile.length(),
         },
       });
-
-      final response = await _dio.post('/ocr/extract-text/', data: formData);
-      
-      final resultat = response.data;
-      if (kDebugMode) {
-        print('📷 OCR terminé - Confiance: ${resultat['confiance']}%');
-        print('📝 Texte extrait: ${resultat['texte_extrait']?.substring(0, 50)}...');
-      }
-
-      return resultat;
+      final response = await _dio.post('$_prefixe/ocr/extract-text/', data: formData);
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final messageErreur = _getDioErrorMessage(e);
-      throw Exception('📷 Erreur traitement OCR: $messageErreur');
-    } catch (e) {
-      throw Exception('📷 Erreur inattendue OCR: $e');
+      throw Exception(_messageErreur(e));
     }
   }
 
   // ==================== PRÉFÉRENCES IA ====================
 
-  /// Récupère les préférences IA de l'utilisateur
-  /// 
-  /// Retourne les préférences de personnalisation de l'IA
   Future<Map<String, dynamic>> getPreferencesIA() async {
     try {
-      final response = await _dio.get('/preferences/');
-      return response.data;
+      final response = await _dio.get('$_prefixe/preferences/');
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final messageErreur = _getDioErrorMessage(e);
-      throw Exception('⚙️ Erreur récupération préférences: $messageErreur');
-    } catch (e) {
-      throw Exception('⚙️ Erreur inattendue préférences: $e');
+      throw Exception(_messageErreur(e));
     }
   }
 
-  /// Sauvegarde les préférences IA de l'utilisateur
-  /// 
-  /// [preferences] - Les préférences à sauvegarder
   Future<Map<String, dynamic>> sauvegarderPreferencesIA({
     required Map<String, dynamic> preferences,
   }) async {
     try {
       final response = await _dio.post(
-        '/preferences/',
-        data: {
-          ...preferences,
-          'plateforme': 'mobile',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
+        '$_prefixe/preferences/',
+        data: {...preferences, 'plateforme': 'mobile'},
       );
-      
-      if (kDebugMode) {
-        print('⚙️ Préférences IA sauvegardées');
-      }
-      
-      return response.data;
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final messageErreur = _getDioErrorMessage(e);
-      throw Exception('⚙️ Erreur sauvegarde préférences: $messageErreur');
-    } catch (e) {
-      throw Exception('⚙️ Erreur inattendue sauvegarde: $e');
+      throw Exception(_messageErreur(e));
     }
   }
 
   // ==================== UTILITAIRES ====================
 
-  /// Extrait un message d'erreur compréhensible depuis une exception Dio
-  String _getDioErrorMessage(DioException e) {
+  String _messageErreur(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
-        return 'Timeout de connexion (15s)';
       case DioExceptionType.sendTimeout:
-        return 'Timeout d\'envoi (15s)';
       case DioExceptionType.receiveTimeout:
-        return 'Timeout de réception (30s)';
+        return 'Le service IA met trop de temps à répondre. Réessayez.';
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
-        switch (statusCode) {
-          case 401:
-            return 'Non autorisé - Veuillez vous reconnecter';
-          case 403:
-            return 'Accès refusé - Permissions insuffisantes';
-          case 404:
-            return 'Service IA indisponible';
-          case 500:
-            return 'Erreur serveur IA - Réessayez plus tard';
-          default:
-            return 'Erreur HTTP $statusCode';
+        if (statusCode == 401 || statusCode == 403) {
+          return 'Session expirée, veuillez vous reconnecter.';
         }
-      case DioExceptionType.cancel:
-        return 'Requête annulée';
+        return 'Le service IA est momentanément indisponible.';
       case DioExceptionType.connectionError:
-        return 'Erreur de connexion - Vérifiez votre réseau';
-      case DioExceptionType.badCertificate:
-        return 'Erreur de certificat SSL';
-      case DioExceptionType.unknown:
+        return 'Vérifiez votre connexion réseau.';
       default:
-        return e.message ?? 'Erreur inconnue';
+        if (kDebugMode) debugPrint('WARMS: erreur IA: ${e.message}');
+        return 'Une erreur inattendue est survenue.';
     }
   }
 
-  /// Vérifie si le service IA est disponible
   Future<bool> isServiceAvailable() async {
     try {
-      await _dio.get('/health/', 
-        options: Options(
-          receiveTimeout: const Duration(seconds: 5),
-        ),
+      await _dio.get(
+        '$_prefixe/health/',
+        options: Options(receiveTimeout: const Duration(seconds: 5)),
       );
       return true;
-    } catch (e) {
-      if (kDebugMode) {
-        print('🔴 Service IA indisponible: $e');
-      }
+    } catch (_) {
       return false;
     }
   }

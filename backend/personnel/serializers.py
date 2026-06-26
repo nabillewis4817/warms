@@ -35,6 +35,10 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 
 class UtilisateurCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    # Obligatoire à la création (le champ reste optionnel par ailleurs,
+    # ex. mise à jour de préférences) : sert d'identification visuelle
+    # lors de la connexion mobile ("Est-ce bien vous ?").
+    photo_profil = serializers.ImageField(required=True)
 
     class Meta:
         model = Utilisateur

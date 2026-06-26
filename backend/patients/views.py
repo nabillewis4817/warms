@@ -68,6 +68,14 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # La photo est obligatoire à la création : elle sert d'identification
+        # visuelle lors de la connexion mobile ("Est-ce bien vous ?").
+        if not request.FILES.get("photo"):
+            return Response(
+                {"detail": "Une photo du patient est obligatoire à la création."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         patient = serializer.save()
@@ -75,7 +83,7 @@ class PatientViewSet(viewsets.ModelViewSet):
 
         username = (request.data.get("username_patient") or "").strip()
         password = (request.data.get("password_patient") or "").strip()
-        
+
         # Rendre username et password obligatoires
         if not username or not password:
             return Response(

@@ -16,6 +16,23 @@
       <option value="secretaire">Secrétaire</option>
     </select>
     <input placeholder="Mot de passe initial (optionnel)" type="password" formControlName="password" />
+
+    <div class="bloc-photo-personnel">
+      <div class="photo-info">
+        <i class="bi bi-shield-check"></i>
+        <p>
+          Photo <strong>obligatoire</strong> du membre du personnel : elle servira à confirmer
+          visuellement son identité à la connexion.
+        </p>
+      </div>
+      <app-capture-photo [initiales]="initiales" taille="grande" (fichierChange)="onPhotoChange($event)" />
+      @if (photoTouchee && !photoFichier) {
+        <small class="erreur-photo">
+          <i class="bi bi-exclamation-circle"></i> Une photo est obligatoire.
+        </small>
+      }
+    </div>
+
     <button type="submit">Ajouter personnel</button>
   </form>
 

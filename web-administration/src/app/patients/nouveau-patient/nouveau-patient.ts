@@ -15,7 +15,7 @@ function telephoneValidator(control: AbstractControl): ValidationErrors | null {
   return /^\+?[0-9]{8,15}$/.test(nettoye) ? null : { telephoneInvalide: true };
 }
 
-type CleEtape = 'identite' | 'contact' | 'medical' | 'compte';
+type CleEtape = 'identite' | 'contact' | 'medical' | 'compte' | 'photo';
 
 @Component({
   selector: 'app-nouveau-patient',
@@ -37,12 +37,14 @@ export class NouveauPatient {
   showPassword = false;
   showSuccessModal = false;
   photoFichier: File | null = null;
+  photoTouchee = false;
 
   readonly etapes: { cle: CleEtape; label: string; icone: string }[] = [
     { cle: 'identite', label: 'Identité', icone: 'bi-person-vcard' },
     { cle: 'contact', label: 'Contact', icone: 'bi-telephone' },
     { cle: 'medical', label: 'Médical', icone: 'bi-heart-pulse' },
     { cle: 'compte', label: 'Compte', icone: 'bi-shield-lock' },
+    { cle: 'photo', label: 'Photo', icone: 'bi-camera-fill' },
   ];
   etapeActive = 0;
 
@@ -51,6 +53,7 @@ export class NouveauPatient {
     contact: ['telephone', 'email', 'adresse'],
     medical: ['groupe_sanguin', 'taille_cm', 'poids_kg', 'symptomes', 'consultations_precedentes', 'allergies'],
     compte: ['username_patient', 'password_patient'],
+    photo: [],
   };
 
   // Options pour le groupe sanguin
@@ -94,7 +97,9 @@ export class NouveauPatient {
   }
 
   etapeEstValide(index: number): boolean {
-    const champs = this.champsParEtape[this.etapes[index].cle];
+    const cle = this.etapes[index].cle;
+    if (cle === 'photo') return this.photoFichier !== null;
+    const champs = this.champsParEtape[cle];
     return champs.every((champ) => this.form.get(champ)?.valid ?? true);
   }
 
@@ -123,7 +128,12 @@ export class NouveauPatient {
   }
 
   private marquerEtapeTouchee(index: number): void {
-    this.champsParEtape[this.etapes[index].cle].forEach((champ) => this.form.get(champ)?.markAsTouched());
+    const cle = this.etapes[index].cle;
+    if (cle === 'photo') {
+      this.photoTouchee = true;
+      return;
+    }
+    this.champsParEtape[cle].forEach((champ) => this.form.get(champ)?.markAsTouched());
   }
 
   champTouche(nom: string): boolean {
@@ -144,7 +154,7 @@ export class NouveauPatient {
   creer(): void {
     this.etapes.forEach((_, index) => this.marquerEtapeTouchee(index));
 
-    if (this.form.invalid) {
+    if (this.form.invalid || this.photoFichier === null) {
       this.etapeActive = this.etapes.findIndex((_, index) => !this.etapeEstValide(index));
       if (this.etapeActive < 0) this.etapeActive = 0;
       return;
@@ -242,6 +252,7 @@ export class NouveauPatient {
     this.patientCree = null;
     this.qrImageData = '';
     this.photoFichier = null;
+    this.photoTouchee = false;
     this.etapeActive = 0;
   }
 

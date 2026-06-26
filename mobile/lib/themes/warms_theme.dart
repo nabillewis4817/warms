@@ -1,42 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Thème WARMS Mobile - Cohérent avec l'application web
-/// 
-/// Ce thème implémente les couleurs, polices et styles de l'application web WARMS
-/// pour une expérience utilisateur consistante sur toutes les plateformes.
-/// 
-/// Couleurs principales :
-/// --warms-navy: #0d1b3e
-/// --warms-blue: #1a2e6b
-/// --warms-accent: #1e4db7
-/// --warms-bg: #f0f4ff
-/// --warms-card: #ffffff
-/// --warms-gray: #4a5568
-/// 
+/// Thème WARMS Mobile - Palette turquoise "cabinet dentaire"
+///
+/// Ce thème centralise les couleurs, polices et styles de l'app mobile.
+/// Tous les écrans/widgets de l'app référencent ces constantes (jamais de
+/// couleur codée en dur) : changer une valeur ici suffit à retinter
+/// l'application entière de façon cohérente.
+///
+/// Palette principale (turquoise/cyan, alignée sur la maquette de référence) :
+/// --warms-navy   (texte foncé / titres)   : #0B2B2E
+/// --warms-blue   (teal foncé, dégradés)   : #0E6E76
+/// --warms-accent (teal principal, CTA)    : #14919B
+/// --warms-bg     (fond app, très clair)   : #F2FBFC
+/// --warms-card   (fond des cartes)        : #FFFFFF
+/// --warms-gray   (texte secondaire)       : #5C7A7D
+///
 /// @author WARMS Team
-/// @version 2.0.0
+/// @version 3.0.0
 class WarmsTheme {
-  // Couleurs principales WARMS
-  static const Color warmsNavy = Color(0xFF0D1B3E);
-  static const Color warmsBlue = Color(0xFF1A2E6B);
-  static const Color warmsAccent = Color(0xFF1E4DB7);
-  static const Color warmsBg = Color(0xFFF0F4FF);
+  // Couleurs principales WARMS (palette turquoise)
+  static const Color warmsNavy = Color(0xFF0B2B2E);
+  static const Color warmsBlue = Color(0xFF0E6E76);
+  static const Color warmsAccent = Color(0xFF14919B);
+  static const Color warmsBg = Color(0xFFF2FBFC);
   static const Color warmsCard = Color(0xFFFFFFFF);
-  static const Color warmsGray = Color(0xFF4A5568);
-  
+  static const Color warmsGray = Color(0xFF5C7A7D);
+
   // Couleurs secondaires
-  static const Color warmsLightBlue = Color(0xFF2A5FC9);
-  static const Color warmsDarkBlue = Color(0xFF1A3E7F);
+  static const Color warmsLightBlue = Color(0xFF4FD1D9);
+  static const Color warmsDarkBlue = Color(0xFF0A4F55);
   static const Color warmsSuccess = Color(0xFF22C55E);
   static const Color warmsWarning = Color(0xFFFACC15);
   static const Color warmsError = Color(0xFFEF4444);
-  static const Color warmsInfo = Color(0xFF0D6EFD);
-  
+  static const Color warmsInfo = Color(0xFF14919B);
+
+  // Couleur d'accent pour les indicateurs "favori" / notation (cohérente avec la maquette)
+  static const Color warmsHeart = Color(0xFFFF5C7A);
+  static const Color warmsStar = Color(0xFFFFB800);
+
+  // Teinte claire de l'accent (remplace les anciens `Colors.blue[50/100]`
+  // utilisés comme fonds de badge/chip dans les écrans IA).
+  static const Color warmsAccentTint = Color(0xFFDCF1F3);
+
   // Couleurs mode sombre
-  static const Color warmsDarkBg = Color(0xFF0B1530);
-  static const Color warmsDarkCard = Color(0xFF182543);
-  static const Color warmsDarkGray = Color(0xFFD6DEEF);
+  static const Color warmsDarkBg = Color(0xFF07232A);
+  static const Color warmsDarkCard = Color(0xFF103138);
+  static const Color warmsDarkGray = Color(0xFFBFEAEE);
   
   // Gradients
   static const LinearGradient warmsPrimaryGradient = LinearGradient(
@@ -61,6 +71,18 @@ class WarmsTheme {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
+      warmsAccent,
+      warmsBlue,
+    ],
+  );
+
+  /// Dégradé "héro" utilisé sur les écrans d'accueil/onboarding/connexion
+  /// (fond plein écran turquoise, du clair en haut vers le foncé en bas).
+  static const LinearGradient warmsHeroGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF4FD1D9),
       warmsAccent,
       warmsBlue,
     ],

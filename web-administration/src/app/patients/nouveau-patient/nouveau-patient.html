@@ -49,12 +49,6 @@
           <h2><i class="bi bi-person-vcard"></i> Identité</h2>
           <p>Les informations de base du patient</p>
         </div>
-        <div class="photo-patient-zone">
-          <app-capture-photo
-            [initiales]="initialesPatient"
-            (fichierChange)="onPhotoChange($event)"
-          />
-        </div>
         <div class="form-grid">
           <label class="form-field">
             <span>Prénom *</span>
@@ -195,6 +189,38 @@
               <small class="erreur-champ">Le mot de passe doit contenir au moins 6 caractères</small>
             }
           </label>
+        </div>
+      </div>
+    }
+
+    <!-- ÉTAPE 5 : PHOTO -->
+    @if (etapeCourante.cle === 'photo') {
+      <div class="contenu-etape">
+        <div class="etape-entete">
+          <h2><i class="bi bi-camera-fill"></i> Photo du patient</h2>
+          <p>Dernière étape : une photo claire et obligatoire</p>
+        </div>
+
+        <div class="bloc-photo-obligatoire">
+          <div class="photo-info">
+            <i class="bi bi-shield-check"></i>
+            <p>
+              Cette photo permettra au patient de <strong>confirmer visuellement son identité</strong>
+              à chaque connexion sur l'application mobile ("Est-ce bien vous ?").
+            </p>
+          </div>
+
+          <app-capture-photo
+            [initiales]="initialesPatient"
+            taille="grande"
+            (fichierChange)="onPhotoChange($event)"
+          />
+
+          @if (photoTouchee && !photoFichier) {
+            <small class="erreur-champ erreur-photo">
+              <i class="bi bi-exclamation-circle"></i> Une photo est obligatoire pour créer le dossier patient.
+            </small>
+          }
         </div>
       </div>
     }
