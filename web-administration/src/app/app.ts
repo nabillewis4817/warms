@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Observable, filter } from 'rxjs';
 
@@ -23,7 +23,7 @@ import { GlobalTokenErrorHandlerComponent } from './noyau/composants/global-toke
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {
+export class App implements OnInit, OnDestroy {
   readonly selecteurSvc = inject(SelecteurPatientService);
 
   badges = { rappel: 0, message: 0, critique: 0, total: 0 };
@@ -31,13 +31,16 @@ export class App {
   showNotificationPanel = false;
   notificationsEnabled = true;
   showLogoutModal = false;
-  
+
   // Propriétés pour la date/heure
   showExtendedDateTime = false;
   formattedDateTime$?: Observable<string>;
   formattedDateExtended$?: Observable<string>;
   timeBasedGreeting = '';
-  
+
+  private rafraichissementBadges?: ReturnType<typeof setInterval>;
+  private readonly INTERVALLE_BADGES_MS = 20000;
+
   constructor(
     readonly themeService: ThemeService,
     readonly traductionService: TraductionService,
@@ -68,11 +71,49 @@ export class App {
             },
           });
         }
-        this.messagerie.badges().subscribe({
-          next: (b) => (this.badges = { ...b, total: b.message + b.critique + b.rappel })
-        });
-        this.notificationsService.badges$.subscribe({ next: (b) => (this.badges = b) });
+        this.rafraichirBadges();
       });
+  }
+
+  ngOnInit(): void {
+    // Seule source de vérité affichée : le service garde le dernier
+    // total connu (et déclenche le son si de nouvelles notifications
+    // arrivent) — avant ce correctif, ce flux était systématiquement
+    // écrasé par sa propre valeur figée à zéro à chaque navigation,
+    // ce qui empêchait les badges de jamais s'incrémenter à l'écran.
+    this.notificationsService.badges$.subscribe({ next: (b) => (this.badges = b) });
+
+    if (this.authService.estConnecte()) {
+      this.rafraichirBadges();
+    }
+    // Permet aux badges de progresser même si l'utilisateur reste sur
+    // une seule page sans naviguer (sinon ils ne se mettaient à jour
+    // qu'au changement de route).
+    this.rafraichissementBadges = setInterval(() => {
+      if (this.authService.estConnecte() && !this.estPageConnexion) {
+        this.rafraichirBadges();
+      }
+    }, this.INTERVALLE_BADGES_MS);
+  }
+
+  ngOnDestroy(): void {
+    if (this.rafraichissementBadges) {
+      clearInterval(this.rafraichissementBadges);
+    }
+  }
+
+  private rafraichirBadges(): void {
+    this.messagerie.badges().subscribe({
+      next: (b) => this.notificationsService.updateBadges(b),
+    });
+  }
+
+  /** Couleur du badge de la cloche selon la catégorie la plus urgente
+   * présente (critique > rappel > message) plutôt qu'une couleur fixe. */
+  get couleurBadgePrincipal(): string {
+    if (this.badges.critique > 0) return '#dc3545';
+    if (this.badges.rappel > 0) return '#f59e0b';
+    return '#16a34a';
   }
 
   get initialesUtilisateur(): string {

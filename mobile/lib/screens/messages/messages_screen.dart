@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/message.dart';
 import '../../services/conversation_service.dart';
 import '../../themes/warms_theme.dart';
+import '../../widgets/skeleton_box.dart';
 
 /// Conversation texte avec le cabinet.
 ///
@@ -103,7 +104,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   Widget _corps() {
     if (_enChargement) {
-      return const Center(child: CircularProgressIndicator(color: WarmsTheme.warmsAccent));
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: SkeletonBulles(),
+      );
     }
     if (_messages.isEmpty) {
       return Center(

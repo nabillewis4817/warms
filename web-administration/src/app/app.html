@@ -17,6 +17,9 @@
       <a routerLink="/statistiques" routerLinkActive="active" class="nav-lien">
         <i class="bi bi-bar-chart-line-fill"></i> <span>{{ traductionService.t('statistics') }}</span>
       </a>
+      <a routerLink="/agenda" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-calendar-check-fill"></i> <span>{{ traductionService.t('agenda') }}</span>
+      </a>
 
       <span class="nav-groupe-titre">{{ traductionService.t('navPatients') }}</span>
       <a routerLink="/patients" routerLinkActive="active" class="nav-lien">
@@ -27,6 +30,9 @@
       </a>
       <a routerLink="/carnets" routerLinkActive="active" class="nav-lien">
         <i class="bi bi-journal-bookmark-fill"></i> <span>{{ traductionService.t('notebooks') }}</span>
+      </a>
+      <a routerLink="/prescriptions" routerLinkActive="active" class="nav-lien">
+        <i class="bi bi-capsule-pill"></i> <span>{{ traductionService.t('prescriptions') }}</span>
       </a>
 
       <span class="nav-groupe-titre">{{ traductionService.t('navCommunication') }}</span>
@@ -75,7 +81,7 @@
           <button class="notification-toggle" (click)="toggleNotifications()" [class.active]="notificationsEnabled">
             <i class="bi bi-bell-fill"></i>
             @if (badges.total > 0) {
-              <span class="notification-count">{{ badges.total }}</span>
+              <span class="notification-count" [style.background]="couleurBadgePrincipal">{{ badges.total }}</span>
             }
           </button>
           
@@ -294,11 +300,10 @@
   <!-- Gestionnaire global des erreurs de token -->
   <app-global-token-error-handler></app-global-token-error-handler>
 
-  <!-- Bouton IA Warms flottant en bas à droite -->
-  <button class="ia-float-bottom-right" (click)="ouvrirWarms()" title="Assistant IA Warms">
-    <div class="ia-icon">
-      <i class="bi bi-android"></i>
-    </div>
-    <span class="ia-label">wam's</span>
+  <!-- Bouton IA Wam's flottant en bas à droite -->
+  <button class="ia-float-bottom-right" (click)="ouvrirWarms()" title="Assistant IA Wam's">
+    <span class="ia-pulse-ring"></span>
+    <div class="ia-icon"><i class="bi bi-robot"></i></div>
+    <span class="ia-label">Wam's</span>
   </button>
 </div>

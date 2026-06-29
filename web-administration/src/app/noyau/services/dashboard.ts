@@ -4,21 +4,26 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
-// Interface pour les statistiques du dashboard
+// Interface pour les statistiques du dashboard.
+// "tendance" est null quand il n'y a aucune donnée le mois précédent pour
+// comparer (base fraîche) : distingue "pas encore d'historique" de
+// "stable à 0%" (sinon la tendance restait bloquée à "0.0%" en permanence
+// dès qu'il n'y avait pas de mois précédent, donnant l'impression que les
+// chiffres du dashboard ne bougeaient jamais).
 export interface DashboardStats {
   consultations: {
     total: number;
     aujourdHui: number;
     semaine: number;
     mois: number;
-    tendance: number;
+    tendance: number | null;
   };
   rendezVous: {
     total: number;
     aujourdHui: number;
     semaine: number;
     mois: number;
-    tendance: number;
+    tendance: number | null;
     enAttente: number;
     confirms: number;
     annules: number;
@@ -28,7 +33,7 @@ export interface DashboardStats {
     aujourdHui: number;
     semaine: number;
     mois: number;
-    tendance: number;
+    tendance: number | null;
     repondus: number;
     nonRepondus: number;
     enAttente: number;
@@ -37,7 +42,7 @@ export interface DashboardStats {
     global: number;
     mois: number;
     semaine: number;
-    tendance: number;
+    tendance: number | null;
     absences: number;
     presences: number;
   };
@@ -75,14 +80,16 @@ export class DashboardService {
   }
 
   // Méthode pour obtenir la couleur de tendance
-  getTrendColor(tendance: number): string {
+  getTrendColor(tendance: number | null): string {
+    if (tendance === null) return '#9ca3af'; // gris neutre : pas d'historique
     if (tendance > 0) return '#10b981'; // vert
     if (tendance < 0) return '#ef4444'; // rouge
     return '#6b7280'; // gris
   }
 
   // Méthode pour obtenir l'icône de tendance
-  getTrendIcon(tendance: number): string {
+  getTrendIcon(tendance: number | null): string {
+    if (tendance === null) return 'bi-stars';
     if (tendance > 0) return 'bi-arrow-up-short';
     if (tendance < 0) return 'bi-arrow-down-short';
     return 'bi-dash';

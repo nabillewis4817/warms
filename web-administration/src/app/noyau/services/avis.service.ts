@@ -51,7 +51,7 @@ export interface AvisStatistiques {
 
 @Injectable({ providedIn: 'root' })
 export class AvisService {
-  private readonly apiUrl = `${environment.apiBaseUrl}/avis`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/avis/avis`;
 
   constructor(private readonly http: HttpClient) {}
 

@@ -1,4 +1,5 @@
 import html
+import logging
 import re
 import requests
 from urllib.parse import parse_qs, unquote, urlparse
@@ -12,6 +13,9 @@ from django.db.models import Q
 import uuid
 import json
 
+from assistant_ia.services_llm import reponse_ia as generer_reponse_riche
+from patients.models import Patient
+
 from .models import (
     ConversationIA, MessageIA, RechercheIA,
     AnalyseMedicale, DocumentOCR, PreferenceIA
@@ -22,67 +26,16 @@ from .serializers import (
     DocumentOCRSerializer, PreferenceIASerializer
 )
 
-# Règles du chat IA "cabinet dentaire" : pas de LLM externe payant, juste
-# une détection de mots-clés suffisante pour orienter le patient (horaires,
-# rendez-vous, urgences...) en attendant un éventuel branchement futur sur
-# un vrai modèle de langage (clé ANTHROPIC_API_KEY).
+# Détection rapide d'urgence dentaire, appliquée avant tout moteur de
+# réponse (Claude ou repli local) pour ne jamais laisser un message
+# urgent attendre une génération de texte plus lente.
 REGLES_CHAT_URGENCE = [
     'urgence', 'douleur intense', 'douleur insupportable', 'saignement',
     'gonflement', 'dent cassée', 'dent cassee', 'accident', 'choc',
 ]
 
-REGLES_CHAT = [
-    (('bonjour', 'salut', 'bonsoir', 'coucou'),
-     "Bonjour ! Je suis l'assistant WARMS. Je peux vous renseigner sur les "
-     "horaires, les rendez-vous ou vos ordonnances. Comment puis-je vous aider ?"),
-    (('horaire', 'ouvert', 'ferme', 'fermé', 'ferme le'),
-     "Pour connaître les horaires exacts du cabinet, le plus fiable est de "
-     "contacter directement l'équipe via la messagerie (onglet Messages)."),
-    (('rendez-vous', 'rdv', 'reserver', 'réserver', 'prendre rendez'),
-     "Pour prendre, modifier ou annuler un rendez-vous, utilisez l'onglet "
-     "Messages pour contacter directement le cabinet : l'équipe vous "
-     "répondra rapidement."),
-    (('paiement', 'tarif', 'prix', 'cout', 'coût', 'remboursement', 'mutuelle'),
-     "Les tarifs et remboursements dépendent de l'acte et de votre mutuelle. "
-     "Le secrétariat pourra vous communiquer un devis précis via la messagerie."),
-    (('ordonnance', 'prescription', 'medicament', 'médicament', 'traitement'),
-     "Vos ordonnances sont disponibles dans l'onglet Accueil, section "
-     "\"Mes ordonnances\"."),
-    (('merci', 'super', 'parfait'),
-     "Avec plaisir ! N'hésitez pas si vous avez d'autres questions."),
-]
 
-
-def generer_reponse_regles(message: str) -> dict:
-    """Génère une réponse de chat à base de règles simples (gratuit, sans
-    appel à un service IA externe payant)."""
-    texte = (message or '').lower()
-
-    if any(mot in texte for mot in REGLES_CHAT_URGENCE):
-        return {
-            'reponse': (
-                "Cela ressemble à une urgence dentaire. Contactez "
-                "directement le cabinet ou rendez-vous aux urgences "
-                "dentaires les plus proches sans attendre."
-            ),
-            'metadonnees': {'niveau_urgence': 'critique', 'confidence': 0.6},
-        }
-
-    for mots_cles, reponse in REGLES_CHAT:
-        if any(mot in texte for mot in mots_cles):
-            return {
-                'reponse': reponse,
-                'metadonnees': {'niveau_urgence': 'aucun', 'confidence': 0.75},
-            }
-
-    return {
-        'reponse': (
-            "Je n'ai pas une réponse précise à vous apporter sur ce point. "
-            "Le plus sûr est de contacter directement le cabinet via la "
-            "messagerie : l'équipe pourra vous répondre personnellement."
-        ),
-        'metadonnees': {'niveau_urgence': 'aucun', 'confidence': 0.4},
-    }
+logger = logging.getLogger(__name__)
 
 
 def effectuer_recherche_google(query: str, limite: int = 10) -> list:
@@ -103,7 +56,12 @@ def effectuer_recherche_google(query: str, limite: int = 10) -> list:
         )
         reponse.raise_for_status()
         items = reponse.json().get('items', [])
-    except (requests.RequestException, ValueError):
+    except (requests.RequestException, ValueError) as exc:
+        # Échec silencieux côté utilisateur (liste vide) mais loggé ici :
+        # sans ce log, une mauvaise configuration du projet Google Cloud
+        # (ex. "Custom Search JSON API" non activée, quota dépassé) est
+        # indissociable d'une recherche qui n'a simplement aucun résultat.
+        logger.warning("Recherche Google Custom Search indisponible: %s", exc)
         return []
 
     resultats = []
@@ -179,10 +137,12 @@ class ConversationIAViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return ConversationIA.objects.filter(
-            utilisateur=self.request.user,
-            plateforme=self.request.query_params.get('plateforme', 'web')
-        )
+        queryset = ConversationIA.objects.filter(utilisateur=self.request.user)
+        if self.action == 'list':
+            queryset = queryset.filter(
+                plateforme=self.request.query_params.get('plateforme', 'web')
+            )
+        return queryset
     
     def create(self, request, *args, **kwargs):
         plateforme = request.data.get('plateforme', 'web')
@@ -204,7 +164,7 @@ class ConversationIAViewSet(viewsets.ModelViewSet):
         conversation = self.get_object()
         
         message_data = {
-            'conversation': conversation.id,
+            'conversation': conversation,
             'contenu': request.data.get('contenu'),
             'type_message': request.data.get('type_message', 'user'),
             'metadonnees': request.data.get('metadonnees', {})
@@ -214,17 +174,17 @@ class ConversationIAViewSet(viewsets.ModelViewSet):
         
         # Si c'est un message utilisateur, générer une réponse IA
         if message.type_message == 'user':
-            reponse_ia = self.generer_reponse_ia(
-                message.contenu, 
+            resultat_ia = self.generer_reponse_ia(
+                message.contenu,
                 conversation.contexte,
-                conversation.plateforme
+                conversation.utilisateur,
             )
-            
+
             message_ia = MessageIA.objects.create(
                 conversation=conversation,
-                contenu=reponse_ia['reponse'],
+                contenu=resultat_ia['reponse'],
                 type_message='ia',
-                metadonnees=reponse_ia.get('metadonnees', {})
+                metadonnees=resultat_ia.get('metadonnees', {})
             )
             
             conversation.modifie_le = timezone.now()
@@ -237,10 +197,31 @@ class ConversationIAViewSet(viewsets.ModelViewSet):
         
         return Response(MessageIASerializer(message).data)
     
-    def generer_reponse_ia(self, message, contexte, plateforme):
-        """Générer une réponse IA (moteur de règles cabinet dentaire,
-        gratuit — voir [generer_reponse_regles])."""
-        return generer_reponse_regles(message)
+    def generer_reponse_ia(self, message, contexte, utilisateur):
+        """Génère une réponse IA en réutilisant le même moteur que
+        l'assistant web (`assistant_ia.services_llm.reponse_ia`) : Claude
+        si une clé est configurée, sinon un repli local qui reste
+        spécifique à la question posée et enrichi des données réelles du
+        patient (allergies, rendez-vous, consultations) plutôt que les six
+        réponses figées de [generer_reponse_regles] utilisées avant."""
+        texte = (message or '').lower()
+        if any(mot in texte for mot in REGLES_CHAT_URGENCE):
+            return {
+                'reponse': (
+                    "Cela ressemble à une urgence dentaire. Contactez "
+                    "directement le cabinet ou rendez-vous aux urgences "
+                    "dentaires les plus proches sans attendre."
+                ),
+                'metadonnees': {'niveau_urgence': 'critique', 'confidence': 0.6},
+            }
+
+        patient = Patient.objects.filter(user=utilisateur).first()
+        contexte_str = contexte if isinstance(contexte, str) else json.dumps(contexte or {}, ensure_ascii=False)
+        reponse = generer_reponse_riche(message, contexte_str, patient.id if patient else None)
+        return {
+            'reponse': reponse,
+            'metadonnees': {'niveau_urgence': 'aucun', 'confidence': 0.75},
+        }
 
 class RechercheIAViewSet(viewsets.ModelViewSet):
     """ViewSet pour les recherches IA - partagé Web/Mobile"""
@@ -271,6 +252,11 @@ class RechercheIAViewSet(viewsets.ModelViewSet):
 
         try:
             resultats = effectuer_recherche_google(query)
+            if not resultats:
+                # Repli gratuit si Google Custom Search est mal configuré
+                # côté Google Cloud (clé/CSE invalide, API non activée,
+                # quota dépassé) ou indisponible.
+                resultats = effectuer_recherche_duckduckgo(query)
 
             RechercheIA.objects.create(
                 utilisateur=request.user,
@@ -280,7 +266,15 @@ class RechercheIAViewSet(viewsets.ModelViewSet):
                 contexte=contexte,
             )
 
-            return Response({'query': query, 'resultats': resultats}, status=status.HTTP_201_CREATED)
+            return Response({
+                'query': query,
+                'resultats': resultats,
+                # Permet au frontend de distinguer "aucun résultat pour
+                # cette recherche" de "le service de recherche est
+                # indisponible en ce moment" plutôt que d'afficher la même
+                # liste vide silencieuse dans les deux cas.
+                'service_indisponible': not resultats,
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

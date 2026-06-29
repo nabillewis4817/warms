@@ -22,6 +22,21 @@
           </div>
           <div class="message-content">
             <div class="message-text" [innerHTML]="message.content | nl2br"></div>
+
+            @if (message.actionEnAttente && !message.actionTraitee) {
+              <div class="carte-confirmation">
+                <i class="bi bi-question-diamond-fill"></i>
+                <div class="confirmation-actions">
+                  <button class="btn-confirmer" (click)="confirmerAction(message)">
+                    <i class="bi bi-check-lg"></i> Oui, fais-le
+                  </button>
+                  <button class="btn-annuler" (click)="annulerAction(message)">
+                    <i class="bi bi-x-lg"></i> Annuler
+                  </button>
+                </div>
+              </div>
+            }
+
             <div class="message-time">{{ message.timestamp | date:'HH:mm' }}</div>
           </div>
         </div>
@@ -46,17 +61,37 @@
     <div class="message-input">
       <form [formGroup]="form" (ngSubmit)="envoyerMessage()">
         <div class="input-group">
-          <input 
-            type="text" 
+          @if (reconnaissanceVocaleDisponible) {
+            <button
+              type="button"
+              class="mic-button"
+              [class.mic-actif]="ecouteEnCours"
+              (click)="basculerEcoute()"
+              title="Parler à l'assistant"
+            >
+              <i class="bi" [class.bi-mic-fill]="!ecouteEnCours" [class.bi-mic-mute-fill]="ecouteEnCours"></i>
+            </button>
+          }
+          <button
+            type="button"
+            class="voix-button"
+            [class.voix-active]="lectureVocaleActive"
+            (click)="basculerLectureVocale()"
+            title="Lire les réponses à voix haute"
+          >
+            <i class="bi" [class.bi-volume-up-fill]="lectureVocaleActive" [class.bi-volume-mute-fill]="!lectureVocaleActive"></i>
+          </button>
+          <input
+            type="text"
             [formControl]="form.get('message')"
-            placeholder="Tapez votre message ici..."
+            [placeholder]="ecouteEnCours ? 'Je vous écoute...' : 'Tapez votre message ici...'"
             [disabled]="chargement"
             class="message-field"
             #messageInput
             (keydown.enter)="envoyerMessage()"
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             [disabled]="form.invalid || chargement"
             class="send-button">
             @if (chargement) {

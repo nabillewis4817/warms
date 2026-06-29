@@ -1,0 +1,212 @@
+<section class="section-agenda">
+  <!-- ========== EN-TÊTE ========== -->
+  <header class="en-tete-agenda">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="en-tete-contenu">
+      <div class="en-tete-titre">
+        <span class="badge-clinique"><i class="bi bi-calendar-check-fill"></i> Cabinet Wam's</span>
+        <h1>Agenda</h1>
+        <p class="sous-titre">Notes importantes et rappels programmables pour l'équipe</p>
+      </div>
+      <div class="en-tete-actions">
+        <button class="bouton-secondaire" (click)="ouvrirNouveau('note')">
+          <i class="bi bi-sticky"></i> Nouvelle note
+        </button>
+        <button class="bouton-nouveau" (click)="ouvrirNouveau('rappel')">
+          <i class="bi bi-alarm-fill"></i> Nouveau rappel
+        </button>
+      </div>
+    </div>
+  </header>
+
+  @if (erreur) {
+    <div class="bandeau-erreur">
+      <i class="bi bi-exclamation-circle"></i> {{ erreur }}
+      <button (click)="erreur = ''"><i class="bi bi-x"></i></button>
+    </div>
+  }
+
+  <!-- ========== CONTENU ========== -->
+  @if (chargement && rappels.length === 0) {
+    <div class="etat-chargement">
+      <div class="spinner-agenda"></div>
+      <p>Chargement de l'agenda...</p>
+    </div>
+  } @else if (aucuneEntree) {
+    <div class="etat-vide">
+      <i class="bi bi-calendar2-week"></i>
+      <h3>Votre agenda est vide</h3>
+      <p>Ajoutez une note ou programmez un rappel pour commencer.</p>
+    </div>
+  } @else {
+    <div class="colonnes-agenda">
+      <!-- Aujourd'hui -->
+      <div class="colonne-agenda">
+        <h2 class="titre-colonne"><i class="bi bi-sun-fill"></i> Aujourd'hui</h2>
+        @if (entreesAujourdhui.length === 0) {
+          <p class="colonne-vide">Rien pour aujourd'hui.</p>
+        }
+        @for (item of entreesAujourdhui; track item.id) {
+          <article class="carte-agenda" [class.inactif]="!item.actif">
+            <div class="carte-agenda-icone" [class.icone-recurrente]="item.recurrence !== 'aucune'">
+              <i class="bi" [class]="iconePour(item)"></i>
+            </div>
+            <div class="carte-agenda-corps">
+              <div class="carte-agenda-entete">
+                <h3>{{ item.titre }}</h3>
+                <span class="heure-entree">{{ formaterHeure(item.date_heure) }}</span>
+              </div>
+              @if (item.message) {
+                <p class="message-entree">{{ item.message }}</p>
+              }
+              @if (item.recurrence !== 'aucune') {
+                <span class="puce-recurrence"><i class="bi bi-arrow-repeat"></i> {{ labelRecurrence(item.recurrence) }}</span>
+              }
+            </div>
+            <div class="carte-agenda-actions">
+              <button class="bouton-icone" (click)="basculerActif(item)" [title]="item.actif ? 'Marquer comme fait' : 'Réactiver'">
+                <i class="bi" [class]="item.actif ? 'bi-circle' : 'bi-check-circle-fill'"></i>
+              </button>
+              <button class="bouton-icone" (click)="ouvrirEdition(item)" title="Modifier">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="bouton-icone bouton-icone-danger" (click)="supprimer(item)" title="Supprimer">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <!-- À venir -->
+      <div class="colonne-agenda">
+        <h2 class="titre-colonne"><i class="bi bi-calendar-event-fill"></i> À venir</h2>
+        @if (entreesAVenir.length === 0) {
+          <p class="colonne-vide">Aucune entrée à venir.</p>
+        }
+        @for (item of entreesAVenir; track item.id) {
+          <article class="carte-agenda" [class.inactif]="!item.actif">
+            <div class="carte-agenda-icone" [class.icone-recurrente]="item.recurrence !== 'aucune'">
+              <i class="bi" [class]="iconePour(item)"></i>
+            </div>
+            <div class="carte-agenda-corps">
+              <div class="carte-agenda-entete">
+                <h3>{{ item.titre }}</h3>
+                <span class="heure-entree">{{ formaterDateCourte(item.date_heure) }} · {{ formaterHeure(item.date_heure) }}</span>
+              </div>
+              @if (item.message) {
+                <p class="message-entree">{{ item.message }}</p>
+              }
+              @if (item.recurrence !== 'aucune') {
+                <span class="puce-recurrence"><i class="bi bi-arrow-repeat"></i> {{ labelRecurrence(item.recurrence) }}</span>
+              }
+            </div>
+            <div class="carte-agenda-actions">
+              <button class="bouton-icone" (click)="basculerActif(item)" [title]="item.actif ? 'Marquer comme fait' : 'Réactiver'">
+                <i class="bi" [class]="item.actif ? 'bi-circle' : 'bi-check-circle-fill'"></i>
+              </button>
+              <button class="bouton-icone" (click)="ouvrirEdition(item)" title="Modifier">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="bouton-icone bouton-icone-danger" (click)="supprimer(item)" title="Supprimer">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <!-- Passées -->
+      <div class="colonne-agenda">
+        <h2 class="titre-colonne"><i class="bi bi-clock-history"></i> Passées</h2>
+        @if (entreesPassees.length === 0) {
+          <p class="colonne-vide">Aucun historique.</p>
+        }
+        @for (item of entreesPassees; track item.id) {
+          <article class="carte-agenda carte-passee" [class.inactif]="!item.actif">
+            <div class="carte-agenda-icone" [class.icone-recurrente]="item.recurrence !== 'aucune'">
+              <i class="bi" [class]="iconePour(item)"></i>
+            </div>
+            <div class="carte-agenda-corps">
+              <div class="carte-agenda-entete">
+                <h3>{{ item.titre }}</h3>
+                <span class="heure-entree">{{ formaterDateCourte(item.date_heure) }}</span>
+              </div>
+              @if (item.message) {
+                <p class="message-entree">{{ item.message }}</p>
+              }
+            </div>
+            <div class="carte-agenda-actions">
+              <button class="bouton-icone" (click)="supprimer(item)" title="Supprimer">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ========== FORMULAIRE (modal) ========== -->
+  @if (formulaireOuvert) {
+    <div class="voile-modal" (click)="fermerFormulaire()">
+      <div class="carte-formulaire" (click)="$event.stopPropagation()">
+        <div class="formulaire-entete">
+          <h2>
+            <i class="bi" [class]="typeEntree === 'note' ? 'bi-sticky' : 'bi-alarm-fill'"></i>
+            {{ entreeEnEdition ? 'Modifier' : (typeEntree === 'note' ? 'Nouvelle note' : 'Nouveau rappel') }}
+          </h2>
+          <button class="bouton-icone" (click)="fermerFormulaire()"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <form [formGroup]="formulaire" (ngSubmit)="enregistrer()" class="corps-formulaire">
+          <label class="champ-label">
+            Titre
+            <input type="text" formControlName="titre" placeholder="Ex: Commander le matériel de stérilisation" class="champ-input" />
+          </label>
+
+          <label class="champ-label">
+            Détail (optionnel)
+            <textarea formControlName="message" rows="3" placeholder="Précisions, contexte..." class="champ-textarea"></textarea>
+          </label>
+
+          <div class="champ-ligne">
+            <label class="champ-label">
+              Date
+              <input type="date" formControlName="date" class="champ-input" />
+            </label>
+            <label class="champ-label">
+              Heure
+              <input type="time" formControlName="heure" class="champ-input" />
+            </label>
+          </div>
+
+          @if (typeEntree === 'rappel') {
+            <label class="champ-label">
+              Récurrence
+              <select formControlName="recurrence" class="champ-input">
+                @for (r of recurrences; track r.value) {
+                  <option [value]="r.value">{{ r.label }}</option>
+                }
+              </select>
+            </label>
+          }
+
+          <div class="formulaire-actions">
+            <button type="button" class="bouton-secondaire" (click)="fermerFormulaire()">Annuler</button>
+            <button type="submit" class="bouton-nouveau" [disabled]="enregistrementEnCours || formulaire.invalid">
+              @if (enregistrementEnCours) {
+                <i class="bi bi-arrow-repeat tourne"></i>
+              } @else {
+                <i class="bi bi-check2"></i>
+              }
+              Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</section>

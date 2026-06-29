@@ -76,6 +76,11 @@ export class TableauDeBord implements OnInit, OnDestroy {
     return (this.dashboardStats?.tauxAbsenteeisme?.tendance ?? 0).toFixed(1);
   }
 
+  /** true quand il n'y a aucune donnée le mois précédent pour calculer une tendance (base fraîche). */
+  estNouveau(tendance: number | null | undefined): boolean {
+    return tendance === null || tendance === undefined;
+  }
+
   get tauxAbsenteeismeGlobalFormatted(): string {
     return (this.dashboardStats?.tauxAbsenteeisme?.global ?? 0).toFixed(1);
   }

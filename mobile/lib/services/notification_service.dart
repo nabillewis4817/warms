@@ -147,7 +147,7 @@ class NotificationService {
 
     // Afficher la notification locale
     _showLocalNotification(
-      title: message.notification?.title ?? 'WARMS',
+      title: message.notification?.title ?? "Wam's",
       body: message.notification?.body ?? 'Nouveau message',
       payload: message.data.toString(),
     );
@@ -177,8 +177,8 @@ class NotificationService {
   }) async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'warms_channel',
-      'WARMS Notifications',
-      channelDescription: 'Notifications médicales WARMS',
+      "Wam's Notifications",
+      channelDescription: "Notifications médicales Wam's",
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
@@ -295,8 +295,8 @@ class NotificationService {
   }) async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'warms_recurring',
-      'WARMS Recurring',
-      channelDescription: 'Notifications récurrentes WARMS',
+      "Wam's Recurring",
+      channelDescription: "Notifications récurrentes Wam's",
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
@@ -346,6 +346,105 @@ class NotificationService {
     }
 
     return scheduledDate;
+  }
+
+  /// Demande la permission d'afficher des notifications (obligatoire sur
+  /// Android 13+ ; no-op silencieux ailleurs). À appeler avant de planifier
+  /// un premier rappel.
+  Future<void> demanderPermissionLocale() async {
+    try {
+      await _notifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    } catch (e) {
+      if (kDebugMode) debugPrint("Wam's: permission notifications locale refusée/indisponible: $e");
+    }
+  }
+
+  /// Planifie un rappel personnalisable (titre + message libres) à une date
+  /// et heure précises, avec une récurrence au choix.
+  ///
+  /// Contrairement à [scheduleRecurringNotification] (toujours quotidienne,
+  /// basée sur une [TimeOfDay] seule), cette méthode part d'une [DateTime]
+  /// complète : nécessaire pour une récurrence hebdomadaire/mensuelle, qui
+  /// doit retenir le jour de la semaine ou le jour du mois choisi.
+  Future<void> planifierRappel({
+    required int id,
+    required String titre,
+    required String message,
+    required DateTime quand,
+    required String recurrence,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'warms_rappels',
+      "Wam's Rappels",
+      channelDescription: 'Rappels personnalisables programmés par l\'utilisateur',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      color: Color(0xFF1E4DB7),
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const notificationDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    final tz.TZDateTime cible = _prochaineOccurrence(quand, recurrence);
+    DateTimeComponents? composantes;
+    switch (recurrence) {
+      case 'quotidien':
+        composantes = DateTimeComponents.time;
+        break;
+      case 'hebdomadaire':
+        composantes = DateTimeComponents.dayOfWeekAndTime;
+        break;
+      case 'mensuel':
+        composantes = DateTimeComponents.dayOfMonthAndTime;
+        break;
+      default:
+        composantes = null; // 'aucune' : une seule occurrence, pas de répétition.
+    }
+
+    await _notifications.zonedSchedule(
+      id: id,
+      title: titre,
+      body: message.isEmpty ? titre : message,
+      scheduledDate: cible,
+      notificationDetails: notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: composantes,
+    );
+  }
+
+  /// Si la date demandée est déjà passée (ex: rappel quotidien créé après
+  /// l'heure cible du jour), avance d'une période pour que la première
+  /// occurrence programmée soit bien dans le futur.
+  tz.TZDateTime _prochaineOccurrence(DateTime quand, String recurrence) {
+    var cible = tz.TZDateTime(tz.local, quand.year, quand.month, quand.day, quand.hour, quand.minute);
+    final maintenant = tz.TZDateTime.now(tz.local);
+    if (!cible.isBefore(maintenant)) return cible;
+
+    switch (recurrence) {
+      case 'quotidien':
+        while (cible.isBefore(maintenant)) {
+          cible = cible.add(const Duration(days: 1));
+        }
+        return cible;
+      case 'hebdomadaire':
+        while (cible.isBefore(maintenant)) {
+          cible = cible.add(const Duration(days: 7));
+        }
+        return cible;
+      case 'mensuel':
+        while (cible.isBefore(maintenant)) {
+          cible = tz.TZDateTime(tz.local, cible.year, cible.month + 1, cible.day, cible.hour, cible.minute);
+        }
+        return cible;
+      default:
+        return cible; // 'aucune' déjà passée : laissé tel quel, l'appelant doit valider la date en amont.
+    }
   }
 
   /**
@@ -414,8 +513,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   
   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
     'warms_background',
-    'WARMS Background',
-    channelDescription: 'Notifications d\'arrière-plan WARMS',
+    "Wam's Background",
+    channelDescription: "Notifications d'arrière-plan Wam's",
     importance: Importance.high,
     priority: Priority.high,
     icon: '@mipmap/ic_launcher',
@@ -435,7 +534,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   await notifications.show(
     id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-    title: message.notification?.title ?? 'WARMS',
+    title: message.notification?.title ?? "Wam's",
     body: message.notification?.body ?? 'Nouveau message',
     payload: 'notification',
     notificationDetails: notificationDetails,

@@ -832,6 +832,13 @@ body.theme-sombre .notification-toggle {
   font-size: 11px;
   font-weight: bold;
   border: 2px solid white;
+  animation: badge-pop 0.3s ease;
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(0.4); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 
 .notification-panel {
@@ -1179,61 +1186,71 @@ body.theme-sombre .notification-toggle {
 
 // #EbaJioloLewis
 
-// Bouton IA Warms flottant en bas à droite
+// Bouton assistant IA Wam's flottant en bas à droite — reprend le
+// dégradé de la couleur de thème choisie par l'utilisateur (--warms-accent
+// / --warms-accent-2) plutôt qu'un violet générique sans lien avec
+// l'identité de l'app, avec un anneau pulsant pour évoquer un assistant
+// "vivant" plutôt qu'un simple bouton de navigation.
 .ia-float-bottom-right {
   position: fixed !important;
   bottom: 25px !important;
   right: 25px !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--warms-accent) 0%, var(--warms-accent-2) 100%);
   color: white;
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   border-radius: 50%;
-  width: 70px;
-  height: 70px;
+  width: 68px;
+  height: 68px;
   cursor: pointer;
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 28px rgba(var(--warms-accent-rgb), 0.45);
   z-index: 99999 !important;
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   pointer-events: auto !important;
   transform: translateZ(0);
   will-change: transform;
 
   &:hover {
-    transform: translateY(-3px) scale(1.05) translateZ(0);
-    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    cursor: pointer !important;
+    transform: translateY(-3px) scale(1.06) translateZ(0);
+    box-shadow: 0 14px 36px rgba(var(--warms-accent-rgb), 0.55);
   }
 
   &:active {
     transform: translateY(-1px) scale(1.02) translateZ(0);
   }
 
-  .ia-icon {
-    background: transparent;
+  .ia-pulse-ring {
+    position: absolute;
+    inset: -2px;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    border: 2px solid var(--warms-accent-2);
+    animation: ia-pulse 2.4s ease-out infinite;
+    pointer-events: none;
+  }
+
+  .ia-icon {
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
 
-    i {
-      font-size: 22px;
-      color: white;
-    }
+    i { font-size: 22px; color: white; }
   }
 
   .ia-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    text-transform: capitalize;
     letter-spacing: 0.5px;
   }
+}
+
+@keyframes ia-pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  70%, 100% { transform: scale(1.35); opacity: 0; }
 }

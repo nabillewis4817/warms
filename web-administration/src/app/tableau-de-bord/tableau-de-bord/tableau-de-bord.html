@@ -6,7 +6,7 @@
 
     <div class="header-content">
       <div class="header-title">
-        <span class="badge-clinique"><i class="bi bi-clipboard2-pulse"></i> WARMS Cabinet Dentaire</span>
+        <span class="badge-clinique"><i class="bi bi-clipboard2-pulse"></i> Wam's Cabinet Dentaire</span>
         <h1>
           <i class="bi salutation-icone" [ngClass]="dateTimeService.getTimeBasedIcon()"></i>
           {{ salutation }}{{ auth.utilisateur()?.prenom ? ', ' + auth.utilisateur()?.prenom : '' }}
@@ -76,9 +76,13 @@
           <article class="kpi-card kpi-bleu" (click)="naviguerVersConsultations()">
             <div class="kpi-header">
               <div class="kpi-icon"><i class="bi bi-stethoscope"></i></div>
-              <div class="kpi-trend" [class.positive]="(dashboardStats?.consultations?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.consultations?.tendance ?? 0) < 0">
-                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.consultations?.tendance ?? 0)"></i>
-                <span>{{ (dashboardStats?.consultations?.tendance ?? 0) > 0 ? '+' : '' }}{{ tendanceFormatted }}%</span>
+              <div class="kpi-trend" [class.nouveau]="estNouveau(dashboardStats?.consultations?.tendance)" [class.positive]="(dashboardStats?.consultations?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.consultations?.tendance ?? 0) < 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.consultations?.tendance ?? null)"></i>
+                @if (estNouveau(dashboardStats?.consultations?.tendance)) {
+                  <span>Nouveau</span>
+                } @else {
+                  <span>{{ (dashboardStats?.consultations?.tendance ?? 0) > 0 ? '+' : '' }}{{ tendanceFormatted }}%</span>
+                }
               </div>
             </div>
             <div class="kpi-content">
@@ -102,9 +106,13 @@
           <article class="kpi-card kpi-mint" (click)="naviguerVersRendezVous()">
             <div class="kpi-header">
               <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
-              <div class="kpi-trend" [class.positive]="(dashboardStats?.rendezVous?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.rendezVous?.tendance ?? 0) < 0">
-                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.rendezVous?.tendance ?? 0)"></i>
-                <span>{{ (dashboardStats?.rendezVous?.tendance ?? 0) > 0 ? '+' : '' }}{{ rendezVousTendanceFormatted }}%</span>
+              <div class="kpi-trend" [class.nouveau]="estNouveau(dashboardStats?.rendezVous?.tendance)" [class.positive]="(dashboardStats?.rendezVous?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.rendezVous?.tendance ?? 0) < 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.rendezVous?.tendance ?? null)"></i>
+                @if (estNouveau(dashboardStats?.rendezVous?.tendance)) {
+                  <span>Nouveau</span>
+                } @else {
+                  <span>{{ (dashboardStats?.rendezVous?.tendance ?? 0) > 0 ? '+' : '' }}{{ rendezVousTendanceFormatted }}%</span>
+                }
               </div>
             </div>
             <div class="kpi-content">
@@ -128,9 +136,13 @@
           <article class="kpi-card kpi-ambre" (click)="naviguerVersAppels()">
             <div class="kpi-header">
               <div class="kpi-icon"><i class="bi bi-telephone"></i></div>
-              <div class="kpi-trend" [class.positive]="(dashboardStats?.appels?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.appels?.tendance ?? 0) < 0">
-                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.appels?.tendance ?? 0)"></i>
-                <span>{{ (dashboardStats?.appels?.tendance ?? 0) > 0 ? '+' : '' }}{{ appelsTendanceFormatted }}%</span>
+              <div class="kpi-trend" [class.nouveau]="estNouveau(dashboardStats?.appels?.tendance)" [class.positive]="(dashboardStats?.appels?.tendance ?? 0) > 0" [class.negative]="(dashboardStats?.appels?.tendance ?? 0) < 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.appels?.tendance ?? null)"></i>
+                @if (estNouveau(dashboardStats?.appels?.tendance)) {
+                  <span>Nouveau</span>
+                } @else {
+                  <span>{{ (dashboardStats?.appels?.tendance ?? 0) > 0 ? '+' : '' }}{{ appelsTendanceFormatted }}%</span>
+                }
               </div>
             </div>
             <div class="kpi-content">
@@ -154,9 +166,13 @@
           <article class="kpi-card kpi-rose" (click)="naviguerVersTauxAbsenteisme()">
             <div class="kpi-header">
               <div class="kpi-icon"><i class="bi bi-pie-chart"></i></div>
-              <div class="kpi-trend" [class.positive]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) < 0" [class.negative]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0">
-                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0)"></i>
-                <span>{{ (dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0 ? '+' : '' }}{{ tauxAbsenteeismeTendanceFormatted }}%</span>
+              <div class="kpi-trend" [class.nouveau]="estNouveau(dashboardStats?.tauxAbsenteeisme?.tendance)" [class.positive]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) < 0" [class.negative]="(dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0">
+                <i class="bi" [ngClass]="dashboardService.getTrendIcon(dashboardStats?.tauxAbsenteeisme?.tendance ?? null)"></i>
+                @if (estNouveau(dashboardStats?.tauxAbsenteeisme?.tendance)) {
+                  <span>Nouveau</span>
+                } @else {
+                  <span>{{ (dashboardStats?.tauxAbsenteeisme?.tendance ?? 0) > 0 ? '+' : '' }}{{ tauxAbsenteeismeTendanceFormatted }}%</span>
+                }
               </div>
             </div>
             <div class="kpi-content">

@@ -48,7 +48,7 @@ class ProfilService {
     );
 
     if (kDebugMode) {
-      debugPrint('WARMS: profil chargé (${utilisateur.role})');
+      debugPrint("Wam's: profil chargé (${utilisateur.role})");
     }
     return utilisateur;
   }

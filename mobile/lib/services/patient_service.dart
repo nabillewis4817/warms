@@ -57,12 +57,12 @@ class PatientService {
     }
   }
 
-  Future<List<Ordonnance>> chargerOrdonnances() async {
+  Future<List<Prescription>> chargerOrdonnances() async {
     try {
       final rep = await _dio.get('/prescriptions/me/');
       final liste = rep.data as List<dynamic>;
       return liste
-          .map((e) => Ordonnance.fromJson(e as Map<String, dynamic>))
+          .map((e) => Prescription.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (_) {
       return const [];

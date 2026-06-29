@@ -1,6 +1,7 @@
-<section>
+<section class="ocr-page">
   <h2>OCR Warm's</h2>
-  
+  <p class="sous-titre">Extrayez automatiquement le texte et les informations d'un carnet médical ou d'une ordonnance scannée.</p>
+
   <div *ngIf="chargement" class="loading-overlay">
     <div class="loading-spinner">
       <i class="bi bi-arrow-clockwise"></i>
@@ -13,18 +14,81 @@
     <i class="bi bi-plus-lg"></i>
     <p>Glissez un document ici ou cliquez pour uploader</p>
   </div>
-  
+
   <div class="actions">
     <button class="upload-btn" (click)="clickFileInput()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
       <i class="bi bi-upload"></i>
       <span *ngIf="operationEnCours === 'upload'">...</span>
       <span *ngIf="operationEnCours !== 'upload'">Upload fichier</span>
     </button>
-    
+
     <button class="scan-btn" (click)="scannerDocument()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
       <i class="bi bi-scanner"></i>
       <span *ngIf="operationEnCours === 'scan'">...</span>
       <span *ngIf="operationEnCours !== 'scan'">Scanner document</span>
     </button>
+  </div>
+
+  <!-- Panneau d'erreur -->
+  <div *ngIf="erreur" class="ocr-erreur">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+      <strong>{{ erreur.titre }}</strong>
+      <p>{{ erreur.message }}</p>
+    </div>
+    <button class="bouton-fermer-erreur" (click)="fermerErreur()"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <!-- Panneau de résultats -->
+  <div *ngIf="resultat" class="modal-overlay" (click)="fermerResultat()">
+    <div class="modal-resultat" (click)="$event.stopPropagation()">
+      <div class="resultat-entete">
+        <div>
+          <h3><i class="bi bi-file-earmark-check-fill"></i> Extraction réussie</h3>
+          <span class="nom-fichier">{{ nomFichierTraite }}</span>
+        </div>
+        <button class="bouton-fermer" (click)="fermerResultat()"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="badge-confiance" [class]="'confiance-' + niveauConfiance">
+        <i class="bi bi-bar-chart-fill"></i>
+        Confiance de la reconnaissance : {{ pourcentageConfiance }}%
+      </div>
+
+      <div class="resultat-corps">
+        <div class="resultat-section" *ngIf="champsStructures.length > 0">
+          <h4><i class="bi bi-person-vcard"></i> Informations détectées</h4>
+          <div class="grille-champs">
+            <div class="champ-detecte" *ngFor="let c of champsStructures">
+              <label>{{ c.label }}</label>
+              <span>{{ c.valeur }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="resultat-section" *ngIf="(resultat.symptomes?.length ?? 0) > 0">
+          <h4><i class="bi bi-thermometer-half"></i> Symptômes détectés</h4>
+          <div class="liste-puces">
+            <span class="puce puce-symptome" *ngFor="let s of resultat.symptomes">{{ s }}</span>
+          </div>
+        </div>
+
+        <div class="resultat-section" *ngIf="(resultat.traitements?.length ?? 0) > 0">
+          <h4><i class="bi bi-capsule"></i> Traitements détectés</h4>
+          <div class="liste-puces">
+            <span class="puce puce-traitement" *ngFor="let t of resultat.traitements">{{ t }}</span>
+          </div>
+        </div>
+
+        <div class="resultat-section">
+          <h4><i class="bi bi-textarea-t"></i> Texte brut extrait</h4>
+          <pre class="texte-brut">{{ resultat.texte_extrait || 'Aucun texte détecté.' }}</pre>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondaire" (click)="fermerResultat()">Fermer</button>
+      </div>
+    </div>
   </div>
 </section>

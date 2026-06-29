@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/notification_interne.dart';
 import '../../services/notifications_internes_service.dart';
 import '../../themes/warms_theme.dart';
+import '../../widgets/skeleton_box.dart';
 
 /// Liste des notifications de l'utilisateur, avec marquage individuel
 /// comme lue (tap). Le retour sur cet écran rafraîchit toujours le badge
@@ -70,7 +71,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         onRefresh: _charger,
         color: WarmsTheme.warmsAccent,
         child: _enChargement
-            ? const Center(child: CircularProgressIndicator(color: WarmsTheme.warmsAccent))
+            ? const Padding(
+                padding: EdgeInsets.all(16),
+                child: SkeletonListe(count: 4),
+              )
             : _notifications.isEmpty
                 ? _etatVide()
                 : ListView.separated(

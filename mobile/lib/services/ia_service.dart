@@ -181,7 +181,7 @@ class IAService {
       case DioExceptionType.connectionError:
         return 'Vérifiez votre connexion réseau.';
       default:
-        if (kDebugMode) debugPrint('WARMS: erreur IA: ${e.message}');
+        if (kDebugMode) debugPrint("Wam's: erreur IA: ${e.message}");
         return 'Une erreur inattendue est survenue.';
     }
   }

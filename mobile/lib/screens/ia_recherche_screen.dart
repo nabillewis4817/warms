@@ -7,17 +7,17 @@ import '../themes/warms_theme.dart';
 import 'package:flutter/foundation.dart';
 
 /// Écran de Recherche Médicale IA pour WARMS Mobile
-/// 
+///
 /// Cet écran permet aux utilisateurs de rechercher des informations médicales
 /// à partir de sources fiables comme PubMed, Google Scholar et l'OMS.
-/// 
+///
 /// Fonctionnalités principales :
 /// - Recherche médicale multi-sources
 /// - Suggestions intelligentes de recherche
 /// - Historique des recherches récentes
 /// - Affichage des résultats avec pertinence
 /// - Interface moderne avec animations
-/// 
+///
 /// @author WARMS Team
 /// @version 1.0.0
 class IARechercheScreen extends StatefulWidget {
@@ -29,43 +29,48 @@ class IARechercheScreen extends StatefulWidget {
 
 class _IARechercheScreenState extends State<IARechercheScreen>
     with TickerProviderStateMixin {
-  
   // ==================== CONTRÔLEURS ====================
-  
+
   /// Contrôleur pour le champ de recherche
   final TextEditingController _searchController = TextEditingController();
-  
+
   /// Contrôleur pour le scrolling des résultats
   final ScrollController _scrollController = ScrollController();
-  
+
   /// Animation pour la recherche
   late AnimationController _searchAnimationController;
-  
+
   /// Animation pour les résultats
   late AnimationController _resultsAnimationController;
 
   // ==================== ÉTAT ====================
-  
+
   /// Résultats de la recherche
   List<Map<String, dynamic>> _results = [];
-  
+
   /// Historique des recherches récentes
   List<String> _searchHistory = [];
-  
+
   /// Suggestions de recherche
   List<String> _suggestions = [];
-  
+
   /// État de chargement
   bool _isLoading = false;
-  
+
   /// Message d'erreur
   String? _errorMessage;
-  
+
+  /// true si la recherche a renvoyé zéro résultat parce que le service de
+  /// recherche web est indisponible (clé/API mal configurée côté serveur)
+  /// plutôt que parce que la requête n'a simplement rien trouvé — évite
+  /// d'afficher "Aucun résultat" comme si la recherche avait fonctionné.
+  bool _serviceIndisponible = false;
+
   /// Requête de recherche actuelle
   String _currentQuery = '';
 
   // ==================== SUGGESTIONS PRÉDÉFINIES ====================
-  
+
   static const List<String> _popularSearches = [
     'Diabète type 2',
     'Hypertension artérielle',
@@ -111,7 +116,8 @@ class _IARechercheScreenState extends State<IARechercheScreen>
 
   /// Charge l'historique des recherches, persisté localement sur l'appareil.
   Future<void> _loadSearchHistory() async {
-    final historique = await SecureStorageService.instance.lireHistoriqueRecherche();
+    final historique = await SecureStorageService.instance
+        .lireHistoriqueRecherche();
     if (!mounted) return;
     setState(() => _searchHistory = historique);
   }
@@ -121,7 +127,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
   /// Gère les changements dans le champ de recherche
   void _onSearchChanged() {
     final query = _searchController.text.trim();
-    
+
     if (query.isEmpty) {
       setState(() {
         _suggestions.clear();
@@ -136,14 +142,14 @@ class _IARechercheScreenState extends State<IARechercheScreen>
   /// Génère des suggestions de recherche intelligentes
   void _generateSuggestions(String query) {
     final suggestions = <String>[];
-    
+
     // Suggestions basées sur l'historique
     for (String historyItem in _searchHistory) {
       if (historyItem.toLowerCase().contains(query.toLowerCase())) {
         suggestions.add(historyItem);
       }
     }
-    
+
     // Suggestions basées sur les recherches populaires
     for (String popular in _popularSearches) {
       if (popular.toLowerCase().contains(query.toLowerCase()) &&
@@ -151,7 +157,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
         suggestions.add(popular);
       }
     }
-    
+
     setState(() {
       _suggestions = suggestions.take(5).toList();
     });
@@ -186,9 +192,10 @@ class _IARechercheScreenState extends State<IARechercheScreen>
       );
 
       final searchResults = response['resultats'] as List<dynamic>? ?? [];
-      
+
       setState(() {
         _results = searchResults.cast<Map<String, dynamic>>();
+        _serviceIndisponible = response['service_indisponible'] == true;
         _isLoading = false;
       });
 
@@ -201,7 +208,6 @@ class _IARechercheScreenState extends State<IARechercheScreen>
       if (kDebugMode) {
         print('🔍 Recherche terminée: ${_results.length} résultats');
       }
-
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -219,7 +225,9 @@ class _IARechercheScreenState extends State<IARechercheScreen>
         _searchHistory = _searchHistory.take(10).toList();
       }
     });
-    SecureStorageService.instance.sauvegarderHistoriqueRecherche(_searchHistory);
+    SecureStorageService.instance.sauvegarderHistoriqueRecherche(
+      _searchHistory,
+    );
   }
 
   // ==================== INTERFACE UTILISATEUR ====================
@@ -233,14 +241,12 @@ class _IARechercheScreenState extends State<IARechercheScreen>
         children: [
           // Barre de recherche
           _buildSearchBar(),
-          
+
           // Message d'erreur
           if (_errorMessage != null) _buildErrorMessage(),
-          
+
           // Contenu principal
-          Expanded(
-            child: _buildMainContent(),
-          ),
+          Expanded(child: _buildMainContent()),
         ],
       ),
     );
@@ -257,19 +263,12 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               color: WarmsTheme.warmsAccent,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.search,
-              color: Colors.white,
-              size: 20,
-            ),
+            child: const Icon(Icons.search, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           const Text(
             'Recherche Médicale',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
           ),
         ],
       ),
@@ -324,7 +323,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             ),
             onSubmitted: _performSearch,
           ),
-          
+
           // Suggestions
           if (_suggestions.isNotEmpty) _buildSuggestions(),
         ],
@@ -365,10 +364,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             return ListTile(
               dense: true,
               leading: Icon(Icons.history, color: Colors.grey[400], size: 16),
-              title: Text(
-                suggestion,
-                style: const TextStyle(fontSize: 14),
-              ),
+              title: Text(suggestion, style: const TextStyle(fontSize: 14)),
               onTap: () {
                 _searchController.text = suggestion;
                 _performSearch(suggestion);
@@ -397,10 +393,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(
-                color: Colors.red[800],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.red[800], fontSize: 14),
             ),
           ),
           IconButton(
@@ -418,15 +411,15 @@ class _IARechercheScreenState extends State<IARechercheScreen>
     if (_isLoading) {
       return _buildLoadingState();
     }
-    
+
     if (_currentQuery.isEmpty) {
       return _buildInitialState();
     }
-    
+
     if (_results.isEmpty && _errorMessage == null) {
       return _buildNoResultsState();
     }
-    
+
     return _buildResultsList();
   }
 
@@ -458,9 +451,9 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               );
             },
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           Text(
             'Recherche en cours...',
             style: TextStyle(
@@ -469,19 +462,16 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               fontWeight: FontWeight.w500,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           Text(
-            'WARMS analyse les sources médicales fiables',
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 14,
-            ),
+            "Wam's analyse les sources médicales fiables",
+            style: TextStyle(color: Colors.grey[500], fontSize: 14),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Sources consultées
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -514,29 +504,26 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               color: Colors.grey[800],
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           Text(
             'Accédez à des informations médicales fiables et à jour',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Sources fiables
           _buildReliableSourcesSection(),
-          
+
           const SizedBox(height: 32),
-          
+
           // Recherches populaires
           _buildPopularSearchesSection(),
-          
+
           const SizedBox(height: 32),
-          
+
           // Historique
           if (_searchHistory.isNotEmpty) _buildHistorySection(),
         ],
@@ -576,24 +563,48 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
-              Expanded(child: _buildSourceCard('PubMed', 'Articles scientifiques', Icons.article)),
+              Expanded(
+                child: _buildSourceCard(
+                  'PubMed',
+                  'Articles scientifiques',
+                  Icons.article,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildSourceCard('Google Scholar', 'Publications académiques', Icons.school)),
+              Expanded(
+                child: _buildSourceCard(
+                  'Google Scholar',
+                  'Publications académiques',
+                  Icons.school,
+                ),
+              ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Row(
             children: [
-              Expanded(child: _buildSourceCard('WHO', 'Directives OMS', Icons.health_and_safety)),
+              Expanded(
+                child: _buildSourceCard(
+                  'WHO',
+                  'Directives OMS',
+                  Icons.health_and_safety,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildSourceCard('CDC', 'Recommandations CDC', Icons.local_hospital)),
+              Expanded(
+                child: _buildSourceCard(
+                  'CDC',
+                  'Recommandations CDC',
+                  Icons.local_hospital,
+                ),
+              ),
             ],
           ),
         ],
@@ -608,7 +619,9 @@ class _IARechercheScreenState extends State<IARechercheScreen>
       decoration: BoxDecoration(
         color: WarmsTheme.warmsBg,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: WarmsTheme.warmsAccent.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: WarmsTheme.warmsAccent.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,10 +643,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
           const SizedBox(height: 4),
           Text(
             description,
-            style: TextStyle(
-              color: WarmsTheme.warmsAccent,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: WarmsTheme.warmsAccent, fontSize: 12),
           ),
         ],
       ),
@@ -653,18 +663,15 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             color: Colors.grey[800],
           ),
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: _popularSearches.map((search) {
             return ActionChip(
-              label: Text(
-                search,
-                style: const TextStyle(fontSize: 12),
-              ),
+              label: Text(search, style: const TextStyle(fontSize: 12)),
               onPressed: () {
                 _searchController.text = search;
                 _performSearch(search);
@@ -703,9 +710,9 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         ..._searchHistory.map((search) {
           return ListTile(
             dense: true,
@@ -728,51 +735,87 @@ class _IARechercheScreenState extends State<IARechercheScreen>
     );
   }
 
-  /// État sans résultats
+  /// État sans résultats — distingue "rien trouvé pour cette requête" de
+  /// "service de recherche indisponible" (sinon les deux cas semblaient
+  /// identiques côté utilisateur : une recherche qui "n'aboutit jamais").
   Widget _buildNoResultsState() {
+    final indisponible = _serviceIndisponible;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          Text(
-            'Aucun résultat trouvé',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    (indisponible
+                            ? WarmsTheme.warmsWarning
+                            : WarmsTheme.warmsAccent)
+                        .withValues(alpha: 0.12),
+              ),
+              child: Icon(
+                indisponible
+                    ? Icons.cloud_off_rounded
+                    : Icons.search_off_rounded,
+                size: 40,
+                color: indisponible
+                    ? WarmsTheme.warmsWarning
+                    : WarmsTheme.warmsAccent,
+              ),
             ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            'Essayez avec d autres mots-clés',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
+            const SizedBox(height: 20),
+            Text(
+              indisponible
+                  ? 'Service de recherche indisponible'
+                  : 'Aucun résultat trouvé',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: WarmsTheme.warmsNavy,
+              ),
             ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          ElevatedButton(
-            onPressed: () {
-              _searchController.clear();
-              setState(() {
-                _currentQuery = '';
-              });
-            },
-            child: const Text('Nouvelle recherche'),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              indisponible
+                  ? "Le service de recherche médicale en ligne ne répond pas pour le moment. Réessayez dans quelques instants."
+                  : 'Essayez avec d\'autres mots-clés.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: WarmsTheme.warmsGray,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                _searchController.clear();
+                setState(() {
+                  _currentQuery = '';
+                  _serviceIndisponible = false;
+                });
+              },
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Nouvelle recherche'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WarmsTheme.warmsAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -789,10 +832,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             children: [
               Text(
                 '${_results.length} résultats pour',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -807,7 +847,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             ],
           ),
         ),
-        
+
         // Liste des résultats
         Expanded(
           child: ListView.builder(
@@ -847,72 +887,77 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             ).animate(animation),
             child: Container(
               margin: const EdgeInsets.only(bottom: 16),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Titre et source
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              result['title'] ?? 'Sans titre',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+              decoration: BoxDecoration(
+                color: WarmsTheme.warmsCard,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: WarmsTheme.warmsBlue.withValues(alpha: 0.07),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Titre et source
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            result['title'] ?? 'Sans titre',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          _buildSourceChip(result['source'] ?? 'Inconnue'),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // Résumé
-                      Text(
-                        result['summary'] ?? 'Aucun résumé disponible',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                          height: 1.4,
                         ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                        _buildSourceChip(result['source'] ?? 'Inconnue'),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Résumé
+                    Text(
+                      result['summary'] ?? 'Aucun résumé disponible',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                        height: 1.4,
                       ),
-                      
-                      const SizedBox(height: 12),
-                      
-                      // Métadonnées
-                      Row(
-                        children: [
-                          _buildMetadataChip(
-                            Icons.star,
-                            '${(result['relevance'] ?? 0.8 * 100).toInt()}%',
-                            Colors.orange[600]!,
-                          ),
-                          const SizedBox(width: 8),
-                          _buildMetadataChip(
-                            Icons.calendar_today,
-                            result['date'] ?? 'Date inconnue',
-                            Colors.grey[600]!,
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            onPressed: () => _openResult(result),
-                            icon: const Icon(Icons.open_in_new),
-                            tooltip: 'Voir le détail',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Métadonnées
+                    Row(
+                      children: [
+                        _buildMetadataChip(
+                          Icons.star,
+                          '${(result['relevance'] ?? 0.8 * 100).toInt()}%',
+                          Colors.orange[600]!,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildMetadataChip(
+                          Icons.calendar_today,
+                          result['date'] ?? 'Date inconnue',
+                          Colors.grey[600]!,
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () => _openResult(result),
+                          icon: const Icon(Icons.open_in_new),
+                          tooltip: 'Voir le détail',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -973,26 +1018,23 @@ class _IARechercheScreenState extends State<IARechercheScreen>
           children: [
             const Text(
               'Filtres de recherche',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
-            
+
             // TODO: Implémenter les filtres
             ListTile(
               leading: const Icon(Icons.date_range),
               title: const Text('Période'),
               subtitle: const Text('Dernière année'),
             ),
-            
+
             ListTile(
               leading: const Icon(Icons.language),
               title: const Text('Langue'),
               subtitle: const Text('Français'),
             ),
-            
+
             ListTile(
               leading: const Icon(Icons.category),
               title: const Text('Catégorie'),
@@ -1008,7 +1050,8 @@ class _IARechercheScreenState extends State<IARechercheScreen>
   /// résumé complet dans un détail plein écran (les recherches scientifiques
   /// n'ont pas toujours d'URL directe exploitable).
   Future<void> _openResult(Map<String, dynamic> result) async {
-    final lien = (result['url'] ?? result['lien'] ?? result['link'] ?? '').toString();
+    final lien = (result['url'] ?? result['lien'] ?? result['link'] ?? '')
+        .toString();
     if (lien.isNotEmpty) {
       final uri = Uri.tryParse(lien);
       if (uri != null && await canLaunchUrl(uri)) {
@@ -1036,7 +1079,10 @@ class _IARechercheScreenState extends State<IARechercheScreen>
             children: [
               Text(
                 result['title'] ?? 'Sans titre',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
               _buildSourceChip(result['source'] ?? 'Inconnue'),
@@ -1047,7 +1093,10 @@ class _IARechercheScreenState extends State<IARechercheScreen>
               ),
               if (lien.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                SelectableText(lien, style: const TextStyle(color: WarmsTheme.warmsAccent)),
+                SelectableText(
+                  lien,
+                  style: const TextStyle(color: WarmsTheme.warmsAccent),
+                ),
               ],
             ],
           ),

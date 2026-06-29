@@ -63,8 +63,8 @@ class ConfirmationIdentiteScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Pour votre sécurité, confirmez que cette photo correspond '
-                      'bien à votre visage avant d\'accéder à votre espace WARMS.',
+                      "Pour votre sécurité, confirmez que cette photo correspond "
+                      "bien à votre visage avant d'accéder à votre espace Wam's.",
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 13.5, color: WarmsTheme.warmsGray, height: 1.5),
                     ),

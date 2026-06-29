@@ -716,6 +716,35 @@
   transform: scale(1.08);
 }
 
+.bouton-pdf {
+  background: #eaf1ff;
+  color: #1e4db7;
+}
+
+.bouton-pdf:hover {
+  background: #1e4db7;
+  color: white;
+}
+
+.badge-statut-prescription {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  margin: 0.15rem 0;
+
+  &.badge-active { background: #e3f8ea; color: #16a34a; }
+  &.badge-terminee { background: #e8edfb; color: #1e4db7; }
+  &.badge-annulee { background: #fde8e8; color: #dc2626; }
+}
+
+@keyframes girer { to { transform: rotate(360deg); } }
+.spin { animation: girer 0.8s linear infinite; display: inline-block; }
+
 /* Navigation bas de page */
 .navigation-bas {
   display: flex;

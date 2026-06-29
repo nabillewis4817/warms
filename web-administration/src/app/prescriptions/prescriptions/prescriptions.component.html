@@ -1,0 +1,397 @@
+<div class="prescriptions-page">
+  <header class="page-header">
+    <div class="header-texte">
+      <h1><i class="bi bi-capsule-pill"></i> Prescriptions &amp; Ordonnances</h1>
+      <p>Rédigez, suivez et imprimez les ordonnances, conseils et recommandations pour vos patients.</p>
+    </div>
+    <button class="btn btn-primary" (click)="ouvrirCreation()">
+      <i class="bi bi-plus-circle-fill"></i> Nouvelle prescription
+    </button>
+  </header>
+
+  <div class="barre-outils">
+    <div class="champ-recherche">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Rechercher un patient, un titre..."
+        [value]="termeRecherche"
+        (input)="surRecherche($any($event.target).value)"
+      />
+    </div>
+
+    <div class="filtres-statut">
+      <button class="chip" [class.chip-actif]="filtreStatut === ''" (click)="filtrerParStatut('')">
+        Toutes
+      </button>
+      @for (s of statuts; track s.valeur) {
+        <button
+          class="chip"
+          [class.chip-actif]="filtreStatut === s.valeur"
+          [class.chip-active]="s.valeur === 'active'"
+          [class.chip-terminee]="s.valeur === 'terminee'"
+          [class.chip-annulee]="s.valeur === 'annulee'"
+          (click)="filtrerParStatut(s.valeur)"
+        >
+          {{ s.libelle }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (chargement) {
+    <div class="etat-chargement">
+      <div class="spinner"></div>
+      <p>Chargement des prescriptions...</p>
+    </div>
+  } @else if (prescriptions.length === 0) {
+    <div class="etat-vide">
+      <i class="bi bi-capsule"></i>
+      <h3>Aucune prescription trouvée</h3>
+      <p>Commencez par créer une nouvelle ordonnance pour un patient.</p>
+      <button class="btn btn-primary" (click)="ouvrirCreation()">
+        <i class="bi bi-plus-circle-fill"></i> Créer une prescription
+      </button>
+    </div>
+  } @else {
+    <div class="grille-prescriptions">
+      @for (p of prescriptions; track p.id) {
+        <div class="carte-prescription">
+          <div class="carte-entete">
+            <span class="badge-statut" [class]="'badge-' + p.statut">{{ libelleStatut(p.statut) }}</span>
+            <span class="carte-date">{{ p.cree_le | date: 'dd/MM/yyyy' }}</span>
+          </div>
+
+          <h3 class="carte-titre">{{ p.titre || 'Ordonnance sans titre' }}</h3>
+
+          <div class="carte-patient">
+            <i class="bi bi-person-circle"></i>
+            <span>{{ p.patient_prenom }} {{ p.patient_nom }}</span>
+          </div>
+
+          @if (p.praticien_nom) {
+            <div class="carte-praticien">
+              <i class="bi bi-clipboard2-pulse"></i>
+              <span>Dr. {{ p.praticien_nom }}</span>
+            </div>
+          }
+
+          <div class="carte-lignes">
+            @for (ligne of p.lignes.slice(0, 3); track ligne.id) {
+              <div class="ligne-medicament">
+                <i class="bi bi-capsule"></i>
+                <span>{{ ligne.medicament }}</span>
+                @if (ligne.posologie) { <small>— {{ ligne.posologie }}</small> }
+              </div>
+            }
+            @if (p.lignes.length > 3) {
+              <small class="lignes-plus">+ {{ p.lignes.length - 3 }} autre(s)</small>
+            }
+            @if (p.lignes.length === 0) {
+              <small class="lignes-vide">Aucun médicament listé</small>
+            }
+          </div>
+
+          @if (p.conseils || p.recommandations) {
+            <div class="carte-conseils">
+              @if (p.conseils) {
+                <p><i class="bi bi-lightbulb-fill"></i> <strong>Conseils :</strong> {{ p.conseils }}</p>
+              }
+              @if (p.recommandations) {
+                <p><i class="bi bi-flag-fill"></i> <strong>Recommandations :</strong> {{ p.recommandations }}</p>
+              }
+            </div>
+          }
+
+          <div class="carte-actions">
+            <button class="btn-icone" title="Voir l'ordonnance PDF" [disabled]="prescriptionEnTelechargement === p.id" (click)="ouvrirPdf(p)">
+              @if (prescriptionEnTelechargement === p.id) {
+                <i class="bi bi-arrow-repeat spin"></i>
+              } @else {
+                <i class="bi bi-file-earmark-pdf-fill"></i>
+              }
+            </button>
+            <button class="btn-icone" title="Modifier" (click)="ouvrirEdition(p)">
+              <i class="bi bi-pencil-fill"></i>
+            </button>
+            <button class="btn-icone btn-icone-danger" title="Supprimer" (click)="confirmerSuppression(p)">
+              <i class="bi bi-trash3-fill"></i>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (afficherFormulaire && vueModal === 'formulaire') {
+    <div class="modal-overlay" (click)="fermerFormulaire()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            <i class="bi" [class.bi-prescription2]="!modeEdition" [class.bi-pencil-square]="modeEdition"></i>
+            {{ modeEdition ? 'Modifier la prescription' : 'Nouvelle prescription' }}
+          </h2>
+          <button class="modal-fermer" (click)="fermerFormulaire()"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <form [formGroup]="formulaire" (ngSubmit)="ouvrirApercu()" class="modal-body">
+          <div class="section-form">
+            <h4><i class="bi bi-person-vcard"></i> Contexte</h4>
+            <div class="grille-champs">
+              <div class="champ">
+                <label>Patient *</label>
+                <select formControlName="patient" (change)="onPatientChange($any($event.target).value)">
+                  <option [value]="null" disabled>Sélectionner un patient</option>
+                  @for (patient of patients; track patient.id) {
+                    <option [value]="patient.id">{{ patient.prenom }} {{ patient.nom }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="champ">
+                <label>Praticien</label>
+                <select formControlName="praticien">
+                  <option [value]="null">Non spécifié</option>
+                  @for (praticien of praticiens; track praticien.id) {
+                    <option [value]="praticien.id">{{ praticien.prenom }} {{ praticien.nom }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="champ">
+                <label>Titre de l'ordonnance *</label>
+                <input type="text" formControlName="titre" placeholder="Ex : Ordonnance post-opératoire" />
+              </div>
+
+              <div class="champ">
+                <label>Statut</label>
+                <select formControlName="statut">
+                  @for (s of statuts; track s.valeur) {
+                    <option [value]="s.valeur">{{ s.libelle }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-form">
+            <div class="section-form-entete">
+              <h4><i class="bi bi-capsule"></i> Médicaments / lignes de l'ordonnance</h4>
+              <button type="button" class="btn-ajouter" (click)="ajouterLigne()">
+                <i class="bi bi-plus-circle"></i> Ajouter une ligne
+              </button>
+            </div>
+
+            <div formArrayName="lignes" class="lignes-formulaire">
+              @for (ligne of lignes.controls; track ligne; let i = $index) {
+                <div [formGroupName]="i" class="ligne-formulaire">
+                  <input type="text" formControlName="medicament" placeholder="Médicament *" class="champ-medicament" />
+                  <input type="text" formControlName="posologie" placeholder="Posologie" />
+                  <input type="text" formControlName="duree" placeholder="Durée" />
+                  <input type="text" formControlName="remarques" placeholder="Remarques" />
+                  <button
+                    type="button"
+                    class="btn-retirer"
+                    [disabled]="lignes.length === 1"
+                    (click)="retirerLigne(i)"
+                  >
+                    <i class="bi bi-x-circle-fill"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="section-form">
+            <h4><i class="bi bi-lightbulb-fill"></i> Conseils du médecin</h4>
+            <textarea
+              formControlName="conseils"
+              rows="3"
+              placeholder="Conseils donnés au patient (hygiène, alimentation, soins post-traitement...)"
+            ></textarea>
+          </div>
+
+          <div class="section-form">
+            <h4><i class="bi bi-flag-fill"></i> Recommandations</h4>
+            <textarea
+              formControlName="recommandations"
+              rows="3"
+              placeholder="Recommandations complémentaires (suivi, examens, rendez-vous de contrôle...)"
+            ></textarea>
+          </div>
+
+          <div class="section-form">
+            <h4><i class="bi bi-journal-text"></i> Notes internes</h4>
+            <textarea formControlName="note_praticien" rows="2" placeholder="Notes internes (non imprimées sur l'ordonnance)"></textarea>
+          </div>
+        </form>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondaire" (click)="fermerFormulaire()">Annuler</button>
+          <button class="btn btn-primary" (click)="ouvrirApercu()">
+            <i class="bi bi-eye-fill"></i> Aperçu de l'ordonnance
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (afficherFormulaire && vueModal === 'apercu') {
+    <div class="modal-overlay" (click)="revenirAuFormulaire()">
+      <div class="modal-content modal-apercu" (click)="$event.stopPropagation()">
+        <div class="apercu-scroll">
+          <div class="ordonnance-papier">
+            <div class="ordonnance-entete">
+              <div class="ordonnance-marque">
+                <div class="ordonnance-logo"><i class="bi bi-emoji-smile-fill"></i></div>
+                <div>
+                  <h2>Cabinet Wam's</h2>
+                  <span>Chirurgie dentaire &amp; soins bucco-dentaires</span>
+                </div>
+              </div>
+              <div class="ordonnance-pictos">
+                <i class="bi bi-capsule-pill"></i>
+                <i class="bi bi-prescription2"></i>
+                <i class="bi bi-bag-heart-fill"></i>
+              </div>
+            </div>
+
+            <div class="ordonnance-titre-bloc">
+              <h3>{{ formulaire.value.titre || 'Ordonnance sans titre' }}</h3>
+              <span class="badge-statut" [class]="'badge-' + formulaire.value.statut">
+                {{ libelleStatut(formulaire.value.statut) }}
+              </span>
+            </div>
+
+            <div class="ordonnance-infos">
+              <div class="info-bloc">
+                <span class="info-label">Patient</span>
+                @if (patientSelectionne) {
+                  <strong>{{ patientSelectionne.prenom }} {{ patientSelectionne.nom }}</strong>
+                  @if (patientSelectionne.allergies) {
+                    <small class="info-allergie"><i class="bi bi-exclamation-triangle-fill"></i> Allergies connues : {{ patientSelectionne.allergies }}</small>
+                  }
+                } @else {
+                  <em>Patient manquant — revenez au formulaire</em>
+                }
+              </div>
+              <div class="info-bloc">
+                <span class="info-label">Praticien</span>
+                @if (praticienSelectionne) {
+                  <strong>Dr. {{ praticienSelectionne.prenom }} {{ praticienSelectionne.nom }}</strong>
+                } @else {
+                  <em>Non spécifié</em>
+                }
+              </div>
+              <div class="info-bloc">
+                <span class="info-label">Date</span>
+                <strong>{{ today | date: 'dd/MM/yyyy' }}</strong>
+              </div>
+            </div>
+
+            <div class="ordonnance-section">
+              <h4><i class="bi bi-capsule"></i> Traitement prescrit</h4>
+              @for (ligne of lignes.value; track $index) {
+                <div class="ordonnance-ligne">
+                  <i class="bi bi-dot"></i>
+                  <div>
+                    <strong>{{ ligne.medicament || '—' }}</strong>
+                    <span>
+                      @if (ligne.posologie) { {{ ligne.posologie }} }
+                      @if (ligne.duree) { · {{ ligne.duree }} }
+                      @if (ligne.remarques) { · {{ ligne.remarques }} }
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (formulaire.value.conseils) {
+              <div class="ordonnance-section">
+                <h4><i class="bi bi-lightbulb-fill"></i> Conseils du médecin</h4>
+                <p>{{ formulaire.value.conseils }}</p>
+              </div>
+            }
+
+            @if (formulaire.value.recommandations) {
+              <div class="ordonnance-section">
+                <h4><i class="bi bi-flag-fill"></i> Recommandations</h4>
+                <p>{{ formulaire.value.recommandations }}</p>
+              </div>
+            }
+
+            <div class="ordonnance-pied">
+              <i class="bi bi-shield-check"></i> Document généré par Wam's — Cabinet Wam's
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondaire" (click)="revenirAuFormulaire()">
+            <i class="bi bi-pencil-fill"></i> Modifier
+          </button>
+          <button class="btn btn-primary" [disabled]="enregistrementEnCours" (click)="validerDepuisApercu()">
+            @if (enregistrementEnCours) {
+              <i class="bi bi-arrow-repeat spin"></i> Enregistrement...
+            } @else {
+              <i class="bi bi-check-circle-fill"></i> Valider et enregistrer
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (alerteAllergie) {
+    <div class="alerte-overlay">
+      <div class="alerte-carte">
+        @if (alerteAllergie.etape === 1) {
+          <div class="alerte-icone-zone">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </div>
+          <h2>Alerte allergie patient</h2>
+          <p class="alerte-texte">
+            Ce patient a déclaré être allergique à :
+            <strong>{{ alerteAllergie.allergiesPatient }}</strong>
+          </p>
+          <div class="alerte-medicaments">
+            @for (m of alerteAllergie.medicaments; track m) {
+              <span class="chip-medicament-danger"><i class="bi bi-capsule"></i> {{ m }}</span>
+            }
+          </div>
+          <p class="alerte-sous-texte">
+            Le(s) médicament(s) ci-dessus semble(nt) correspondre à une allergie connue du patient.
+            Vérifiez attentivement avant de poursuivre.
+          </p>
+          <div class="alerte-actions">
+            <button class="btn btn-secondaire" (click)="annulerAlerteAllergie()">
+              <i class="bi bi-x-circle"></i> Annuler et modifier l'ordonnance
+            </button>
+            <button class="btn btn-danger" (click)="passerAlerteEtapeDeux()">
+              OK, j'ai compris
+            </button>
+          </div>
+        } @else {
+          <div class="alerte-icone-zone">
+            <i class="bi bi-shield-exclamation"></i>
+          </div>
+          <h2>Confirmation requise</h2>
+          <p class="alerte-texte">
+            Confirmez-vous vouloir prescrire ce médicament malgré l'allergie déclarée par le patient ?
+          </p>
+          <p class="alerte-sous-texte">
+            Cette action sera enregistrée comme une prescription validée en connaissance de cause.
+          </p>
+          <div class="alerte-actions">
+            <button class="btn btn-secondaire" (click)="annulerAlerteAllergie()">
+              <i class="bi bi-x-circle"></i> Non, modifier l'ordonnance
+            </button>
+            <button class="btn btn-danger" (click)="confirmerPrescriptionMalgreAllergie()">
+              <i class="bi bi-check-circle-fill"></i> Oui, prescrire malgré tout
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

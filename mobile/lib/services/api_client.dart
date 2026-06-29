@@ -83,13 +83,19 @@ class ApiClient {
         data: {'refresh': refresh},
       );
       final access = rep.data['access'] as String?;
+      // Le backend tourne les refresh tokens (ROTATE_REFRESH_TOKENS +
+      // BLACKLIST_AFTER_ROTATION) : l'ancien refresh token est blacklisté
+      // dès cet appel. Sans sauvegarder le nouveau renvoyé ici, le
+      // rafraîchissement suivant échoue avec 401 (symptôme observé sur
+      // les écrans appelés après une session restée ouverte un moment).
+      final nouveauRefresh = rep.data['refresh'] as String?;
       if (access != null) {
-        await _storage.mettreAJourAccessToken(access);
+        await _storage.enregistrerTokens(access: access, refresh: nouveauRefresh);
         definirToken(access);
       }
       return access;
     } catch (e) {
-      if (kDebugMode) debugPrint('WARMS: échec du rafraîchissement de token: $e');
+      if (kDebugMode) debugPrint("Wam's: échec du rafraîchissement de token: $e");
       return null;
     }
   }

@@ -22,6 +22,22 @@ export interface WarmsIAInfo {
   limitations: string[];
 }
 
+export interface ActionAssistant {
+  name: string;
+  input: Record<string, any>;
+}
+
+export interface EffetAssistant {
+  type: 'naviguer' | 'changer_theme';
+  chemin?: string;
+  mode?: 'clair' | 'sombre';
+}
+
+export type ReponseCommandeAssistant =
+  | { type: 'reponse'; texte: string }
+  | { type: 'confirmation'; action: ActionAssistant; description: string }
+  | { type: 'resultat'; succes: boolean; message: string; effet?: EffetAssistant };
+
 @Injectable({
   providedIn: 'root'
 })
@@ -45,5 +61,24 @@ export class WarmsIAService {
    */
   getInformations(): Observable<WarmsIAInfo> {
     return this.http.get<WarmsIAInfo>(`${this.baseUrl}/warms-info/`);
+  }
+
+  /**
+   * Envoie un message libre à l'assistant : peut renvoyer une réponse texte
+   * classique, ou une action CRUD à confirmer (voir confirmerAction).
+   */
+  envoyerCommande(message: string): Observable<ReponseCommandeAssistant> {
+    return this.http
+      .post<ReponseCommandeAssistant>(`${this.baseUrl}/commande/`, { message })
+      .pipe(timeout(30000));
+  }
+
+  /**
+   * Exécute réellement une action précédemment proposée par l'assistant.
+   */
+  confirmerAction(action: ActionAssistant): Observable<ReponseCommandeAssistant> {
+    return this.http
+      .post<ReponseCommandeAssistant>(`${this.baseUrl}/commande/`, { action, confirmer: true })
+      .pipe(timeout(30000));
   }
 }

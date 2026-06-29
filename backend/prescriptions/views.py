@@ -24,9 +24,22 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
     ).prefetch_related("lignes")
 
     def get_serializer_class(self):
-        if self.action == "create":
+        if self.action in ("create", "update", "partial_update"):
             return PrescriptionCreateSerializer
         return PrescriptionSerializer
+
+    def perform_create(self, serializer):
+        # Le frontend envoie le patient (id entier) ; le dossier (UUID) en
+        # est déduit automatiquement si absent ou invalide, comme pour les
+        # consultations — évite de dépendre d'un transfert exact du dossier
+        # depuis le frontend (source d'un 400 si mal typé/converti côté JS).
+        if not serializer.validated_data.get("dossier"):
+            patient = serializer.validated_data.get("patient")
+            dossier = getattr(patient, "dossier", None)
+            if dossier:
+                serializer.save(dossier=dossier)
+                return
+        serializer.save()
 
     def get_permissions(self):
         """
@@ -149,19 +162,26 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
                 y = height - 60
                 c.setFont("Helvetica", 11)
 
-        if prescription.note_praticien:
+        def _dessiner_bloc(titre_bloc, contenu):
+            nonlocal y
+            if not contenu:
+                return
             y -= 10
             c.setFont("Helvetica-Bold", 12)
-            c.drawString(50, y, "Notes :")
+            c.drawString(50, y, titre_bloc)
             y -= 18
             c.setFont("Helvetica", 11)
-            for line in prescription.note_praticien.splitlines():
+            for line in contenu.splitlines():
                 c.drawString(60, y, line[:120])
                 y -= 16
                 if y < 80:
                     c.showPage()
                     y = height - 60
                     c.setFont("Helvetica", 11)
+
+        _dessiner_bloc("Notes :", prescription.note_praticien)
+        _dessiner_bloc("Conseils du médecin :", prescription.conseils)
+        _dessiner_bloc("Recommandations :", prescription.recommandations)
 
         y = 60
         c.setFont("Helvetica-Oblique", 9)

@@ -81,13 +81,14 @@ def extract_text(request):
     """Extrait le texte d'une image"""
     if not check_tesseract_installation()[0]:
         return Response({'error': 'Tesseract n\'est pas installé'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    
-    if 'image' not in request.FILES:
+
+    # 'image' (web) ou 'fichier' (mobile, voir IAService.traiterImageOCR) :
+    # les deux clients n'envoient pas le fichier sous le même nom de champ.
+    image_file = request.FILES.get('image') or request.FILES.get('fichier')
+    if image_file is None:
         return Response({'error': 'Aucune image fournie'}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     try:
-        image_file = request.FILES['image']
-        
         # Créer un fichier temporaire
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
             for chunk in image_file.chunks():

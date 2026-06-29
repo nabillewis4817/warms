@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -57,7 +57,29 @@ def me(request):
 class UtilisateurViewSet(viewsets.ModelViewSet):
     queryset = Utilisateur.objects.all().order_by("-date_joined")
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        # Sans ce filtrage, tous les comptes (y compris les patients) sont
+        # renvoyés quels que soient les paramètres de requête envoyés par le
+        # frontend (ex: le sélecteur de praticien d'une prescription) :
+        # les paramètres "role"/"statut" étaient jusqu'ici silencieusement
+        # ignorés côté backend.
+        queryset = super().get_queryset()
+        role = self.request.query_params.get("role")
+        if role:
+            queryset = queryset.filter(role=role)
+        statut = self.request.query_params.get("statut")
+        if statut:
+            queryset = queryset.filter(statut=statut)
+        recherche = self.request.query_params.get("recherche")
+        if recherche:
+            queryset = queryset.filter(
+                Q(first_name__icontains=recherche)
+                | Q(last_name__icontains=recherche)
+                | Q(username__icontains=recherche)
+            )
+        return queryset
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy", "desactiver", "changer_mot_de_passe"]:
@@ -168,7 +190,7 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
 
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
-@parser_classes([MultiPartParser, FormParser])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def me_preferences(request):
     user = request.user
     serializer = PreferencesUtilisateurSerializer(user, data=request.data, partial=True)
@@ -452,7 +474,7 @@ def dashboard_stats(request):
     if consultations_mois_dernier > 0:
         tendance_consultations = round(((consultations_mois - consultations_mois_dernier) / consultations_mois_dernier) * 100, 1)
     else:
-        tendance_consultations = 0.0
+        tendance_consultations = None
     
     # Statistiques des rendez-vous
     rendez_vous_total = RendezVous.objects.count()
@@ -473,7 +495,7 @@ def dashboard_stats(request):
     if rendez_vous_mois_dernier > 0:
         tendance_rendez_vous = round(((rendez_vous_mois - rendez_vous_mois_dernier) / rendez_vous_mois_dernier) * 100, 1)
     else:
-        tendance_rendez_vous = 0.0
+        tendance_rendez_vous = None
     
     # Statistiques des appels (modèle Appel)
     appels_qs = Appel.objects.all()
@@ -496,7 +518,7 @@ def dashboard_stats(request):
     if appels_mois_dernier > 0:
         tendance_appels = round(((appels_mois - appels_mois_dernier) / appels_mois_dernier) * 100, 1)
     else:
-        tendance_appels = 0.0
+        tendance_appels = None
     
     # Taux d'absentéisme (basé sur les rendez-vous)
     total_rendez_vous_effectues = RendezVous.objects.filter(statut='effectue').count()
@@ -544,7 +566,7 @@ def dashboard_stats(request):
         taux_absenteeisme_mois_dernier = round((rdv_absents_mois_dernier / total_rdv_mois_dernier) * 100, 1)
         tendance_absenteeisme = round(taux_absenteeisme_mois - taux_absenteeisme_mois_dernier, 1)
     else:
-        tendance_absenteeisme = 0.0
+        tendance_absenteeisme = None
     
     # Statistiques des patients
     patients_total = Patient.objects.count()
@@ -560,7 +582,7 @@ def dashboard_stats(request):
     if patients_mois_dernier > 0:
         tendance_patients = round(((patients_mois - patients_mois_dernier) / patients_mois_dernier) * 100, 1)
     else:
-        tendance_patients = 0.0
+        tendance_patients = None
     
     stats = {
         "consultations": {

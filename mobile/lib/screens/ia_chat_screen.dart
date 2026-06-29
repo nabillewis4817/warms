@@ -1,21 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import '../services/ia_service.dart';
 import '../themes/warms_theme.dart';
 
 /// Écran de Chat IA pour WARMS Mobile
-/// 
+///
 /// Cet écran permet aux utilisateurs de discuter avec l'IA médicale WARMS
 /// pour obtenir des informations, des conseils et du soutien médical.
-/// 
+///
 /// Fonctionnalités principales :
 /// - Chat conversationnel en temps réel
 /// - Détection automatique des urgences médicales
 /// - Historique des conversations persistant
 /// - Interface moderne avec animations fluides
 /// - Support des suggestions rapides
-/// 
+///
 /// @author WARMS Team
 /// @version 1.0.0
 class IAChatScreen extends StatefulWidget {
@@ -25,34 +24,33 @@ class IAChatScreen extends StatefulWidget {
   State<IAChatScreen> createState() => _IAChatScreenState();
 }
 
-class _IAChatScreenState extends State<IAChatScreen> 
+class _IAChatScreenState extends State<IAChatScreen>
     with TickerProviderStateMixin {
-  
   // ==================== CONTRÔLEURS ====================
-  
+
   /// Contrôleur pour le champ de saisie de message
   final TextEditingController _messageController = TextEditingController();
-  
+
   /// Contrôleur pour le scrolling de la liste de messages
   final ScrollController _scrollController = ScrollController();
-  
+
   /// Animation pour l'indicateur de saisie
   late AnimationController _typingIndicatorController;
-  
+
   /// Animation pour les messages
   late AnimationController _messageAnimationController;
 
   // ==================== ÉTAT ====================
-  
+
   /// Liste des messages de la conversation
   final List<Map<String, dynamic>> _messages = [];
-  
+
   /// État de chargement pour l'envoi de message
   bool _isLoading = false;
-  
+
   /// Indicateur si l'IA est en train d'écrire
   bool _isTyping = false;
-  
+
   /// Message d'erreur à afficher
   String? _errorMessage;
 
@@ -61,7 +59,7 @@ class _IAChatScreenState extends State<IAChatScreen>
   String? _conversationId;
 
   // ==================== SUGGESTIONS RAPIDES ====================
-  
+
   /// Suggestions prédéfinies pour aider l'utilisateur
   static const List<String> _suggestions = [
     'Quels sont les symptômes de la grippe ?',
@@ -111,7 +109,9 @@ class _IAChatScreenState extends State<IAChatScreen>
     try {
       setState(() => _isLoading = true);
 
-      final conversation = await IAService().obtenirOuCreerConversation(plateforme: 'mobile');
+      final conversation = await IAService().obtenirOuCreerConversation(
+        plateforme: 'mobile',
+      );
       _conversationId = conversation['id'] as String?;
       final messages = (conversation['messages'] as List<dynamic>? ?? [])
           .map((m) => _depuisMessageIA(m as Map<String, dynamic>))
@@ -140,12 +140,15 @@ class _IAChatScreenState extends State<IAChatScreen>
   /// Convertit un message renvoyé par le backend (`MessageIASerializer`)
   /// vers la forme attendue par les bulles de cet écran.
   Map<String, dynamic> _depuisMessageIA(Map<String, dynamic> message) {
-    final metadonnees = message['metadonnees'] as Map<String, dynamic>? ?? const {};
+    final metadonnees =
+        message['metadonnees'] as Map<String, dynamic>? ?? const {};
     return {
       'id': message['id'],
       'type': message['type_message'] == 'user' ? 'user' : 'ia',
       'contenu': message['contenu'] ?? '',
-      'timestamp': DateTime.tryParse(message['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      'timestamp':
+          DateTime.tryParse(message['timestamp']?.toString() ?? '') ??
+          DateTime.now(),
       'confidence': (metadonnees['confidence'] as num?)?.toDouble() ?? 0.8,
       'urgence': metadonnees['niveau_urgence'],
     };
@@ -156,21 +159,33 @@ class _IAChatScreenState extends State<IAChatScreen>
     final welcomeMessage = {
       'id': DateTime.now().millisecondsSinceEpoch,
       'type': 'ia',
-      'contenu': '👋 Bonjour ! Je suis WARMS, votre assistant médical intelligent.\n\n'
-          'Je peux vous aider avec :\n'
-          '• 🏥 Informations sur les symptômes et maladies\n'
-          '• 💊 Conseils sur les traitements\n'
-          '• 🥗 Recommandations de prévention\n'
-          '• 🚨 Détection d\'urgences médicales\n\n'
-          'Comment puis-je vous aider aujourd\'hui ?',
+      'contenu':
+          "Bonjour ! Je suis Wam's, votre assistant médical intelligent.\n\n"
+          'Je peux vous aider avec :',
+      'contenu_suite': 'Comment puis-je vous aider aujourd\'hui ?',
+      'bullets': [
+        {
+          'icon': Icons.local_hospital_rounded,
+          'texte': 'Informations sur les symptômes et maladies',
+        },
+        {
+          'icon': Icons.medication_rounded,
+          'texte': 'Conseils sur les traitements',
+        },
+        {'icon': Icons.eco_rounded, 'texte': 'Recommandations de prévention'},
+        {
+          'icon': Icons.emergency_rounded,
+          'texte': 'Détection d\'urgences médicales',
+        },
+      ],
       'timestamp': DateTime.now(),
       'confidence': 1.0,
     };
-    
+
     setState(() {
       _messages.add(welcomeMessage);
     });
-    
+
     // Animation d'apparition du message
     _messageAnimationController.forward();
   }
@@ -180,7 +195,7 @@ class _IAChatScreenState extends State<IAChatScreen>
   /// Envoie un message à l'IA et traite la réponse
   Future<void> _sendMessage() async {
     final message = _messageController.text.trim();
-    
+
     // Validation du message
     if (message.isEmpty) {
       _showError('Veuillez entrer un message');
@@ -221,7 +236,9 @@ class _IAChatScreenState extends State<IAChatScreen>
         conversationId: conversationId,
         message: message,
       );
-      final iaMessage = _depuisMessageIA(response['message_ia'] as Map<String, dynamic>);
+      final iaMessage = _depuisMessageIA(
+        response['message_ia'] as Map<String, dynamic>,
+      );
 
       setState(() {
         _messages.add(iaMessage);
@@ -231,12 +248,13 @@ class _IAChatScreenState extends State<IAChatScreen>
 
       // Alerte spéciale si urgence détectée
       if (iaMessage['urgence'] == 'critique') {
-        _showUrgencyAlert('Urgence détectée : contactez le cabinet ou les urgences sans attendre.');
+        _showUrgencyAlert(
+          'Urgence détectée : contactez le cabinet ou les urgences sans attendre.',
+        );
       }
 
       _scrollToBottom();
       _messageAnimationController.forward();
-
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -248,7 +266,8 @@ class _IAChatScreenState extends State<IAChatScreen>
       final errorMessage = {
         'id': DateTime.now().millisecondsSinceEpoch + 2,
         'type': 'ia',
-        'contenu': '😔 Désolé, je rencontre des difficultés techniques. '
+        'contenu':
+            '😔 Désolé, je rencontre des difficultés techniques. '
             'Veuillez réessayer dans quelques instants.',
         'timestamp': DateTime.now(),
         'confidence': 0.0,
@@ -258,7 +277,7 @@ class _IAChatScreenState extends State<IAChatScreen>
       setState(() {
         _messages.add(errorMessage);
       });
-      
+
       _scrollToBottom();
     }
   }
@@ -274,17 +293,17 @@ class _IAChatScreenState extends State<IAChatScreen>
         children: [
           // Messages d'erreur
           if (_errorMessage != null) _buildErrorMessage(),
-          
+
           // Liste des messages
           Expanded(
             child: _isLoading && _messages.isEmpty
                 ? _buildLoadingState()
                 : _buildMessagesList(),
           ),
-          
+
           // Indicateur de saisie IA
           if (_isTyping) _buildTypingIndicator(),
-          
+
           // Zone de saisie
           _buildMessageInput(),
         ],
@@ -311,11 +330,8 @@ class _IAChatScreenState extends State<IAChatScreen>
           ),
           const SizedBox(width: 12),
           const Text(
-            'WARMS IA',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-            ),
+            "Wam's IA",
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
           ),
         ],
       ),
@@ -349,10 +365,7 @@ class _IAChatScreenState extends State<IAChatScreen>
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(
-                color: Colors.red[800],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.red[800], fontSize: 14),
             ),
           ),
           IconButton(
@@ -371,12 +384,10 @@ class _IAChatScreenState extends State<IAChatScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animation Lottie de chargement
-          Lottie.asset(
-            'assets/animations/doctor_loading.json',
-            width: 200,
-            height: 200,
-            repeat: true,
+          const SizedBox(
+            width: 56,
+            height: 56,
+            child: CircularProgressIndicator(strokeWidth: 4),
           ),
           const SizedBox(height: 24),
           Text(
@@ -389,11 +400,8 @@ class _IAChatScreenState extends State<IAChatScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'WARMS prépare vos réponses personnalisées',
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 14,
-            ),
+            "Wam's prépare vos réponses personnalisées",
+            style: TextStyle(color: Colors.grey[500], fontSize: 14),
           ),
         ],
       ),
@@ -417,25 +425,28 @@ class _IAChatScreenState extends State<IAChatScreen>
   Widget _buildMessageBubble(Map<String, dynamic> message, int index) {
     final isUserMessage = message['type'] == 'user';
     final isErrorMessage = message['is_error'] == true;
-    
+
     return AnimatedBuilder(
       animation: _messageAnimationController,
       builder: (context, child) {
         return SlideTransition(
-          position: Tween<Offset>(
-            begin: Offset(isUserMessage ? 1.0 : -1.0, 0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: _messageAnimationController,
-            curve: Curves.easeOutQuart,
-          )),
+          position:
+              Tween<Offset>(
+                begin: Offset(isUserMessage ? 1.0 : -1.0, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: _messageAnimationController,
+                  curve: Curves.easeOutQuart,
+                ),
+              ),
           child: FadeTransition(
             opacity: _messageAnimationController,
             child: Container(
               margin: const EdgeInsets.only(bottom: 16),
               child: Row(
-                mainAxisAlignment: isUserMessage 
-                    ? MainAxisAlignment.end 
+                mainAxisAlignment: isUserMessage
+                    ? MainAxisAlignment.end
                     : MainAxisAlignment.start,
                 children: [
                   if (!isUserMessage) ...[
@@ -453,7 +464,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                       ),
                     ),
                   ],
-                  
+
                   // Bulle de message
                   Flexible(
                     child: Container(
@@ -465,14 +476,18 @@ class _IAChatScreenState extends State<IAChatScreen>
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: isUserMessage 
+                        color: isUserMessage
                             ? WarmsTheme.warmsAccent
-                            : isErrorMessage 
-                                ? Colors.red[100]
-                                : Colors.white,
+                            : isErrorMessage
+                            ? Colors.red[100]
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(16).copyWith(
-                          bottomLeft: isUserMessage ? Radius.circular(16) : Radius.circular(4),
-                          bottomRight: isUserMessage ? Radius.circular(4) : Radius.circular(16),
+                          bottomLeft: isUserMessage
+                              ? Radius.circular(16)
+                              : Radius.circular(4),
+                          bottomRight: isUserMessage
+                              ? Radius.circular(4)
+                              : Radius.circular(16),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -481,7 +496,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                             offset: const Offset(0, 2),
                           ),
                         ],
-                        border: isErrorMessage 
+                        border: isErrorMessage
                             ? Border.all(color: Colors.red[200]!)
                             : null,
                       ),
@@ -499,13 +514,59 @@ class _IAChatScreenState extends State<IAChatScreen>
                               height: 1.4,
                             ),
                           ),
-                          
+
+                          // Liste à puces avec icônes (ex. message de
+                          // bienvenue) — pas d'emoji en dur dans le texte.
+                          if (message['bullets'] != null) ...[
+                            const SizedBox(height: 8),
+                            ...(message['bullets'] as List).map((bullet) {
+                              final b = bullet as Map;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      b['icon'] as IconData,
+                                      size: 17,
+                                      color: WarmsTheme.warmsAccent,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        b['texte'] as String,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
+
+                          if (message['contenu_suite'] != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              message['contenu_suite'] as String,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Colors.black87,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+
                           // Métadonnées du message
-                          if (message['confidence'] != null || message['urgence'] != null) ...[
+                          if (message['confidence'] != null ||
+                              message['urgence'] != null) ...[
                             const SizedBox(height: 8),
                             _buildMessageMetadata(message),
                           ],
-                          
+
                           // Timestamp
                           const SizedBox(height: 4),
                           Text(
@@ -521,7 +582,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                       ),
                     ),
                   ),
-                  
+
                   if (isUserMessage) ...[
                     // Avatar de l'utilisateur
                     Container(
@@ -550,7 +611,7 @@ class _IAChatScreenState extends State<IAChatScreen>
   Widget _buildMessageMetadata(Map<String, dynamic> message) {
     final confidence = message['confidence'] as double?;
     final urgence = message['urgence'] as String?;
-    
+
     return Row(
       children: [
         // Indicateur de confiance
@@ -572,7 +633,7 @@ class _IAChatScreenState extends State<IAChatScreen>
           ),
           const SizedBox(width: 8),
         ],
-        
+
         // Indicateur d'urgence
         if (urgence != null && urgence == 'critique') ...[
           Container(
@@ -584,11 +645,7 @@ class _IAChatScreenState extends State<IAChatScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.warning,
-                  color: Colors.red[600],
-                  size: 10,
-                ),
+                Icon(Icons.warning, color: Colors.red[600], size: 10),
                 const SizedBox(width: 2),
                 Text(
                   'URGENCE',
@@ -616,22 +673,18 @@ class _IAChatScreenState extends State<IAChatScreen>
           CircleAvatar(
             backgroundColor: WarmsTheme.warmsAccent,
             radius: 16,
-            child: const Icon(
-              Icons.smart_toy,
-              color: Colors.white,
-              size: 16,
-            ),
+            child: const Icon(Icons.smart_toy, color: Colors.white, size: 16),
           ),
           const SizedBox(width: 8),
-          
+
           // Bulle de saisie avec points animés
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16).copyWith(
-                bottomRight: const Radius.circular(4),
-              ),
+              borderRadius: BorderRadius.circular(
+                16,
+              ).copyWith(bottomRight: const Radius.circular(4)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -685,7 +738,7 @@ class _IAChatScreenState extends State<IAChatScreen>
         children: [
           // Suggestions rapides
           if (_messages.isEmpty) _buildSuggestions(),
-          
+
           // Champ de saisie
           Row(
             children: [
@@ -698,7 +751,7 @@ class _IAChatScreenState extends State<IAChatScreen>
                   tooltip: 'Saisie vocale',
                 ),
               ),
-              
+
               // Champ de texte
               Expanded(
                 child: TextField(
@@ -743,19 +796,15 @@ class _IAChatScreenState extends State<IAChatScreen>
                   onSubmitted: (_) => _sendMessage(),
                 ),
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Bouton d'envoi
               FloatingActionButton(
                 onPressed: _isLoading ? null : _sendMessage,
                 backgroundColor: WarmsTheme.warmsAccent,
                 mini: true,
-                child: const Icon(
-                  Icons.send,
-                  color: Colors.white,
-                  size: 18,
-                ),
+                child: const Icon(Icons.send, color: Colors.white, size: 18),
               ),
             ],
           ),
@@ -785,7 +834,9 @@ class _IAChatScreenState extends State<IAChatScreen>
                 _sendMessage();
               },
               backgroundColor: WarmsTheme.warmsBg,
-              side: BorderSide(color: WarmsTheme.warmsAccent.withValues(alpha: 0.3)),
+              side: BorderSide(
+                color: WarmsTheme.warmsAccent.withValues(alpha: 0.3),
+              ),
             ),
           );
         },
@@ -811,7 +862,7 @@ class _IAChatScreenState extends State<IAChatScreen>
   /// Formate le timestamp pour l'affichage
   String _formatTimestamp(DateTime? timestamp) {
     if (timestamp == null) return '';
-    
+
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
@@ -853,7 +904,7 @@ class _IAChatScreenState extends State<IAChatScreen>
           children: [
             Icon(Icons.warning, color: Colors.red[600]),
             const SizedBox(width: 8),
-            const Text('⚠️ Alerte d\'urgence'),
+            const Text("Alerte d'urgence"),
           ],
         ),
         content: Text(message),

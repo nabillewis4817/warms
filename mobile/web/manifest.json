@@ -1,6 +1,6 @@
 {
-    "name": "warms_mobile",
-    "short_name": "warms_mobile",
+    "name": "Wam's Mobile",
+    "short_name": "Wam's",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

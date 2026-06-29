@@ -1,151 +1,55 @@
-import io
-from typing import Optional
+from typing import Tuple
 
 import pytesseract
 from PIL import Image
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
+# TESSDATA_PREFIX (langues) est posée par gestion_cabinet.settings au
+# démarrage. Seul le chemin du binaire reste à configurer ici (utile sur
+# Windows où l'installeur ne met pas toujours à jour le PATH des process
+# déjà lancés).
+_tesseract_path = getattr(settings, "TESSERACT_PATH", None)
+if _tesseract_path:
+    pytesseract.pytesseract.tesseract_cmd = _tesseract_path
 
-def extraire_texte_image(image_file: InMemoryUploadedFile, lang: str = 'fra') -> Optional[str]:
+
+class TesseractIndisponible(Exception):
+    """Levée quand le binaire Tesseract OCR n'est pas accessible sur le système."""
+
+
+def extraire_texte_image(image_file: InMemoryUploadedFile, lang: str = "fra") -> Tuple[str, float]:
     """
-    Extrait le texte d'une image avec Tesseract OCR ou service web.
-    
+    Extrait le texte d'une image avec Tesseract OCR.
+
     Args:
         image_file: Fichier image uploadé
         lang: Code langue pour Tesseract ('fra' pour français)
-    
+
     Returns:
-        Texte extrait ou None si échec
+        Tuple (texte_extrait, confiance) où confiance est un taux réel
+        (moyenne des scores de confiance Tesseract par mot détecté, 0.0-1.0).
+
+    Raises:
+        TesseractIndisponible: si le binaire Tesseract n'est pas installé/accessible.
     """
     try:
-        # Essayer d'abord avec Tesseract local
-        texte_tesseract = _extraire_avec_tesseract(image_file, lang)
-        if texte_tesseract and not texte_tesseract.startswith("Texte simulé"):
-            return texte_tesseract
-        
-        # Si Tesseract n'est pas disponible, essayer avec un service web OCR
-        print("Tesseract non disponible, tentative avec service web OCR")
-        texte_web = _extraire_avec_service_web(image_file)
-        return texte_web or "Texte non disponible - Aucun service OCR disponible"
-        
+        pytesseract.get_tesseract_version()
     except Exception as e:
-        print(f"Erreur lors de l'extraction OCR: {e}")
-        return "Texte non disponible - Erreur lors du traitement OCR"
+        raise TesseractIndisponible(
+            "Le moteur Tesseract OCR n'est pas installé ou accessible sur le serveur."
+        ) from e
 
+    image = Image.open(image_file)
+    image = _pretraiter_image(image)
 
-def _extraire_avec_tesseract(image_file: InMemoryUploadedFile, lang: str) -> Optional[str]:
-    """Extrait le texte avec Tesseract local"""
-    try:
-        # Vérifier si Tesseract est disponible
-        import subprocess
-        try:
-            result = subprocess.run(['tesseract', '--version'], capture_output=True, check=True, timeout=5)
-            print(f"Tesseract trouvé: {result.stdout.decode()}")
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-            print("Tesseract n'est pas installé sur le système")
-            return None
-        
-        # Configurer le chemin de Tesseract si nécessaire
-        
-        # Configurer le chemin de Tesseract si nécessaire
-        tesseract_path = getattr(settings, 'TESSERACT_PATH', None)
-        if tesseract_path:
-            pytesseract.pytesseract.tesseract_cmd = tesseract_path
-        
-        # Ouvrir l'image avec PIL
-        image = Image.open(image_file)
-        
-        # Prétraitement de l'image pour améliorer l'OCR
-        image = _pretraiter_image(image)
-        
-        # Extraire le texte avec Tesseract
-        texte = pytesseract.image_to_string(image, lang=lang, config='--psm 6')
-        
-        return texte.strip() if texte else None
-        
-    except Exception as e:
-        print(f"Erreur OCR: {e}")
-        # Fallback: retourner un texte de démonstration
-        return "Texte simulé - Erreur lors de l'extraction OCR. Veuillez installer Tesseract OCR sur le système."
+    texte = pytesseract.image_to_string(image, lang=lang, config="--psm 6")
 
+    donnees = pytesseract.image_to_data(image, lang=lang, config="--psm 6", output_type=pytesseract.Output.DICT)
+    confiances = [float(c) for c in donnees.get("conf", []) if c not in ("-1", -1) and float(c) >= 0]
+    confiance = (sum(confiances) / len(confiances) / 100) if confiances else 0.0
 
-def _extraire_avec_service_web(image_file: InMemoryUploadedFile) -> Optional[str]:
-    """Extrait le texte avec un service web OCR alternatif"""
-    try:
-        import requests
-        import base64
-        
-        # Convertir l'image en base64
-        image_data = image_file.read()
-        image_base64 = base64.b64encode(image_data).decode('utf-8')
-        
-        # Utiliser un service OCR gratuit (OCR.space ou similaire)
-        # Pour l'instant, retourner une analyse simulée mais plus réaliste
-        return _analyser_image_simulee(image_file)
-        
-    except Exception as e:
-        print(f"Erreur service web OCR: {e}")
-        return None
-
-
-def _analyser_image_simulee(image_file: InMemoryUploadedFile) -> str:
-    """Analyse simulée mais plus réaliste basée sur le type de document"""
-    filename = image_file.name.lower()
-    
-    if 'carnet' in filename or 'medical' in filename:
-        return """CARNET MÉDICAL - ANALYSE OCR
-
-Informations patient:
-• Nom: [À compléter]
-• Date de naissance: [À compléter]
-• Groupe sanguin: [À compléter]
-• Allergies: [À compléter]
-
-Historique médical:
-• Consultations: [Liste des consultations]
-• Traitements: [Liste des traitements]
-• Vaccinations: [Liste des vaccinations]
-
-Notes:
-Ce document a été numérisé mais nécessite une vérification manuelle 
-car l'OCR automatique n'est pas disponible sur ce système.
-
-Recommandation: Installer Tesseract OCR pour une meilleure précision."""
-    
-    elif 'ordonnance' in filename or 'prescription' in filename:
-        return """ORDONNANCE MÉDICALE - ANALYSE OCR
-
-Médicaments prescrits:
-• [Médicament 1] - Posologie: [À compléter]
-• [Médicament 2] - Posologie: [À compléter]
-
-Instructions:
-• Prendre selon les indications du médecin
-• Durée du traitement: [À compléter]
-• Précautions: [À compléter]
-
-Notes:
-Cette ordonnance a été numérisée. Veuillez vérifier manuellement 
-les détails avant toute administration."""
-    
-    else:
-        return """DOCUMENT NUMÉRISÉ - ANALYSE OCR
-
-Type de document: Document médical ou administratif
-Date de numérisation: """ + str(image_file.name) + """
-
-Contenu:
-Ce document a été traité par le système OCR de WARMS.
-Pour une analyse précise du contenu, veuillez:
-
-1. Installer Tesseract OCR sur le système
-2. Ou vérifier manuellement le document original
-
-Informations techniques:
-• Format: """ + image_file.content_type + """
-• Taille: """ + str(image_file.size) + """ bytes
-• Nom du fichier: """ + image_file.name
+    return texte.strip(), confiance
 
 
 def _pretraiter_image(image: Image.Image) -> Image.Image:

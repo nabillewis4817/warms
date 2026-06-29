@@ -23,7 +23,7 @@ void main() {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              'Erreur WARMS:\n${details.exceptionAsString()}',
+              "Erreur Wam's:\n${details.exceptionAsString()}",
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFFB91C1C)),
             ),

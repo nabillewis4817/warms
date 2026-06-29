@@ -6,6 +6,7 @@ from .views import (
     MessageAssistantIAViewSet,
     OCRImportCarnetViewSet,
     RecommandationIAViewSet,
+    assistant_commande,
     ocr_carnet,
     recherche,
     suggestions_recherche,
@@ -25,6 +26,7 @@ router.register(r"ia/comptes-rendus", CompteRenduIAViewSet, basename="ia-compte-
 
 urlpatterns = [
     path("ia/ocr-carnet/", ocr_carnet, name="ia-ocr-carnet"),
+    path("ia/commande/", assistant_commande, name="ia-commande"),
     path("ia/warms-general/", warms_ia_general, name="ia-warms-general"),
     path("ia/warms-info/", warms_ia_info, name="ia-warms-info"),
     path("warms-general/", warms_general, name="warms-general"),

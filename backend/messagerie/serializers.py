@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Conversation, Message, NotificationInterne, ParticipantConversation
+from .models import Conversation, Message, NotificationInterne, ParticipantConversation, Rappel
 
 
 class ParticipantConversationSerializer(serializers.ModelSerializer):
@@ -134,6 +134,13 @@ class NotificationInterneSerializer(serializers.ModelSerializer):
         model = NotificationInterne
         fields = ["id", "destinataire", "titre", "contenu", "niveau", "lu", "cree_le"]
         read_only_fields = ["destinataire", "cree_le"]
+
+
+class RappelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rappel
+        fields = ["id", "utilisateur", "titre", "message", "date_heure", "recurrence", "actif", "cree_le"]
+        read_only_fields = ["utilisateur", "cree_le"]
 
 
 #EbaJioloLewis

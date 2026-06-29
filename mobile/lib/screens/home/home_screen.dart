@@ -10,6 +10,7 @@ import '../../widgets/avatar_circle.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/ordonnance_card.dart';
 import '../../widgets/service_chip.dart';
+import '../../widgets/skeleton_box.dart';
 import '../avis/avis_modal.dart';
 import '../messages/messages_screen.dart';
 import '../ia_chat_screen.dart';
@@ -43,7 +44,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _patientService = PatientService.instance;
 
-  List<Ordonnance> _ordonnances = [];
+  List<Prescription> _ordonnances = [];
   Badges _badges = const Badges();
   bool _enChargement = true;
   Timer? _minuteurBadges;
@@ -72,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
     if (!mounted) return;
     setState(() {
-      _ordonnances = resultats[0] as List<Ordonnance>;
+      _ordonnances = resultats[0] as List<Prescription>;
       _badges = resultats[1] as Badges;
       _enChargement = false;
     });
@@ -138,10 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _titreSection('Mes ordonnances'),
               const SizedBox(height: 12),
               if (_enChargement)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator(color: WarmsTheme.warmsAccent)),
-                )
+                const SkeletonListe(count: 3)
               else if (_ordonnances.isEmpty)
                 _etatVideOrdonnances()
               else

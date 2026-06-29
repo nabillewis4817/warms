@@ -37,6 +37,21 @@ class Prescription(models.Model):
         help_text="Ex: Ordonnance post-op, Ordonnance douleur, etc.",
     )
     note_praticien = models.TextField(blank=True)
+    conseils = models.TextField(
+        blank=True,
+        help_text="Conseils donnés au patient (hygiène, alimentation, soins post-traitement...).",
+    )
+    recommandations = models.TextField(
+        blank=True,
+        help_text="Recommandations complémentaires (suivi, examens, rendez-vous de contrôle...).",
+    )
+
+    class Statut(models.TextChoices):
+        ACTIVE = "active", "Active"
+        TERMINEE = "terminee", "Terminée"
+        ANNULEE = "annulee", "Annulée"
+
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.ACTIVE)
 
     cree_le = models.DateTimeField(auto_now_add=True)
     modifie_le = models.DateTimeField(auto_now=True)

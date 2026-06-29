@@ -7,8 +7,9 @@ import { Patients, Patient } from '../../noyau/services/patients';
 import { DossierService, Dossier } from '../../noyau/services/dossier.service';
 import { ConsultationsService, Consultation } from '../../noyau/services/consultations.service';
 import { DialogueService } from '../../noyau/services/dialogue.service';
+import { Prescription, PrescriptionsService } from '../../noyau/services/prescriptions.service';
 
-type CleDePage = 'identite' | 'medical' | 'carte' | 'historique';
+type CleDePage = 'identite' | 'medical' | 'carte' | 'historique' | 'prescriptions';
 
 @Component({
   selector: 'app-dossier-patient',
@@ -23,6 +24,7 @@ export class DossierPatient implements OnInit {
   private readonly patientsService = inject(Patients);
   private readonly dossierService = inject(DossierService);
   private readonly consultationsService = inject(ConsultationsService);
+  private readonly prescriptionsService = inject(PrescriptionsService);
   private readonly dialogueService = inject(DialogueService);
 
   readonly pages: { cle: CleDePage; label: string; icone: string }[] = [
@@ -30,16 +32,20 @@ export class DossierPatient implements OnInit {
     { cle: 'medical', label: 'Médical', icone: 'bi-heart-pulse' },
     { cle: 'carte', label: 'Carte & QR', icone: 'bi-qr-code' },
     { cle: 'historique', label: 'Historique', icone: 'bi-clock-history' },
+    { cle: 'prescriptions', label: 'Prescriptions', icone: 'bi-capsule-pill' },
   ];
 
   patientId = 0;
   patient: Patient | null = null;
   dossier: Dossier | null = null;
   consultations: Consultation[] = [];
+  prescriptions: Prescription[] = [];
   qrDataUrl = '';
 
   loading = true;
   chargementConsultations = false;
+  chargementPrescriptions = false;
+  prescriptionEnTelechargement: number | null = null;
   erreur = '';
 
   ouvert = false;
@@ -96,6 +102,7 @@ export class DossierPatient implements OnInit {
           this.chargerDossier(patient.dossier_id);
         }
         this.chargerHistorique();
+        this.chargerPrescriptions();
       },
       error: () => {
         this.erreur = 'Impossible de charger les informations du patient';
@@ -129,6 +136,38 @@ export class DossierPatient implements OnInit {
       },
       error: () => {
         this.chargementConsultations = false;
+      },
+    });
+  }
+
+  private chargerPrescriptions(): void {
+    this.chargementPrescriptions = true;
+    this.prescriptionsService.historiquePatient(this.patientId).subscribe({
+      next: (prescriptions) => {
+        this.prescriptions = [...prescriptions].sort(
+          (a, b) => new Date(b.cree_le).getTime() - new Date(a.cree_le).getTime()
+        );
+        this.chargementPrescriptions = false;
+      },
+      error: () => {
+        this.chargementPrescriptions = false;
+      },
+    });
+  }
+
+  telechargerPrescriptionPdf(prescription: Prescription): void {
+    this.prescriptionEnTelechargement = prescription.id;
+    this.prescriptionsService.telechargerPdf(prescription.id).subscribe({
+      next: (blob) => {
+        this.prescriptionEnTelechargement = null;
+        window.open(URL.createObjectURL(blob), '_blank');
+      },
+      error: () => {
+        this.prescriptionEnTelechargement = null;
+        this.dialogueService.erreur({
+          titre: 'Erreur',
+          message: "Impossible de récupérer le PDF de cette ordonnance.",
+        }).subscribe();
       },
     });
   }

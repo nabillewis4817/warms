@@ -299,17 +299,37 @@
 }
 
 .carte-patient {
+  position: relative;
   background: white;
   border-radius: 22px;
   padding: 1.5rem;
+  border: 1px solid #eef2fb;
   box-shadow: 0 10px 26px -12px rgba(22, 50, 122, 0.16);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
   animation: apparition 0.35s ease;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1e4db7 0%, #3b82f6 50%, #60a5fa 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 }
 
 .carte-patient:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 36px -16px rgba(22, 50, 122, 0.24);
+  transform: translateY(-6px);
+  box-shadow: 0 22px 40px -16px rgba(22, 50, 122, 0.28);
+  border-color: #dbe6fb;
+
+  &::before {
+    opacity: 1;
+  }
 }
 
 .carte-entete {
@@ -320,8 +340,8 @@
 }
 
 .avatar-patient {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   flex-shrink: 0;
   border-radius: 50%;
   display: flex;
@@ -331,6 +351,7 @@
   color: white;
   font-weight: 800;
   font-size: 1.1rem;
+  box-shadow: 0 0 0 4px #eef3ff, 0 6px 14px -4px rgba(30, 77, 183, 0.5);
 }
 
 .infos-principales {
@@ -356,12 +377,23 @@
 
 .badge-statut {
   flex-shrink: 0;
-  padding: 0.25rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: capitalize;
   white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
 }
 
 .badge-statut-nouveau { background: #dbeafe; color: #1d4ed8; }

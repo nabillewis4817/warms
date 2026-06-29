@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.conf import settings
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -18,8 +19,15 @@ from .serializers import (
     OCRImportCarnetSerializer,
     RecommandationIASerializer,
 )
+from .outils import (
+    ACTIONS_NECESSITANT_CONFIRMATION,
+    appeler_claude_avec_outils,
+    description_lisible,
+    detecter_intention_locale,
+    executer_action,
+)
 from .services_llm import reponse_ia
-from .services_ocr import analyser_carnet_medical, extraire_texte_image
+from .services_ocr import TesseractIndisponible, analyser_carnet_medical, extraire_texte_image
 from .services_recherche import FiltresRecherche, recherche_globale, suggestions
 
 
@@ -223,86 +231,64 @@ def sync_offline(request):
 @api_view(["POST"])
 def ocr_carnet(request):
     """
-    Traite une image de carnet médical avec OCR.
+    Traite une image de carnet médical avec OCR (Tesseract réel).
     """
+    if 'image' not in request.FILES:
+        return Response({"detail": "Aucune image fournie."}, status=400)
+
+    image_file = request.FILES['image']
+
     try:
-        if 'image' not in request.FILES:
-            return Response({"detail": "Aucune image fournie."}, status=400)
-        
-        image_file = request.FILES['image']
-        
-        # Extraire le texte avec OCR
-        try:
-            texte = extraire_texte_image(image_file)
-        except Exception as ocr_error:
-            print(f"Erreur OCR: {ocr_error}")
-            # Utiliser un fallback si OCR échoue
-            texte = "Texte non disponible - Erreur lors du traitement OCR"
-        
-        if not texte or texte.strip() == "":
-            texte = "Texte non disponible - Impossible d'extraire du texte de l'image"
-        
-        # Analyser et structurer le contenu
-        try:
-            analyse = analyser_carnet_medical(texte)
-        except Exception as analyse_error:
-            print(f"Erreur analyse: {analyse_error}")
-            analyse = {
-                "donnees_structurees": {},
-                "symptomes": [],
-                "traitements": [],
-                "notes": ["Erreur lors de l'analyse du texte OCR"],
-                "dates": []
-            }
-        
-        # Créer un enregistrement OCR si patient/dossier fourni
-        patient_id = request.data.get('patient_id')
-        dossier_id = request.data.get('dossier_id')
-        
-        ocr_record = None
-        try:
-            if patient_id or dossier_id:
-                ocr_record = OCRImportCarnet.objects.create(
-                    patient_id=patient_id,
-                    dossier_id=dossier_id,
-                    image_source=image_file,
-                    texte_extrait=texte,
-                    analyse=analyse,
-                    cree_par=request.user
-                )
-        except Exception as save_error:
-            print(f"Erreur sauvegarde OCR: {save_error}")
-            # Continuer même si la sauvegarde échoue
-        
-        # Préparer la réponse avec les données structurées
-        response_data = {
-            "texte_extrait": texte,
-            "donnees_structurees": analyse.get("donnees_structurees", {}),
-            "symptomes": analyse.get("symptomes", []),
-            "traitements": analyse.get("traitements", []),
-            "notes": analyse.get("notes", []),
-            "dates": analyse.get("dates", []),
-            "confiance": 0.85,  # Taux de confiance moyen pour Tesseract
-            "ocr_record_id": ocr_record.id if ocr_record else None,
-            "status": "success" if texte and texte.strip() else "no_text"
-        }
-        
-        return Response(response_data)
-        
+        texte, confiance = extraire_texte_image(image_file)
+    except TesseractIndisponible as e:
+        # Erreur explicite plutôt qu'un faux résultat "réussi" avec du
+        # contenu inventé : le frontend doit savoir que l'OCR n'a pas
+        # tourné, pas afficher des données fictives comme si c'en était.
+        return Response({"detail": str(e), "status": "service_indisponible"}, status=503)
     except Exception as e:
+        return Response({"detail": f"Erreur lors du traitement OCR : {e}", "status": "error"}, status=500)
+
+    if not texte:
         return Response({
-            "detail": "Erreur lors du traitement OCR",
-            "error": str(e),
-            "status": "error",
-            "texte_extrait": "Texte non disponible - Erreur système",
+            "texte_extrait": "",
             "donnees_structurees": {},
             "symptomes": [],
             "traitements": [],
-            "notes": ["Erreur système lors du traitement OCR"],
+            "notes": [],
             "dates": [],
-            "confiance": 0.0,
-            "ocr_record_id": None
-        }, status=500)
+            "confiance": confiance,
+            "ocr_record_id": None,
+            "status": "no_text",
+        })
+
+    analyse = analyser_carnet_medical(texte)
+
+    # Créer un enregistrement OCR si patient/dossier fourni
+    patient_id = request.data.get('patient_id')
+    dossier_id = request.data.get('dossier_id')
+
+    ocr_record = None
+    if patient_id or dossier_id:
+        ocr_record = OCRImportCarnet.objects.create(
+            patient_id=patient_id,
+            dossier_id=dossier_id,
+            image_source=image_file,
+            texte_extrait=texte,
+            analyse=analyse,
+            cree_par=request.user
+        )
+
+    return Response({
+        "texte_extrait": texte,
+        "donnees_structurees": analyse.get("donnees_structurees", {}),
+        "symptomes": analyse.get("symptomes", []),
+        "traitements": analyse.get("traitements", []),
+        "notes": analyse.get("notes", []),
+        "dates": analyse.get("dates", []),
+        "confiance": confiance,
+        "ocr_record_id": ocr_record.id if ocr_record else None,
+        "status": "success",
+    })
 
 
 @api_view(["POST"])
@@ -384,14 +370,19 @@ def warms_general(request):
             }
         )
         
+        # Annonce honnêtement la source réellement utilisée plutôt que de
+        # toujours prétendre "claude_anthropic" même quand aucune clé API
+        # n'est configurée (ou que l'appel a échoué et que reponse_ia() est
+        # retombée sur le moteur de réponses locales).
+        cle_api = getattr(settings, 'ANTHROPIC_API_KEY', '')
         return Response({
             'question': question,
             'reponse': reponse,
             'timestamp': datetime.now().isoformat(),
             'patient_id': patient_id,
-            'source': 'claude_anthropic'
+            'source': 'claude_anthropic' if cle_api and cle_api.strip() else 'local'
         })
-        
+
     except Exception as e:
         print(f"Erreur WARMS IA: {e}")
         return Response(
@@ -460,9 +451,64 @@ def warms_demo(request):
     except Exception as e:
         print(f"Erreur WARMS Demo: {e}")
         return Response(
-            {'detail': f'Erreur lors du traitement: {str(e)}'}, 
+            {'detail': f'Erreur lors du traitement: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def assistant_commande(request):
+    """
+    Point d'entrée unique du chat WARMS IA capable d'exécuter des actions
+    CRUD réelles (ouvrir un dossier patient, créer un patient, changer le
+    thème, naviguer...) après confirmation explicite de l'utilisateur.
+
+    Deux usages :
+    - {"message": "..."} : analyse le message (Claude function-calling si
+      une clé API est configurée, sinon un analyseur par mots-clés) et
+      renvoie soit une réponse texte classique, soit une action à confirmer.
+    - {"action": {"name": ..., "input": {...}}, "confirmer": true} : exécute
+      réellement l'action précédemment proposée.
+    """
+    action_proposee = request.data.get("action")
+    if action_proposee and request.data.get("confirmer"):
+        resultat = executer_action(
+            action_proposee.get("name", ""),
+            action_proposee.get("input", {}),
+            request.user,
+        )
+        journaliser(
+            acteur=request.user,
+            action="ia.assistant_action",
+            objet_type="AssistantIA",
+            message=f"Action IA exécutée: {action_proposee.get('name')}",
+            metadata={"action": action_proposee, "resultat": resultat},
+        )
+        return Response({"type": "resultat", **resultat})
+
+    message = (request.data.get("message") or "").strip()
+    if not message:
+        return Response({"detail": "Message vide."}, status=status.HTTP_400_BAD_REQUEST)
+
+    appel_outil = appeler_claude_avec_outils(message) or detecter_intention_locale(message)
+
+    if appel_outil:
+        nom = appel_outil["name"]
+        parametres = appel_outil.get("input", {})
+
+        if nom in ACTIONS_NECESSITANT_CONFIRMATION:
+            return Response({
+                "type": "confirmation",
+                "action": {"name": nom, "input": parametres},
+                "description": description_lisible(nom, parametres),
+            })
+
+        resultat = executer_action(nom, parametres, request.user)
+        return Response({"type": "resultat", **resultat})
+
+    reponse = reponse_ia(message, "", None)
+    return Response({"type": "reponse", "texte": reponse})
 
 
 #EbaJioloLewis

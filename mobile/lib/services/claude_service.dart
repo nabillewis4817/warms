@@ -179,7 +179,7 @@ final recognizedWords = await completer.future;
       /// Réponse de secours si Claude n'est pas disponible
       String _getFallbackResponse(String message) {
         if (message.toLowerCase().contains('bonjour') || message.toLowerCase().contains('salut')) {
-          return 'Bonjour ! Je suis votre assistant médical WARMS. Comment puis-je vous aider aujourd\'hui ?';
+          return "Bonjour ! Je suis votre assistant médical Wam's. Comment puis-je vous aider aujourd'hui ?";
         } else if (message.toLowerCase().contains('symptôme')) {
           return 'Je comprends que vous vous inquiétez à propos de symptômes. Pour une évaluation précise, je vous recommande de consulter un professionnel de santé. Pouvez-vous me décrire plus précisément ce que vous ressentez ?';
         } else if (message.toLowerCase().contains('médicament')) {

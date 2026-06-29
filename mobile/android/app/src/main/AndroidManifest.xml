@@ -5,9 +5,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Rappels personnalisables : notifications locales planifiées, et
+         relancées après un redémarrage de l'appareil. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
-        android:label="warms_mobile"
+        android:label="Wam's Mobile"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

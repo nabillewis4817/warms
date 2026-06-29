@@ -7,6 +7,7 @@ Objectif: une base claire et robuste pour:
 - PostgreSQL en environnement réel (SQLite possible en dev si besoin)
 """
 
+import os
 from pathlib import Path
 
 import environ
@@ -227,6 +228,27 @@ ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", default="claude-3-5-sonnet-latest")
 # Recherche web (Google Custom Search) pour l'écran "Recherche IA"
 GOOGLE_API_KEY = env("GOOGLE_API_KEY", default="")
 GOOGLE_CSE_ID = env("GOOGLE_CSE_ID", default="")
+
+# OCR (carnets/ordonnances scannés) : chemin du binaire Tesseract.
+# Sur Windows, l'installeur (winget/UB-Mannheim) ne place pas toujours le
+# binaire sur le PATH des processus déjà démarrés — on pointe directement
+# vers l'emplacement par défaut plutôt que de dépendre du PATH système.
+TESSERACT_PATH = env(
+    "TESSERACT_PATH",
+    default=r"C:\Program Files\Tesseract-OCR\tesseract.exe" if os.name == "nt" else "",
+)
+# Dossier des modèles de langue (.traineddata). Le paquet Windows
+# (winget/UB-Mannheim en mode silencieux) n'installe que l'anglais, et son
+# dossier "tessdata" système nécessite des droits administrateur pour y
+# ajouter le français — on utilise donc un dossier local au projet à la
+# place (voir backend/.tessdata/, à peupler via le README OCR).
+TESSDATA_PREFIX = env("TESSDATA_PREFIX", default=str(BASE_DIR / ".tessdata"))
+# Posée ici (au chargement des settings, avant tout code applicatif) plutôt
+# que dans chacun des modules OCR : pytesseract/tesseract.exe lisent cette
+# variable d'environnement directement, peu importe quel module Python
+# l'importe en premier.
+if TESSDATA_PREFIX:
+    os.environ["TESSDATA_PREFIX"] = TESSDATA_PREFIX
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

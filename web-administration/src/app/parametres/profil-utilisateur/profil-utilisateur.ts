@@ -307,7 +307,7 @@ export class ProfilUtilisateur implements OnInit {
   demanderDeconnexion(): void {
     this.dialogueService.confirmer({
       titre: 'Se déconnecter',
-      message: 'Voulez-vous vraiment vous déconnecter de WARMS sur cet appareil ?',
+      message: "Voulez-vous vraiment vous déconnecter de Wam's sur cet appareil ?",
       boutonOk: 'Se déconnecter',
       boutonAnnuler: 'Annuler',
     }).subscribe((confirme) => {

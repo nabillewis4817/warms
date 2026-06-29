@@ -351,6 +351,64 @@
               }
             </div>
           }
+
+          @if (pageActive === 'prescriptions') {
+            <div class="section-carnet">
+              <div class="section-entete">
+                <h3><i class="bi bi-capsule-pill"></i> Prescriptions &amp; ordonnances</h3>
+                <a routerLink="/prescriptions" class="bouton-modifier">
+                  <i class="bi bi-plus-lg"></i> Nouvelle prescription
+                </a>
+              </div>
+
+              @if (chargementPrescriptions) {
+                <div class="etat-chargement-mini">
+                  <div class="spinner-carnet petit"></div>
+                  <p>Chargement des prescriptions...</p>
+                </div>
+              } @else if (prescriptions.length === 0) {
+                <div class="etat-vide-mini">
+                  <i class="bi bi-capsule"></i>
+                  <p>Aucune prescription enregistrée pour ce patient.</p>
+                </div>
+              } @else {
+                <ul class="liste-consultations liste-prescriptions-dossier">
+                  @for (prescription of prescriptions; track prescription.id) {
+                    <li class="ligne-consultation ligne-prescription-dossier">
+                      <div class="puce-date">
+                        <i class="bi bi-calendar3"></i>
+                        {{ formatDate(prescription.cree_le) }}
+                      </div>
+                      <div class="details-consultation">
+                        <strong>{{ prescription.titre || 'Ordonnance sans titre' }}</strong>
+                        <span class="badge-statut-prescription" [class]="'badge-' + prescription.statut">
+                          {{ prescription.statut === 'active' ? 'Active' : (prescription.statut === 'terminee' ? 'Terminée' : 'Annulée') }}
+                        </span>
+                        @if (prescription.lignes.length > 0) {
+                          <span class="diagnostic">
+                            {{ prescription.lignes.slice(0, 2).map(l => l.medicament).join(', ') }}
+                            @if (prescription.lignes.length > 2) { + {{ prescription.lignes.length - 2 }} autre(s) }
+                          </span>
+                        }
+                      </div>
+                      <button
+                        class="bouton-supprimer bouton-pdf"
+                        [disabled]="prescriptionEnTelechargement === prescription.id"
+                        (click)="telechargerPrescriptionPdf(prescription)"
+                        title="Télécharger le PDF"
+                      >
+                        @if (prescriptionEnTelechargement === prescription.id) {
+                          <i class="bi bi-arrow-repeat spin"></i>
+                        } @else {
+                          <i class="bi bi-file-earmark-pdf-fill"></i>
+                        }
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          }
         </div>
 
         <div class="navigation-bas">

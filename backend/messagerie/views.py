@@ -7,12 +7,13 @@ from django.db.models import Count
 from journaux.utils import journaliser
 from patients.models import Patient
 
-from .models import Conversation, Message, NotificationInterne, ParticipantConversation
+from .models import Conversation, Message, NotificationInterne, ParticipantConversation, Rappel
 from .serializers import (
     ConversationSerializer,
     MessageSerializer,
     NotificationInterneSerializer,
     ParticipantConversationSerializer,
+    RappelSerializer,
 )
 
 
@@ -258,6 +259,19 @@ class NotificationInterneViewSet(
             if niveau in resume:
                 resume[niveau] = row["total"]
         return Response(resume)
+
+
+class RappelViewSet(viewsets.ModelViewSet):
+    """Rappels personnalisables programmés par l'utilisateur lui-même (CRUD complet)."""
+
+    serializer_class = RappelSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Rappel.objects.filter(utilisateur=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(utilisateur=self.request.user)
 
 
 #EbaJioloLewis

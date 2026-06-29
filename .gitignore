@@ -5,6 +5,9 @@ backend/*.pyc
 backend/db.sqlite3
 backend/.env
 
+# Données Tesseract OCR (téléchargées localement, voir README OCR)
+backend/.tessdata/
+
 # Angular
 web-administration/node_modules/
 web-administration/dist/

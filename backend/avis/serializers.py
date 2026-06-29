@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from .models import Avis, StatistiquesAvis, MotifSignalement
 
@@ -5,12 +6,12 @@ from .models import Avis, StatistiquesAvis, MotifSignalement
 class AvisSerializer(serializers.ModelSerializer):
     """Serializer principal pour les avis"""
     
-    patient_nom = serializers.CharField(source='patient_nom', read_only=True)
-    patient_email = serializers.CharField(source='patient_email', read_only=True)
-    type_label = serializers.CharField(source='type_label', read_only=True)
-    statut_label = serializers.CharField(source='statut_label', read_only=True)
-    a_reponse = serializers.BooleanField(source='a_reponse', read_only=True)
-    est_recent = serializers.BooleanField(source='est_recent', read_only=True)
+    patient_nom = serializers.CharField(read_only=True)
+    patient_email = serializers.CharField(read_only=True)
+    type_label = serializers.CharField(read_only=True)
+    statut_label = serializers.CharField(read_only=True)
+    a_reponse = serializers.BooleanField(read_only=True)
+    est_recent = serializers.BooleanField(read_only=True)
     
     # Informations de modération
     modere_par_nom = serializers.CharField(source='modere_par.get_full_name', read_only=True)
@@ -120,10 +121,10 @@ class AvisModerationSerializer(serializers.ModelSerializer):
 class AvisListSerializer(serializers.ModelSerializer):
     """Serializer simplifié pour les listes"""
     
-    patient_nom = serializers.CharField(source='patient_nom', read_only=True)
-    type_label = serializers.CharField(source='type_label', read_only=True)
-    a_reponse = serializers.BooleanField(source='a_reponse', read_only=True)
-    est_recent = serializers.BooleanField(source='est_recent', read_only=True)
+    patient_nom = serializers.CharField(read_only=True)
+    type_label = serializers.CharField(read_only=True)
+    a_reponse = serializers.BooleanField(read_only=True)
+    est_recent = serializers.BooleanField(read_only=True)
     
     class Meta:
         model = Avis

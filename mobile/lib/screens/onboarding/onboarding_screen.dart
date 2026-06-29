@@ -41,7 +41,7 @@ class OnboardingScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   const Text(
-                    'WARMS',
+                    "Wam's",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,

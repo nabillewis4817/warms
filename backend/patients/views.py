@@ -1,3 +1,4 @@
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import mixins, status, viewsets
@@ -100,8 +101,21 @@ class PatientViewSet(viewsets.ModelViewSet):
                 email=patient.email,
                 telephone=patient.telephone,
             )
+            # La photo du patient sert aussi de photo de profil de son compte
+            # de connexion : c'est elle qui s'affiche à l'écran "Est-ce bien
+            # vous ?" lors de la connexion mobile (lue depuis Utilisateur,
+            # pas depuis Patient).
+            if patient.photo:
+                patient.photo.open("rb")
+                compte_patient.photo_profil.save(
+                    patient.photo.name.split("/")[-1],
+                    ContentFile(patient.photo.read()),
+                    save=False,
+                )
+                patient.photo.close()
             patient.user = compte_patient
             patient.save(update_fields=["user"])
+            compte_patient.save(update_fields=["photo_profil"])
         payload = self.get_serializer(patient).data
         payload["identifiants_patient"] = {"username": username, "password": password}
         return Response(payload, status=status.HTTP_201_CREATED)

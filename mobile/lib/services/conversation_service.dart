@@ -2,8 +2,8 @@ import '../models/message.dart';
 import 'api_client.dart';
 
 /// Conversation texte avec le cabinet (distincte du chat IA — voir
-/// [IAChatScreen]/[EnhancedChatScreen] qui parlent à l'assistant Claude,
-/// pas au personnel du cabinet).
+/// [IAChatScreen] qui parle à l'assistant médical, pas au personnel du
+/// cabinet).
 class ConversationService {
   ConversationService._();
   static final ConversationService instance = ConversationService._();
@@ -19,10 +19,13 @@ class ConversationService {
       return (conversations.first as Map<String, dynamic>)['id'] as int;
     }
 
-    final creation = await _dio.post('/conversations/', data: {
-      'titre': 'Ma conversation avec le cabinet',
-      'type_conversation': 'patient',
-    });
+    final creation = await _dio.post(
+      '/conversations/',
+      data: {
+        'titre': 'Ma conversation avec le cabinet',
+        'type_conversation': 'patient',
+      },
+    );
     return (creation.data as Map<String, dynamic>)['id'] as int;
   }
 

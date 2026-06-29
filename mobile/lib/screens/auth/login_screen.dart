@@ -63,12 +63,24 @@ class _LoginScreenState extends State<LoginScreen> {
       final confirme = await Navigator.of(context).push<bool>(
         MaterialPageRoute(builder: (_) => ConfirmationIdentiteScreen(utilisateur: utilisateur)),
       );
+      if (!mounted) return;
 
       if (confirme == true) {
+        final prenom = utilisateur.prenom.isNotEmpty ? utilisateur.prenom : utilisateur.nomComplet;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(prenom.isEmpty ? 'Identité confirmée. Bienvenue !' : 'Identité confirmée. Bienvenue, $prenom !'),
+            backgroundColor: WarmsTheme.warmsAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
         widget.onConnexionReussie?.call();
       } else {
         await _auth.deconnexion();
-        if (mounted) setState(() => _erreur = 'Vérifiez vos identifiants.');
+        if (mounted) {
+          setState(() => _erreur = "Ce n'est pas vous ? Vérifiez vos identifiants et réessayez.");
+        }
       }
     } on AuthException catch (e) {
       setState(() => _erreur = e.message);
@@ -99,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const ToothIllustration(taille: 130),
                   const SizedBox(height: 12),
                   const Text(
-                    'WARMS',
+                    "Wam's",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -127,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Connectez-vous pour accéder à votre espace WARMS.',
+                    "Connectez-vous pour accéder à votre espace Wam's.",
                     style: TextStyle(color: WarmsTheme.warmsGray, fontSize: 14),
                   ),
                   const SizedBox(height: 28),

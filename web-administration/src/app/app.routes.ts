@@ -18,9 +18,11 @@ import { Ocr } from './innovations/ocr/ocr';
 import { IaWarms } from './innovations/ia-warms/ia-warms';
 import { Avis } from './avis/avis';
 import { ConsultationsComponent } from './consultations/consultations/consultations.component';
+import { PrescriptionsComponent } from './prescriptions/prescriptions/prescriptions.component';
 import { RendezVousComponent } from './rendez-vous/rendez-vous/rendez-vous';
 import { AppelsComponent } from './appels/appels/appels';
 import { TauxAbsenteismeComponent } from './taux-absenteisme/taux-absenteisme/taux-absenteisme';
+import { Agenda } from './agenda/agenda';
 import { authentificationGuard } from './noyau/gardes/authentification-guard';
 import { roleGuard } from './noyau/gardes/role-guard';
 
@@ -35,6 +37,7 @@ export const routes: Routes = [
     component: VueGenerale,
     canActivate: [authentificationGuard],
   },
+  { path: 'agenda', component: Agenda, canActivate: [authentificationGuard] },
   { path: 'patients', component: ListePatients, canActivate: [authentificationGuard] },
   { path: 'patients/nouveau', component: NouveauPatient, canActivate: [authentificationGuard] },
   { path: 'patients/:id/dossier', component: DossierPatient, canActivate: [authentificationGuard] },
@@ -46,6 +49,7 @@ export const routes: Routes = [
   { path: 'messagerie/conversation/:id', component: FilMessages, canActivate: [authentificationGuard] },
   { path: 'journaux', component: JournauxComponent, canActivate: [authentificationGuard] },
   { path: 'avis', component: Avis, canActivate: [authentificationGuard] },
+  { path: 'prescriptions', component: PrescriptionsComponent, canActivate: [authentificationGuard] },
   { path: 'personnel', component: PersonnelComponent, canActivate: [authentificationGuard] },
   { path: 'parametres', redirectTo: 'parametres/profil', pathMatch: 'full' },
   { path: 'parametres/profil', component: ProfilUtilisateur, canActivate: [authentificationGuard] },

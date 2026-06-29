@@ -223,33 +223,66 @@ def enrichir_contexte(question: str, contexte: str, patient_id: int = None) -> s
 def reponse_locale_ia(question: str, contexte: str) -> str:
     """Réponse locale fallback avec traitement intelligent des questions."""
     q = question.lower()
-    
+
+    if any(mot in q for mot in ['bonjour', 'salut', 'bonsoir', 'coucou']):
+        return (
+            "Bonjour ! Je suis l'assistant Wam's. Je peux vous renseigner sur "
+            "vos symptômes, vos rendez-vous, vos traitements, vos allergies "
+            "ou le fonctionnement du cabinet. Comment puis-je vous aider ?"
+        )
+
+    # Questions sur les allergies (extraites du dossier réel via
+    # enrichir_contexte, plutôt que de finir dans la réponse générique)
+    if 'allerg' in q:
+        return reponse_allergies(contexte)
+
     # Questions sur les pathologies et symptômes
     if any(mot in q for mot in ['symptôme', 'symptome', 'maladie', 'pathologie', 'douleur']):
         return reponse_symptomes(question)
-    
+
     # Questions sur les rendez-vous
     if any(mot in q for mot in ['rendez-vous', 'rdv', 'appointment', 'consultation']):
         return reponse_rendez_vous(question, contexte)
-    
+
     # Questions sur les traitements
     if any(mot in q for mot in ['traitement', 'médicament', 'soin', 'thérapie']):
         return reponse_traitements(question)
-    
+
     # Questions générales sur le cabinet
     if any(mot in q for mot in ['cabinet', 'clinique', 'horaire', 'contact']):
         return reponse_cabinet(question, contexte)
-    
+
     # Réponse par défaut
     return (
-        "Je suis WARMS, votre assistant médical. Je peux vous aider avec:\n"
-        "- Informations sur les symptômes et pathologies dentaires\n"
-        "- Gestion de vos rendez-vous\n"
-        "- Informations sur les traitements dentaires\n"
-        "- Questions sur le fonctionnement du cabinet\n\n"
-        "Pour toute urgence médicale, veuillez contacter directement le cabinet ou les services d'urgence.\n"
-        f"Contexte disponible: {contexte[:200]}..."
+        "Je n'ai pas une réponse précise à apporter à cette question. "
+        "Je peux vous aider avec :\n"
+        "- Les symptômes et pathologies dentaires\n"
+        "- Vos rendez-vous\n"
+        "- Vos traitements et ordonnances\n"
+        "- Le fonctionnement du cabinet\n\n"
+        "Pour toute urgence médicale, contactez directement le cabinet ou les services d'urgence."
     )
+
+
+def reponse_allergies(contexte: str) -> str:
+    """Répond à partir de la ligne `Allergies: ...` ajoutée par
+    [enrichir_contexte] plutôt que de renvoyer la réponse générique."""
+    marqueur = 'Allergies:'
+    debut = contexte.find(marqueur)
+    if debut == -1:
+        return (
+            "Je n'ai pas trouvé de dossier patient associé à votre compte pour "
+            "vérifier vos allergies. Contactez le cabinet pour mettre à jour "
+            "cette information."
+        )
+
+    fin_ligne = contexte.find('\n', debut)
+    valeur = contexte[debut + len(marqueur):fin_ligne if fin_ligne != -1 else None].strip()
+
+    if not valeur or valeur.lower() == 'aucune':
+        return "Aucune allergie n'est enregistrée dans votre dossier médical."
+
+    return f"D'après votre dossier médical, les allergies enregistrées sont : {valeur}."
 
 
 def reponse_symptomes(question: str) -> str:
