@@ -1,24 +1,28 @@
 
-# Configuration PostgreSQL pour WARMS
+# Configuration PostgreSQL pour WARMS (scripts ponctuels uniquement,
+# hors du cycle normal manage.py runserver/migrate qui utilise settings.py).
 import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Identifiants lus depuis l'environnement (jamais en dur ici) : ce fichier
+# est versionné dans git, donc tout secret écrit ici en clair finit dans
+# l'historique du dépôt.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'warms',
-        'USER': 'postgres',
-        'PASSWORD': 'MacKenzie',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('PGDATABASE', 'warms'),
+        'USER': os.environ.get('PGUSER', 'postgres'),
+        'PASSWORD': os.environ.get('PGPASSWORD', ''),
+        'HOST': os.environ.get('PGHOST', 'localhost'),
+        'PORT': os.environ.get('PGPORT', '5432'),
     }
 }
 
 # Autres configurations
-SECRET_KEY = 'django-insecure-temp-key-for-postgresql-testing'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-temp-key-for-postgresql-testing')
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 

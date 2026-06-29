@@ -68,6 +68,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -83,7 +84,7 @@ ROOT_URLCONF = "gestion_cabinet.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -160,10 +161,22 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Médias (photos de dossier, pièces jointes scannées, etc.)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# WhiteNoise: sert STATIC_ROOT (après `collectstatic`) directement depuis
+# Django, sans dépendre d'un Nginx déjà en place pour le premier hébergement.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Paramètres DRF (seront complétés lors de la mise en place de l'auth)
 REST_FRAMEWORK = {
@@ -173,6 +186,17 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
+    # Anti-abus de base (force brute login, coûts API Google côté
+    # recherche IA). Valeurs larges pour ne pas gêner l'usage normal du
+    # cabinet ; à resserrer si des abus réels sont constatés.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "300/min",
+    },
 }
 
 # Configuration JWT
@@ -229,6 +253,12 @@ ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", default="claude-3-5-sonnet-latest")
 GOOGLE_API_KEY = env("GOOGLE_API_KEY", default="")
 GOOGLE_CSE_ID = env("GOOGLE_CSE_ID", default="")
 
+# Notifications push mobiles (Firebase Cloud Messaging). Chemin vers le
+# fichier JSON de clé de compte de service Firebase (Project Settings >
+# Service accounts > Generate new private key). Vide = push désactivé
+# silencieusement, voir messagerie/services_push.py.
+FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="")
+
 # OCR (carnets/ordonnances scannés) : chemin du binaire Tesseract.
 # Sur Windows, l'installeur (winget/UB-Mannheim) ne place pas toujours le
 # binaire sur le PATH des processus déjà démarrés — on pointe directement
@@ -256,14 +286,57 @@ if TESSDATA_PREFIX:
 # Channels configuration (WebSocket temps réel pour la messagerie)
 ASGI_APPLICATION = 'gestion_cabinet.asgi.application'
 
-# Couche en mémoire locale : aucune dépendance externe (pas de Redis requis).
-# Suffisant pour un seul processus serveur (dev, ou un seul worker en prod).
-# Pour scaler sur plusieurs workers/processus, remplacer par channels_redis
-# une fois un serveur Redis disponible.
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+# Couche en mémoire locale par défaut : aucune dépendance externe, mais ne
+# fonctionne correctement qu'avec un seul processus serveur (dev, ou un seul
+# worker en prod) — un message envoyé depuis un worker n'atteint pas un
+# client connecté à un autre worker. Dès qu'un REDIS_URL est fourni (prod
+# avec plusieurs workers Daphne), on bascule automatiquement sur Redis.
+REDIS_URL = env("REDIS_URL", default="")
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [REDIS_URL],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+
+# Email (réinitialisation de mot de passe, etc.). En dev (DEBUG=True) sans
+# config explicite, on affiche les emails dans la console au lieu d'essayer
+# une vraie connexion SMTP (qui échouerait silencieusement). En prod, fournir
+# EMAIL_HOST/EMAIL_HOST_USER/EMAIL_HOST_PASSWORD via .env.
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend" if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@wams-dentaire.com")
+
+# Identité utilisée dans les emails (templates HTML) et lien "Se connecter".
+SITE_NAME = env("SITE_NAME", default="Warm's")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:4200")
+
+# Durcissement HTTPS/cookies en production uniquement (laissé désactivé en
+# dev pour ne pas casser les tests en http://127.0.0.1 sans certificat).
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 7)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

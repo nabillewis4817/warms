@@ -8,6 +8,7 @@ from django.db.models import Q
 
 from journaux.utils import journaliser
 
+from .emails import envoyer_email_compte_cree, envoyer_email_mot_de_passe_modifie
 from .models import PasswordResetToken, Utilisateur
 
 # Import pour la gestion des patients dans l'authentification
@@ -131,6 +132,11 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
                 objet_id=user.id,
                 message=f"Création du compte {user.username} ({user.role}).",
             )
+            envoyer_email_compte_cree(
+                user,
+                mot_de_passe=getattr(user, "mot_de_passe_genere", None),
+                en_attente_validation=not user.is_active,
+            )
             print(f"SUCCESS: Utilisateur {user.username} créé avec succès")
         except Exception as e:
             print(f"ERREUR lors de la création de l'utilisateur: {str(e)}")
@@ -185,7 +191,20 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
             objet_id=user.id,
             message=f"Compte validé par chirurgien: {user.username}.",
         )
+        envoyer_email_compte_cree(user)
         return Response(UtilisateurSerializer(user).data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def me_fcm_token(request):
+    """Enregistre/met à jour le jeton FCM de l'appareil mobile courant,
+    utilisé pour envoyer de vraies notifications push (voir
+    messagerie.services_push)."""
+    token = (request.data.get("fcm_token") or "").strip()
+    request.user.fcm_token = token
+    request.user.save(update_fields=["fcm_token"])
+    return Response({"fcm_token": request.user.fcm_token})
 
 
 @api_view(["PATCH"])
@@ -432,6 +451,7 @@ def reset_password(request):
     user.save(update_fields=["password"])
     token.utilise = True
     token.save(update_fields=["utilise"])
+    envoyer_email_mot_de_passe_modifie(user)
     return Response({"detail": "Mot de passe réinitialisé."})
 
 

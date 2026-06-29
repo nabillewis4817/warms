@@ -1,0 +1,12 @@
+Bonjour {{ prenom }},
+
+Nous vous confirmons que le mot de passe de votre compte {{ site_name }} a bien
+été réinitialisé avec succès.
+
+Vous pouvez désormais vous connecter avec votre nouveau mot de passe ici :
+{{ frontend_url }}
+
+Si vous n'êtes pas à l'origine de cette modification, contactez immédiatement
+notre équipe afin de sécuriser votre compte.
+
+-- {{ site_name }}

@@ -4,6 +4,12 @@ backend/__pycache__/
 backend/*.pyc
 backend/db.sqlite3
 backend/.env
+backend/staticfiles/
+
+# Secrets Firebase (clé de compte de service backend, config app mobile)
+backend/secrets/
+mobile/android/app/google-services.json
+mobile/ios/Runner/GoogleService-Info.plist
 
 # Données Tesseract OCR (téléchargées localement, voir README OCR)
 backend/.tessdata/

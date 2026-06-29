@@ -65,12 +65,14 @@ class UtilisateurCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop("password", "")
+        mot_de_passe_genere = None
         if not password:
             # Mot de passe temporaire généré si non fourni par l'UI.
             password = Utilisateur.objects.make_random_password(
                 length=10,
                 allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789@#",
             )
+            mot_de_passe_genere = password
         user = Utilisateur(**validated_data)
         user.set_password(password)
 
@@ -94,6 +96,9 @@ class UtilisateurCreateSerializer(serializers.ModelSerializer):
             user.est_valide_par_chirurgien = True
 
         user.save()
+        # Attribut transitoire (non persisté) pour transmettre le mot de passe
+        # temporaire généré à l'email de bienvenue, sans le stocker en clair.
+        user.mot_de_passe_genere = mot_de_passe_genere
         return user
 
 

@@ -48,6 +48,11 @@ class Utilisateur(AbstractUser):
         blank=True,
         help_text="Numéro de téléphone (utile pour SMS / WhatsApp / contact).",
     )
+    fcm_token = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Jeton Firebase Cloud Messaging de l'appareil mobile actif (notifications push).",
+    )
     photo_profil = models.ImageField(
         upload_to="profils/photos/",
         null=True,

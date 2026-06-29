@@ -10,6 +10,7 @@ from .views import (
     exporter_sauvegarde,
     forgot_password,
     me,
+    me_fcm_token,
     me_preferences,
     ping,
     register,
@@ -40,6 +41,7 @@ urlpatterns = [
     # Profil utilisateur
     path("me/", me, name="me"),
     path("me/preferences/", me_preferences, name="me-preferences"),
+    path("me/fcm-token/", me_fcm_token, name="me-fcm-token"),
     path("me/mot-de-passe/", changer_mon_mot_de_passe, name="me-mot-de-passe"),
     # Sauvegarde et restauration (réservé chirurgien-dentiste)
     path("sauvegarde/exporter/", exporter_sauvegarde, name="sauvegarde-exporter"),

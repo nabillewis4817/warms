@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'api_client.dart';
+import 'notification_service.dart';
 import 'secure_storage_service.dart';
 
 /// Erreur d'authentification avec un message déjà traduit, prêt à afficher
@@ -38,6 +39,7 @@ class AuthService {
       await deconnexion();
       return false;
     }
+    NotificationService().envoyerTokenAuServeur();
     return true;
   }
 
@@ -59,6 +61,7 @@ class AuthService {
 
       await _storage.enregistrerTokens(access: access, refresh: refresh);
       _api.definirToken(access);
+      NotificationService().envoyerTokenAuServeur();
     } on DioException catch (e) {
       throw AuthException(_messageDepuisErreurDio(e));
     }

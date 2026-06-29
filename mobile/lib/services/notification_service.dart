@@ -7,6 +7,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import 'api_client.dart';
+
 /**
  * Service de notifications pour WARMS Mobile
  * 
@@ -121,6 +123,9 @@ class NotificationService {
         if (kDebugMode) {
           print('🔄 Token FCM rafraîchi: $token');
         }
+        // Si une session est active, on renvoie immédiatement le nouveau
+        // jeton (sinon le backend continuerait à pousser vers l'ancien).
+        envoyerTokenAuServeur();
       });
 
       // Configurer les handlers pour les messages
@@ -133,6 +138,31 @@ class NotificationService {
     } catch (e) {
       if (kDebugMode) {
         print('❌ Erreur Firebase Messaging: $e');
+      }
+    }
+  }
+
+  /// Envoie le jeton FCM courant au backend pour que le serveur puisse
+  /// pousser de vraies notifications (nouveaux messages, alertes...) vers
+  /// cet appareil. À appeler après une connexion réussie et après une
+  /// restauration de session, en plus de l'appel automatique sur
+  /// rafraîchissement de jeton (voir [onTokenRefresh] ci-dessus).
+  ///
+  /// Échoue silencieusement si aucune session n'est active ou si le réseau
+  /// est indisponible : ce n'est jamais bloquant pour le reste de l'app.
+  Future<void> envoyerTokenAuServeur() async {
+    try {
+      _fcmToken ??= await _firebaseMessaging.getToken();
+      final token = _fcmToken;
+      if (token == null || token.isEmpty) return;
+
+      await ApiClient.instance.dio.post(
+        '/personnel/me/fcm-token/',
+        data: {'fcm_token': token},
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Wam's: envoi du jeton FCM au serveur impossible: $e");
       }
     }
   }

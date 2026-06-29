@@ -1,0 +1,18 @@
+Bienvenue, {{ prenom }} !
+{% if en_attente_validation %}
+Votre compte {{ role_label }} sur {{ site_name }} a été créé avec succès. Il est
+actuellement en attente de validation par un chirurgien-dentiste ; vous pourrez
+vous connecter dès son approbation.
+{% else %}
+Votre compte {{ role_label }} sur {{ site_name }} a été créé et approuvé avec succès.
+{% endif %}
+Identifiant de connexion : {{ username }}
+{% if mot_de_passe %}Mot de passe temporaire : {{ mot_de_passe }}
+Pour votre sécurité, nous vous recommandons de le changer dès votre première connexion.
+{% endif %}
+{% if not en_attente_validation %}Connectez-vous ici : {{ frontend_url }}{% endif %}
+
+Si vous avez la moindre question, notre équipe reste à votre entière disposition.
+Bienvenue parmi nous !
+
+-- {{ site_name }}

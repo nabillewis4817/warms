@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from journaux.utils import journaliser
 from messagerie.models import Conversation, NotificationInterne, ParticipantConversation
+from personnel.emails import envoyer_email_compte_cree
 from personnel.models import Utilisateur
 from personnel.permissions import EstPersonnelCabinet
 from qr_codes.models import CarnetQRCode
@@ -116,6 +117,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             patient.user = compte_patient
             patient.save(update_fields=["user"])
             compte_patient.save(update_fields=["photo_profil"])
+            envoyer_email_compte_cree(compte_patient, mot_de_passe=password)
         payload = self.get_serializer(patient).data
         payload["identifiants_patient"] = {"username": username, "password": password}
         return Response(payload, status=status.HTTP_201_CREATED)

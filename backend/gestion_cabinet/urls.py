@@ -16,14 +16,21 @@ Including another URLconf
 """
 
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as serve_static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/", include("gestion_cabinet.urls_api_v1")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Sert /media/ (photos patients, PDF d'ordonnances) que DEBUG soit True ou
+# False. `django.conf.urls.static.static()` ne sert ces fichiers qu'en
+# DEBUG=True ; à l'échelle de ce projet (un seul petit serveur, pas encore
+# de Nginx/CDN devant l'API), on garde Django responsable de ce service
+# plutôt que de casser le téléchargement des ordonnances en production.
+# À migrer vers Nginx/stockage objet si le trafic média devient important.
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve_static, {"document_root": settings.MEDIA_ROOT}),
+]

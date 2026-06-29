@@ -19,11 +19,11 @@ def synchroniser_champs_patients():
     
     try:
         conn = psycopg2.connect(
-            dbname="warms",
-            user="postgres",
-            password="MacKenzie",
-            host="localhost",
-            port="5432"
+            dbname=os.environ.get("PGDATABASE", "warms"),
+            user=os.environ.get("PGUSER", "postgres"),
+            password=os.environ.get("PGPASSWORD", ""),
+            host=os.environ.get("PGHOST", "localhost"),
+            port=os.environ.get("PGPORT", "5432"),
         )
         
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
