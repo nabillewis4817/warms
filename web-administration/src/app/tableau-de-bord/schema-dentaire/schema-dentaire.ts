@@ -114,6 +114,8 @@ export class SchemaDentaire implements OnInit {
   outilSelectionne: ConditionDentaire | null = null;
   dentSelectionnee: InfoDent | null = null;
   modePresentation = false;
+  modeComparaison: 'avant' | 'apres' = 'apres';
+  dentsEtatReference: EtatDent[] = [];
   notesDent = '';
 
   modalSuccesOuvert = false;
@@ -135,6 +137,8 @@ export class SchemaDentaire implements OnInit {
       this.dentsEtat      = this.schemaSauvegarde.dentsEtat.map(e => ({ ...e }));
       this.actesPlanifies = this.schemaSauvegarde.actesPlanifies.map(a => ({ ...a }));
     }
+    // Snapshot "avant" = état à l'ouverture du schéma (référence immuable)
+    this.dentsEtatReference = this.dentsEtat.map(e => ({ ...e }));
   }
 
   get dentsMaxillaire(): InfoDent[] {
@@ -163,9 +167,52 @@ export class SchemaDentaire implements OnInit {
     return this.actesPlanifies.filter(a => a.statut === 'termine').length;
   }
 
+  get scoreSante(): number {
+    const source = this.modeComparaison === 'avant' ? this.dentsEtatReference : this.dentsEtat;
+    const presentes = source.filter(e => e.condition !== 'extraction');
+    if (presentes.length === 0) return 100;
+    return Math.round((presentes.filter(e => e.condition === 'sain').length / presentes.length) * 100);
+  }
+
+  get labelScoreSante(): string {
+    const s = this.scoreSante;
+    if (s >= 85) return 'Excellent';
+    if (s >= 70) return 'Bon état';
+    if (s >= 50) return 'Attention';
+    return 'Soins urgents';
+  }
+
+  get couleurScore(): string {
+    const s = this.scoreSante;
+    if (s >= 85) return '#22c55e';
+    if (s >= 70) return '#84cc16';
+    if (s >= 50) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  get hasChanges(): boolean {
+    return JSON.stringify(this.dentsEtat) !== JSON.stringify(this.dentsEtatReference);
+  }
+
+  get peutComparer(): boolean {
+    return this.hasChanges || this.modeComparaison === 'avant';
+  }
+
+  get dashScoreRing(): string {
+    const c = 2 * Math.PI * 15; // r=15
+    return `${(c * this.scoreSante / 100).toFixed(2)} ${c.toFixed(2)}`;
+  }
+
+  toggleComparaison(): void {
+    this.modeComparaison = this.modeComparaison === 'apres' ? 'avant' : 'apres';
+    if (this.modeComparaison === 'avant') {
+      this.outilSelectionne = null;
+    }
+  }
+
   getEtatDent(numero: number): EtatDent {
-    return this.dentsEtat.find(e => e.numero === numero)
-      ?? { numero, condition: 'sain', notes: '' };
+    const source = this.modeComparaison === 'avant' ? this.dentsEtatReference : this.dentsEtat;
+    return source.find(e => e.numero === numero) ?? { numero, condition: 'sain', notes: '' };
   }
 
   getConditionFill(numero: number): string {
@@ -290,9 +337,11 @@ export class SchemaDentaire implements OnInit {
       condition: 'sain' as ConditionDentaire,
       notes: '',
     }));
+    this.dentsEtatReference = this.dentsEtat.map(e => ({ ...e }));
     this.actesPlanifies = [];
     this.dentSelectionnee = null;
     this.outilSelectionne = null;
+    this.modeComparaison = 'apres';
     this.modalResetOuvert = false;
   }
 
@@ -318,6 +367,9 @@ export class SchemaDentaire implements OnInit {
       }
     });
 
+    // Après sauvegarde, l'état actuel devient la nouvelle référence "avant"
+    this.dentsEtatReference = this.dentsEtat.map(e => ({ ...e }));
+    this.modeComparaison = 'apres';
     this.statsAuSauvegarde = { traitements, actes: this.actesPlanifies.length };
     this.modalSuccesOuvert = true;
   }

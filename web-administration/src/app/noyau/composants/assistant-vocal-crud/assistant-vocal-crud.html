@@ -1,0 +1,221 @@
+<!-- ===== BOUTON FLOTTANT ===== -->
+@if (etat === 'ferme') {
+  <button class="ia-float-bottom-right" (click)="ouvrir()" title="Assistant vocal Wam's">
+    <span class="ia-pulse-ring"></span>
+    <div class="ia-icon"><i class="bi bi-mic-fill"></i></div>
+    <span class="ia-label">Wam's</span>
+  </button>
+}
+
+<!-- ===== OVERLAY PRINCIPAL ===== -->
+@if (etat !== 'ferme') {
+  <div class="avc-backdrop" (click)="$event.target === $event.currentTarget && fermer()">
+
+    <!-- ─── ÉCOUTE COMMANDE ─── -->
+    @if (etat === 'ecoute_commande') {
+      <div class="avc-panneau avc-ecoute">
+        <button class="avc-close" (click)="fermer()"><i class="bi bi-x-lg"></i></button>
+        <div class="avc-mic-ring">
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <div class="ring ring-3"></div>
+          <div class="avc-mic-btn">
+            <i class="bi bi-mic-fill"></i>
+          </div>
+        </div>
+        <h2 class="avc-titre">Je vous écoute…</h2>
+        <p class="avc-sous-titre">Dites par exemple :</p>
+        <div class="avc-exemples">
+          <span class="exemple">« Créer un patient »</span>
+        </div>
+        @if (transcriptEnCours) {
+          <div class="avc-transcript">
+            <i class="bi bi-soundwave"></i>
+            {{ transcriptEnCours }}
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ─── INTRO PATIENT ─── -->
+    @if (etat === 'intro_patient') {
+      <div class="avc-panneau avc-intro">
+        <div class="avc-intro-icon"><i class="bi bi-person-plus-fill"></i></div>
+        <h2>Créer un nouveau patient</h2>
+        <p>Je vais vous guider champ par champ. Restez près du microphone.</p>
+        <div class="avc-spinner"></div>
+      </div>
+    }
+
+    <!-- ─── SAISIE PATIENT (modal champ par champ) ─── -->
+    @if (etat === 'saisie_patient') {
+      <div class="avc-modal-patient" (click)="$event.stopPropagation()">
+
+        <!-- En-tête modal -->
+        <div class="avc-modal-header">
+          <div class="avc-modal-titre">
+            <i class="bi bi-person-plus-fill"></i>
+            <span>Nouveau patient</span>
+          </div>
+          <div class="avc-progres-bar">
+            <div class="avc-progres-fill" [style.width]="progres + '%'"></div>
+          </div>
+          <button class="avc-close-sm" (click)="fermer()"><i class="bi bi-x"></i></button>
+        </div>
+
+        <!-- Corps : liste de tous les champs -->
+        <div class="avc-champs-liste">
+          @for (champ of champs; track champ.cle; let i = $index) {
+            <div
+              class="avc-champ"
+              [class.avc-champ-actif]="estChampActif(i)"
+              [class.avc-champ-flou]="!estChampActif(i)"
+              [class.avc-champ-rempli]="estChampRempli(champ.cle)"
+            >
+              <div class="avc-champ-label">
+                <span class="avc-step-num">{{ i + 1 }}</span>
+                <label>{{ champ.label }}</label>
+                @if (estChampRempli(champ.cle)) {
+                  <i class="bi bi-check-circle-fill avc-ok"></i>
+                }
+              </div>
+
+              @if (estChampActif(i)) {
+                <!-- Invite vocale -->
+                <p class="avc-invite">{{ champ.invite }}</p>
+
+                <!-- Affichage épellation en temps réel -->
+                @if (champ.type === 'epellation') {
+                  <div class="avc-epellation">
+                    <div class="avc-lettres">
+                      @for (lettre of lettresAccumulees.split(''); track $index) {
+                        <span class="avc-lettre">{{ lettre }}</span>
+                      }
+                      <span class="avc-curseur">|</span>
+                    </div>
+                    <div class="avc-epellation-aide">
+                      <span>Dites les lettres une par une</span>
+                      <span class="sep">·</span>
+                      <span>« effacer » = supprimer</span>
+                      <span class="sep">·</span>
+                      <span>« terminer » = valider</span>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="avc-valeur-input">
+                    <i class="bi bi-mic-fill avc-mic-indicator"></i>
+                    <span>{{ valeurAffichee(champ.cle) || champ.placeholder }}</span>
+                  </div>
+                }
+
+                <!-- Transcript en cours -->
+                @if (transcriptEnCours && etat === 'saisie_patient') {
+                  <div class="avc-transcript-inline">
+                    <i class="bi bi-soundwave"></i> {{ transcriptEnCours }}
+                  </div>
+                }
+
+                <!-- Actions champ -->
+                <div class="avc-champ-actions">
+                  @if (champIndex > 0) {
+                    <button class="avc-btn-sec" (click)="champPrecedent()">
+                      <i class="bi bi-arrow-left"></i> Retour
+                    </button>
+                  }
+                  <button class="avc-btn-sec" (click)="passerChamp()">
+                    Passer <i class="bi bi-arrow-right"></i>
+                  </button>
+                  @if (champ.type === 'epellation' && lettresAccumulees.length > 0) {
+                    <button class="avc-btn-sec" (click)="corrigerLettre()">
+                      <i class="bi bi-backspace"></i> Effacer
+                    </button>
+                    <button class="avc-btn-primary" (click)="confirmerEpellation()">
+                      <i class="bi bi-check2"></i> Valider
+                    </button>
+                  }
+                  @if (estDernierChamp) {
+                    <button class="avc-btn-submit" (click)="passerChamp()" [disabled]="soumissionEnCours">
+                      @if (soumissionEnCours) {
+                        <i class="bi bi-hourglass-split"></i> Enregistrement…
+                      } @else {
+                        <i class="bi bi-send-fill"></i> Enregistrer
+                      }
+                    </button>
+                  }
+                </div>
+
+              } @else {
+                <!-- Valeur résumée pour les champs non-actifs -->
+                <div class="avc-valeur-resume">
+                  {{ estChampRempli(champ.cle) ? valeurAffichee(champ.cle) : champ.placeholder }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ─── CONFIRMATION ─── -->
+    @if (etat === 'confirmation') {
+      <div class="avc-panneau avc-confirmation" (click)="$event.stopPropagation()">
+        <div class="avc-confirm-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
+        <h2>Récapitulatif</h2>
+        <div class="avc-recap-liste">
+          @for (champ of champs; track champ.cle) {
+            @if (valeurAffichee(champ.cle)) {
+              <div class="avc-recap-item">
+                <span class="avc-recap-label">{{ champ.label }}</span>
+                <span class="avc-recap-val">{{ valeurAffichee(champ.cle) }}</span>
+              </div>
+            }
+          }
+        </div>
+        <p class="avc-confirm-voix">Dites « confirmer » ou cliquez le bouton</p>
+        <div class="avc-confirm-actions">
+          <button class="avc-btn-sec" (click)="recommencer()">
+            <i class="bi bi-arrow-counterclockwise"></i> Recommencer
+          </button>
+          <button class="avc-btn-submit" (click)="$event.stopPropagation(); soumettreDirect()" [disabled]="soumissionEnCours">
+            @if (soumissionEnCours) {
+              <i class="bi bi-hourglass-split"></i> En cours…
+            } @else {
+              <i class="bi bi-check2-circle"></i> Confirmer
+            }
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ─── SUCCÈS ─── -->
+    @if (etat === 'succes') {
+      <div class="avc-panneau avc-succes">
+        <div class="avc-succes-icon"><i class="bi bi-check-circle-fill"></i></div>
+        <h2>Patient créé !</h2>
+        <p>
+          <strong>{{ valeurAffichee('prenom') }} {{ valeurAffichee('nom') }}</strong>
+          a été ajouté avec succès.
+        </p>
+        <button class="avc-btn-primary" (click)="fermer()">
+          <i class="bi bi-x-circle"></i> Fermer
+        </button>
+      </div>
+    }
+
+    <!-- ─── ERREUR ─── -->
+    @if (etat === 'erreur') {
+      <div class="avc-panneau avc-erreur">
+        <div class="avc-erreur-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <h2>Erreur</h2>
+        <p>{{ messageErreur }}</p>
+        <div class="avc-confirm-actions">
+          <button class="avc-btn-sec" (click)="fermer()">Fermer</button>
+          <button class="avc-btn-primary" (click)="recommencer()">
+            <i class="bi bi-arrow-repeat"></i> Réessayer
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+}

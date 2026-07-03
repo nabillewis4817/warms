@@ -7,7 +7,9 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 
-from .models import ActeRealise, Appel, Consultation, PhotoClinique, SchemaDentaire, TauxAbsenteisme
+from personnel.permissions import EstChirurgienDentiste, EstPersonnelCabinet
+from personnel.models import Utilisateur
+from .models import ActeRealise, Appel, Consultation, PhotoClinique, SchemaDentaire, SuiviDouleur, TauxAbsenteisme
 from .serializers import (
     ActeRealiseSerializer,
     AppelSerializer,
@@ -15,6 +17,7 @@ from .serializers import (
     ConsultationSerializer,
     PhotoCliniqueSerializer,
     SchemaDentaireSerializer,
+    SuiviDouleurSerializer,
     TauxAbsenteismeSerializer,
     TauxAbsenteismeCreateSerializer,
 )
@@ -27,8 +30,21 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     serializer_class = ConsultationSerializer
     permission_classes = [IsAuthenticated]
 
+    ACTIONS_ECRITURE = {"create", "update", "partial_update", "destroy"}
+
+    def get_permissions(self):
+        if self.action in self.ACTIONS_ECRITURE:
+            return [EstChirurgienDentiste()]
+        return [EstPersonnelCabinet()]
+
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+
+        # L'infirmière ne voit que les consultations de ses patients assignés
+        if getattr(user, "role", None) == Utilisateur.Role.INFIRMIERE:
+            qs = qs.filter(patient__infirmiere_referente=user)
+
         params = self.request.query_params
         patient_id = params.get("patient")
         praticien_id = params.get("praticien")
@@ -55,11 +71,13 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         return qs.order_by("-date")
 
     def perform_create(self, serializer):
+        from rendez_vous.notifications import notifier_consultation_programmee
         patient = serializer.validated_data.get("patient")
         dossier = serializer.validated_data.get("dossier")
         if not dossier and patient is not None:
             dossier = getattr(patient, "dossier", None)
-        serializer.save(dossier=dossier)
+        consultation = serializer.save(dossier=dossier)
+        notifier_consultation_programmee(consultation, acteur=self.request.user)
 
     @action(detail=False, methods=["get"], url_path="export")
     def exporter(self, request):
@@ -338,6 +356,36 @@ class TauxAbsenteismeViewSet(viewsets.ModelViewSet):
         taux = queryset.order_by('-periode_debut')[:limit]
         serializer = self.get_serializer(taux, many=True)
         return Response(serializer.data)
+
+
+class SuiviDouleurViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SuiviDouleurSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        from patients.models import Patient
+        if getattr(user, 'role', None) == 'patient':
+            patient = Patient.objects.filter(user=user).first()
+            if not patient:
+                return SuiviDouleur.objects.none()
+            return SuiviDouleur.objects.filter(patient=patient)
+        # Personnel: see all or filter by patient query param
+        qs = SuiviDouleur.objects.select_related('patient', 'consultation').all()
+        patient_id = self.request.query_params.get('patient')
+        if patient_id:
+            qs = qs.filter(patient_id=patient_id)
+        return qs
+
+    def perform_create(self, serializer):
+        from patients.models import Patient
+        user = self.request.user
+        if getattr(user, 'role', None) == 'patient':
+            patient = Patient.objects.filter(user=user).first()
+            if patient:
+                serializer.save(patient=patient)
+                return
+        serializer.save()
 
 
 #EbaJioloLewis

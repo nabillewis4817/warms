@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from patients.models import DossierPatient
-from .models import ActeRealise, Appel, Consultation, PhotoClinique, SchemaDentaire, TauxAbsenteisme
+from .models import ActeRealise, Appel, Consultation, PhotoClinique, SchemaDentaire, SuiviDouleur, TauxAbsenteisme
 
 
 class ActeRealiseSerializer(serializers.ModelSerializer):
@@ -229,6 +229,13 @@ class TauxAbsenteismeCreateSerializer(serializers.ModelSerializer):
             )
         
         return data
+
+
+class SuiviDouleurSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SuiviDouleur
+        fields = ['id', 'consultation', 'patient', 'date_signalement', 'intensite', 'description', 'localisation', 'type_douleur', 'traitement_pris']
+        read_only_fields = ['id', 'date_signalement']
 
 
 #EbaJioloLewis

@@ -1,7 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from .models import Utilisateur
+from .models import DemandePersonnel, Utilisateur
 
 
 class UtilisateurSerializer(serializers.ModelSerializer):
@@ -15,6 +15,7 @@ class UtilisateurSerializer(serializers.ModelSerializer):
             "last_name",
             "telephone",
             "photo_profil",
+            "signature_image",
             "role",
             "service",
             "specialite",
@@ -162,13 +163,29 @@ class PreferencesUtilisateurSerializer(serializers.ModelSerializer):
             "preferences_notifications",
             "telephone",
             "photo_profil",
+            "signature_image",
             "first_name",
             "last_name",
             "email",
         ]
 
 
-#EbaJioloLewis
+class DemandePersonnelSerializer(serializers.ModelSerializer):
+    soumis_par_nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DemandePersonnel
+        fields = [
+            'id', 'prenom', 'nom', 'email', 'telephone', 'role',
+            'service', 'specialite', 'username', 'mot_de_passe_temporaire',
+            'soumis_par', 'soumis_par_nom', 'statut', 'cree_le',
+            'traite_le', 'note_traitement',
+        ]
+        read_only_fields = ['id', 'cree_le', 'soumis_par', 'soumis_par_nom', 'traite_le']
+
+    def get_soumis_par_nom(self, obj):
+        u = obj.soumis_par
+        return f"{u.first_name} {u.last_name}".strip() if u else ''
 
 
 #EbaJioloLewis

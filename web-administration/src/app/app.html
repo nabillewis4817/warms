@@ -14,45 +14,70 @@
       <a routerLink="/tableau-de-bord" routerLinkActive="active" class="nav-lien">
         <i class="bi bi-speedometer2"></i> <span>{{ traductionService.t('dashboard') }}</span>
       </a>
-      <a routerLink="/statistiques" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-bar-chart-line-fill"></i> <span>{{ traductionService.t('statistics') }}</span>
-      </a>
-      <a routerLink="/agenda" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-calendar-check-fill"></i> <span>{{ traductionService.t('agenda') }}</span>
-      </a>
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/statistiques" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-bar-chart-line-fill"></i> <span>{{ traductionService.t('statistics') }}</span>
+        </a>
+      }
+      @if (authService.utilisateur()?.role !== 'patient') {
+        <a routerLink="/agenda" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-calendar-check-fill"></i> <span>{{ traductionService.t('agenda') }}</span>
+        </a>
+      }
 
       <span class="nav-groupe-titre">{{ traductionService.t('navPatients') }}</span>
-      <a routerLink="/patients" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-people-fill"></i> <span>{{ traductionService.t('patients') }}</span>
-      </a>
-      <a routerLink="/patients/nouveau" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-person-plus-fill"></i> <span>{{ traductionService.t('newPatient') }}</span>
-      </a>
-      <a routerLink="/carnets" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-journal-bookmark-fill"></i> <span>{{ traductionService.t('notebooks') }}</span>
-      </a>
-      <a routerLink="/prescriptions" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-capsule-pill"></i> <span>{{ traductionService.t('prescriptions') }}</span>
-      </a>
+      @if (authService.utilisateur()?.role !== 'patient') {
+        <a routerLink="/patients" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-people-fill"></i> <span>{{ traductionService.t('patients') }}</span>
+        </a>
+      }
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'secretaire' || authService.utilisateur()?.role === 'assistant' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/patients/nouveau" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-person-plus-fill"></i> <span>{{ traductionService.t('newPatient') }}</span>
+        </a>
+      }
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'infirmiere' || authService.utilisateur()?.role === 'secretaire' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/carnets" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-journal-bookmark-fill"></i> <span>{{ traductionService.t('notebooks') }}</span>
+        </a>
+      }
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'secretaire' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/patients/scanner" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-qr-code-scan"></i> <span>Scanner QR</span>
+        </a>
+      }
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/prescriptions" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-capsule-pill"></i> <span>{{ traductionService.t('prescriptions') }}</span>
+        </a>
+      }
 
       <span class="nav-groupe-titre">{{ traductionService.t('navCommunication') }}</span>
-      <a routerLink="/messagerie" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-chat-dots-fill"></i> <span>{{ traductionService.t('messaging') }}</span>
-        @if (badges.message > 0) { <span class="badge badge-green">{{ badges.message }}</span> }
-      </a>
-      <a routerLink="/avis" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-star-fill"></i> <span>{{ traductionService.t('reviews') }}</span>
-        @if (badges.rappel > 0) { <span class="badge badge-yellow">{{ badges.rappel }}</span> }
-      </a>
+      @if (authService.utilisateur()?.role !== 'patient') {
+        <a routerLink="/messagerie" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-chat-dots-fill"></i> <span>{{ traductionService.t('messaging') }}</span>
+          @if (badges.message > 0) { <span class="badge badge-green">{{ badges.message }}</span> }
+        </a>
+      }
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'secretaire' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/avis" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-star-fill"></i> <span>{{ traductionService.t('reviews') }}</span>
+          @if (badges.rappel > 0) { <span class="badge badge-yellow">{{ badges.rappel }}</span> }
+        </a>
+      }
 
       <span class="nav-groupe-titre">{{ traductionService.t('navAdministration') }}</span>
-      <a routerLink="/personnel" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-person-badge-fill"></i> <span>{{ traductionService.t('staff') }}</span>
-      </a>
-      <a routerLink="/journaux" routerLinkActive="active" class="nav-lien">
-        <i class="bi bi-clipboard-data-fill"></i> <span>{{ traductionService.t('logs') }}</span>
-        @if (badges.critique > 0) { <span class="badge badge-red">{{ badges.critique }}</span> }
-      </a>
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'secretaire' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/personnel" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-person-badge-fill"></i> <span>{{ traductionService.t('staff') }}</span>
+        </a>
+      }
+      @if (authService.utilisateur()?.role === 'chirurgien_dentiste' || authService.utilisateur()?.role === 'admin') {
+        <a routerLink="/journaux" routerLinkActive="active" class="nav-lien">
+          <i class="bi bi-clipboard-data-fill"></i> <span>{{ traductionService.t('logs') }}</span>
+          @if (badges.critique > 0) { <span class="badge badge-red">{{ badges.critique }}</span> }
+        </a>
+      }
       <a routerLink="/parametres/profil" routerLinkActive="active" class="nav-lien">
         <i class="bi bi-gear-fill"></i> <span>{{ traductionService.t('settings') }}</span>
       </a>
@@ -300,10 +325,6 @@
   <!-- Gestionnaire global des erreurs de token -->
   <app-global-token-error-handler></app-global-token-error-handler>
 
-  <!-- Bouton IA Wam's flottant en bas à droite -->
-  <button class="ia-float-bottom-right" (click)="ouvrirWarms()" title="Assistant IA Wam's">
-    <span class="ia-pulse-ring"></span>
-    <div class="ia-icon"><i class="bi bi-robot"></i></div>
-    <span class="ia-label">Wam's</span>
-  </button>
+  <!-- Assistant vocal CRUD Wam's -->
+  <app-assistant-vocal-crud />
 </div>

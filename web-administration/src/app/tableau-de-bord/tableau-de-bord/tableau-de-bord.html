@@ -1,3 +1,4 @@
+@if (auth.utilisateur()?.role === 'chirurgien_dentiste' || auth.utilisateur()?.role === 'admin') {
 <section class="dashboard-section">
   <!-- ========== EN-TÊTE ========== -->
   <header class="dashboard-header">
@@ -255,6 +256,53 @@
       </section>
     }
 
+    <!-- ========== DEMANDES DE PERSONNEL EN ATTENTE ========== -->
+    @if (demandesEnAttente.length > 0) {
+      <section class="demandes-section">
+        <div class="section-header">
+          <h2><i class="bi bi-person-plus-fill"></i> Demandes de personnel</h2>
+          <span class="demandes-badge">{{ demandesEnAttente.length }} en attente</span>
+        </div>
+
+        <div class="demandes-liste">
+          @for (d of demandesEnAttente; track d.id) {
+            <div class="demande-card">
+              <div class="demande-avatar">
+                {{ (d.prenom?.charAt(0) ?? '') + (d.nom?.charAt(0) ?? '') }}
+              </div>
+              <div class="demande-info">
+                <strong>{{ d.prenom }} {{ d.nom }}</strong>
+                <span class="demande-role">{{ d.role }} {{ d.service ? '— ' + d.service : '' }}</span>
+                <span class="demande-soumis">Demandé par {{ d.soumis_par_nom }} · {{ d.cree_le | date:'dd/MM/yyyy' }}</span>
+                <div class="demande-credentials">
+                  <code>{{ d.username }}</code>
+                  <span class="sep">·</span>
+                  <code>{{ d.mot_de_passe_temporaire }}</code>
+                </div>
+              </div>
+              <div class="demande-actions">
+                <button class="btn-approuver"
+                  (click)="validerDemande(d.id, 'approuvee')"
+                  [disabled]="traitementDemandeEnCours === d.id">
+                  @if (traitementDemandeEnCours === d.id) {
+                    <i class="bi bi-hourglass-split"></i>
+                  } @else {
+                    <i class="bi bi-check-circle-fill"></i>
+                  }
+                  Approuver
+                </button>
+                <button class="btn-rejeter"
+                  (click)="validerDemande(d.id, 'rejetee')"
+                  [disabled]="traitementDemandeEnCours === d.id">
+                  <i class="bi bi-x-circle-fill"></i> Rejeter
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
     <!-- ========== OPÉRATIONS & SCHÉMA DENTAIRE ========== -->
     <section class="operations-section">
       <div class="section-header">
@@ -375,4 +423,11 @@
     (fermerEvent)="listeSchemasOuverte = false"
     (modifierEvent)="editerSchema($event)"
   />
+}
+} @else if (auth.utilisateur()?.role === 'secretaire') {
+  <app-dashboard-secretaire />
+} @else if (auth.utilisateur()?.role === 'infirmiere') {
+  <app-dashboard-infirmiere />
+} @else {
+  <app-dashboard-secretaire />
 }

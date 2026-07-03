@@ -127,6 +127,15 @@ export class PrescriptionsService {
     return this.http.get(`${this.apiUrl}${id}/pdf/`, { responseType: 'blob' });
   }
 
+  /** Envoie la signature dessinée (base64 PNG) et récupère le PDF signé prêt à imprimer. */
+  signerPdf(id: number, signatureBase64: string): Observable<Blob> {
+    return this.http.post(
+      `${this.apiUrl}${id}/signer-pdf/`,
+      { signature_base64: signatureBase64 },
+      { responseType: 'blob' },
+    );
+  }
+
   private gererErreur<T>(operation = 'operation', resultat?: T) {
     return (erreur: any): Observable<T> => {
       console.error(`${operation} a échoué :`, erreur);

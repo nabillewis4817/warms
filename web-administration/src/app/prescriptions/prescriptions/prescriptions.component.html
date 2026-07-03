@@ -104,6 +104,9 @@
           }
 
           <div class="carte-actions">
+            <button class="btn-icone btn-icone-sign" title="Signer et imprimer" (click)="ouvrirSignature(p)">
+              <i class="bi bi-pen-fill"></i>
+            </button>
             <button class="btn-icone" title="Voir l'ordonnance PDF" [disabled]="prescriptionEnTelechargement === p.id" (click)="ouvrirPdf(p)">
               @if (prescriptionEnTelechargement === p.id) {
                 <i class="bi bi-arrow-repeat spin"></i>
@@ -335,6 +338,49 @@
               <i class="bi bi-arrow-repeat spin"></i> Enregistrement...
             } @else {
               <i class="bi bi-check-circle-fill"></i> Valider et enregistrer
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (prescriptionASign) {
+    <div class="modal-overlay" (click)="fermerSignature()">
+      <div class="modal-content modal-signature" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2><i class="bi bi-pen-fill"></i> Signature du praticien</h2>
+          <button class="modal-fermer" (click)="fermerSignature()"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <div class="modal-body signature-body">
+          <div class="signature-info">
+            <span class="signature-titre">{{ prescriptionASign.titre || 'Ordonnance sans titre' }}</span>
+            <span class="signature-patient">
+              <i class="bi bi-person-circle"></i>
+              {{ prescriptionASign.patient_prenom }} {{ prescriptionASign.patient_nom }}
+            </span>
+          </div>
+          <p class="signature-indice">
+            <i class="bi bi-info-circle"></i>
+            Dessinez votre signature dans le cadre ci-dessous. Le PDF sera généré avec votre signature et s'ouvrira pour impression.
+          </p>
+          <app-signature-canvas #canvasSignature (modifiee)="signaturePresente = $event" />
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondaire" (click)="fermerSignature()">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button
+            class="btn btn-primary"
+            [disabled]="!signaturePresente || signatureEnCours"
+            (click)="signerEtImprimer()"
+          >
+            @if (signatureEnCours) {
+              <i class="bi bi-arrow-repeat spin"></i> Génération du PDF...
+            } @else {
+              <i class="bi bi-printer-fill"></i> Signer et imprimer
             }
           </button>
         </div>

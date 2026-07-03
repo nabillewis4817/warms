@@ -112,6 +112,12 @@ class Utilisateur(AbstractUser):
     derniere_activite = models.DateTimeField(
         null=True, blank=True, help_text="Dernière requête authentifiée (présence en ligne)."
     )
+    signature_image = models.ImageField(
+        upload_to="signatures/",
+        null=True,
+        blank=True,
+        help_text="Signature manuscrite numérisée du praticien (PNG transparent recommandé).",
+    )
 
     SEUIL_EN_LIGNE = timezone.timedelta(minutes=2)
 
@@ -151,6 +157,39 @@ class PasswordResetToken(models.Model):
     @staticmethod
     def generate() -> str:
         return secrets.token_urlsafe(48)
+
+
+class DemandePersonnel(models.Model):
+    """Demande de création de compte soumise par la secrétaire, en attente de validation du chirurgien."""
+
+    STATUT_CHOICES = [
+        ('en_attente', 'En attente'),
+        ('approuvee', 'Approuvée'),
+        ('rejetee', 'Rejetée'),
+    ]
+
+    prenom = models.CharField(max_length=100)
+    nom = models.CharField(max_length=100)
+    email = models.EmailField()
+    telephone = models.CharField(max_length=30, blank=True)
+    role = models.CharField(max_length=30)
+    service = models.CharField(max_length=100, blank=True)
+    specialite = models.CharField(max_length=100, blank=True)
+    username = models.CharField(max_length=150)
+    mot_de_passe_temporaire = models.CharField(max_length=50)
+    soumis_par = models.ForeignKey(
+        Utilisateur, on_delete=models.SET_NULL, null=True, related_name='demandes_soumises'
+    )
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
+    cree_le = models.DateTimeField(auto_now_add=True)
+    traite_le = models.DateTimeField(null=True, blank=True)
+    note_traitement = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-cree_le']
+
+    def __str__(self):
+        return f"Demande {self.prenom} {self.nom} ({self.role}) — {self.statut}"
 
 
 #EbaJioloLewis

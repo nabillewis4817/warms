@@ -353,4 +353,33 @@ class TauxAbsenteisme(models.Model):
         self.save()
 
 
+class SuiviDouleur(models.Model):
+    TYPE_CHOICES = [
+        ('lancinante', 'Lancinante'),
+        ('sourde', 'Sourde'),
+        ('pulsatile', 'Pulsatile'),
+        ('brulure', 'Brûlure'),
+        ('autre', 'Autre'),
+    ]
+
+    consultation = models.ForeignKey(
+        Consultation, on_delete=models.CASCADE, related_name='suivis_douleur', null=True, blank=True
+    )
+    patient = models.ForeignKey(
+        'patients.Patient', on_delete=models.CASCADE, related_name='suivis_douleur'
+    )
+    date_signalement = models.DateTimeField(auto_now_add=True)
+    intensite = models.PositiveSmallIntegerField()  # 0-10
+    description = models.TextField(blank=True)
+    localisation = models.CharField(max_length=100, blank=True)
+    type_douleur = models.CharField(max_length=30, choices=TYPE_CHOICES, default='autre')
+    traitement_pris = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-date_signalement']
+
+    def __str__(self):
+        return f"Douleur {self.intensite}/10 — {self.patient} — {self.date_signalement:%d/%m/%Y}"
+
+
 #EbaJioloLewis

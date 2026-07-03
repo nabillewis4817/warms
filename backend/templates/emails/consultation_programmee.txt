@@ -1,0 +1,13 @@
+Bonjour {{ prenom }},
+
+Votre consultation au cabinet Wam's a bien été enregistrée.
+
+  Date    : {{ date_str }}
+  Heure   : {{ heure_str }}
+  Avec    : {{ praticien_nom }}
+  Motif   : {{ motif }}
+
+Pour toute question, n'hésitez pas à nous contacter via l'application ou par téléphone.
+
+À bientôt,
+-- {{ site_name }}

@@ -25,20 +25,21 @@ import { TauxAbsenteismeComponent } from './taux-absenteisme/taux-absenteisme/ta
 import { Agenda } from './agenda/agenda';
 import { authentificationGuard } from './noyau/gardes/authentification-guard';
 import { roleGuard } from './noyau/gardes/role-guard';
+import { ScanPatientComponent } from './patients/scan-patient/scan-patient.component';
 
 export const routes: Routes = [
+  // ─── Routes publiques ───────────────────────────────────────────────────────
   { path: '', component: Accueil, pathMatch: 'full' },
   { path: 'connexion', component: Connexion },
   { path: 'inscription', component: Inscription },
   { path: 'mot-de-passe-oublie', component: MotDePasseOublie },
+
+  // ─── Tous les rôles authentifiés (personnel + patient sur web = personnel) ──
   { path: 'tableau-de-bord', component: TableauDeBord, canActivate: [authentificationGuard] },
-  {
-    path: 'statistiques',
-    component: VueGenerale,
-    canActivate: [authentificationGuard],
-  },
+  { path: 'statistiques', component: VueGenerale, canActivate: [authentificationGuard] },
   { path: 'agenda', component: Agenda, canActivate: [authentificationGuard] },
   { path: 'patients', component: ListePatients, canActivate: [authentificationGuard] },
+  { path: 'patients/scanner', component: ScanPatientComponent, canActivate: [authentificationGuard] },
   { path: 'patients/nouveau', component: NouveauPatient, canActivate: [authentificationGuard] },
   { path: 'patients/:id/dossier', component: DossierPatient, canActivate: [authentificationGuard] },
   { path: 'carnets', component: Carnets, canActivate: [authentificationGuard] },
@@ -47,34 +48,45 @@ export const routes: Routes = [
   { path: 'innovations/ia-warms', component: IaWarms, canActivate: [authentificationGuard] },
   { path: 'messagerie', component: ListeConversations, canActivate: [authentificationGuard] },
   { path: 'messagerie/conversation/:id', component: FilMessages, canActivate: [authentificationGuard] },
-  { path: 'journaux', component: JournauxComponent, canActivate: [authentificationGuard] },
-  { path: 'avis', component: Avis, canActivate: [authentificationGuard] },
-  { path: 'prescriptions', component: PrescriptionsComponent, canActivate: [authentificationGuard] },
-  { path: 'personnel', component: PersonnelComponent, canActivate: [authentificationGuard] },
+  { path: 'rendez-vous', component: RendezVousComponent, canActivate: [authentificationGuard] },
+  { path: 'appels', component: AppelsComponent, canActivate: [authentificationGuard] },
+  { path: 'taux-absenteisme', component: TauxAbsenteismeComponent, canActivate: [authentificationGuard] },
   { path: 'parametres', redirectTo: 'parametres/profil', pathMatch: 'full' },
   { path: 'parametres/profil', component: ProfilUtilisateur, canActivate: [authentificationGuard] },
-  // Routes pour les consultations et gestion clinique
-  { 
-    path: 'consultations', 
-    component: ConsultationsComponent, 
-    canActivate: [authentificationGuard]
+
+  // ─── Chirurgien + Secrétaire uniquement ─────────────────────────────────────
+  {
+    path: 'personnel',
+    component: PersonnelComponent,
+    canActivate: [authentificationGuard, roleGuard],
+    data: { roles: ['chirurgien_dentiste', 'secretaire'] }
   },
-  // Routes pour les rendez-vous
-  { 
-    path: 'rendez-vous', 
-    component: RendezVousComponent, 
-    canActivate: [authentificationGuard]
+  {
+    path: 'avis',
+    component: Avis,
+    canActivate: [authentificationGuard, roleGuard],
+    data: { roles: ['chirurgien_dentiste', 'secretaire'] }
   },
-  // Routes pour les appels et absences
-  { 
-    path: 'appels', 
-    component: AppelsComponent, 
-    canActivate: [authentificationGuard]
+
+  // ─── Chirurgien + Infirmière ─────────────────────────────────────────────────
+  {
+    path: 'consultations',
+    component: ConsultationsComponent,
+    canActivate: [authentificationGuard, roleGuard],
+    data: { roles: ['chirurgien_dentiste', 'infirmiere'] }
   },
-  // Routes pour les taux d'absentéisme
-  { 
-    path: 'taux-absenteisme', 
-    component: TauxAbsenteismeComponent, 
-    canActivate: [authentificationGuard]
+
+  // ─── Chirurgien uniquement ───────────────────────────────────────────────────
+  {
+    path: 'journaux',
+    component: JournauxComponent,
+    canActivate: [authentificationGuard, roleGuard],
+    data: { roles: ['chirurgien_dentiste'] }
+  },
+  {
+    path: 'prescriptions',
+    component: PrescriptionsComponent,
+    canActivate: [authentificationGuard, roleGuard],
+    data: { roles: ['chirurgien_dentiste'] }
   },
 ];

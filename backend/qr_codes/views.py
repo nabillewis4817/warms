@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import CarnetQRCode
@@ -44,3 +44,34 @@ class CarnetQRCodeViewSet(viewsets.ModelViewSet):
                 },
             }
         )
+
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def mon_qr(self, request):
+        """Retourne le QR token du patient connecté (rôle patient uniquement)."""
+        from personnel.models import Utilisateur
+        user = request.user
+        if getattr(user, 'role', None) != Utilisateur.Role.PATIENT:
+            from rest_framework.response import Response
+            from rest_framework import status
+            return Response({"detail": "Réservé aux patients."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            from patients.models import Patient, DossierPatient
+            patient = Patient.objects.get(user=user)
+            qr = CarnetQRCode.objects.get(dossier__patient=patient, actif=True)
+            return Response({
+                "token": qr.token,
+                "patient": {
+                    "id": patient.id,
+                    "prenom": patient.prenom,
+                    "nom": patient.nom,
+                },
+                "dossier": {
+                    "id": str(qr.dossier.id),
+                    "numero_dossier": qr.dossier.numero_dossier,
+                }
+            })
+        except Exception:
+            from rest_framework.response import Response
+            from rest_framework import status
+            return Response({"detail": "Aucun QR code trouvé pour ce patient."}, status=status.HTTP_404_NOT_FOUND)

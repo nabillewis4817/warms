@@ -1,0 +1,85 @@
+<div class="dashboard-infirmiere">
+  <div class="dash-header">
+    <div>
+      <h2>{{ salutation }}, {{ auth.utilisateur()?.prenom }}</h2>
+      <p class="sous-titre">Tableau de bord Infirmière</p>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi-card accent-green">
+      <i class="bi bi-people-fill"></i>
+      <div>
+        <span class="kpi-val">{{ patientsAssignes.length }}</span>
+        <span class="kpi-lbl">Mes patients</span>
+      </div>
+    </div>
+    <div class="kpi-card accent-blue">
+      <i class="bi bi-activity"></i>
+      <div>
+        <span class="kpi-val">{{ dashboardStats?.consultations?.aujourdHui ?? '—' }}</span>
+        <span class="kpi-lbl">Consultations aujourd'hui</span>
+      </div>
+    </div>
+    <div class="kpi-card accent-orange">
+      <i class="bi bi-telephone-fill"></i>
+      <div>
+        <span class="kpi-val">{{ dashboardStats?.appels?.aujourdHui ?? '—' }}</span>
+        <span class="kpi-lbl">Appels à traiter</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patients assignés -->
+  <div class="card-section">
+    <div class="section-header">
+      <i class="bi bi-person-heart"></i>
+      <h3>Mes patients assignés</h3>
+    </div>
+    @if (chargement) {
+      <div class="loading-state"><i class="bi bi-hourglass-split"></i> Chargement...</div>
+    } @else if (patientsAssignes.length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-person-slash"></i>
+        <p>Aucun patient assigné pour le moment.</p>
+      </div>
+    } @else {
+      <div class="patients-liste">
+        @for (p of patientsAssignes; track p.id) {
+          <a [routerLink]="['/patients', p.id]" class="patient-item">
+            <div class="patient-avatar">{{ (p.prenom?.charAt(0) ?? '') + (p.nom?.charAt(0) ?? '') }}</div>
+            <div class="patient-info">
+              <strong>{{ p.prenom }} {{ p.nom }}</strong>
+              <span>#{{ p.numero_dossier ?? '—' }}</span>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        }
+      </div>
+      @if (patientsAssignes.length >= 5) {
+        <a routerLink="/patients" class="voir-tous">Voir tous mes patients →</a>
+      }
+    }
+  </div>
+
+  <!-- Raccourcis -->
+  <div class="raccourcis-row">
+    <a routerLink="/patients" class="raccourci-card">
+      <i class="bi bi-people-fill"></i>
+      <span>Patients</span>
+    </a>
+    <a routerLink="/consultations" class="raccourci-card">
+      <i class="bi bi-clipboard2-pulse"></i>
+      <span>Consultations</span>
+    </a>
+    <a routerLink="/appels" class="raccourci-card">
+      <i class="bi bi-telephone-fill"></i>
+      <span>Appels</span>
+    </a>
+    <a routerLink="/messagerie" class="raccourci-card">
+      <i class="bi bi-chat-dots-fill"></i>
+      <span>Messagerie</span>
+    </a>
+  </div>
+</div>

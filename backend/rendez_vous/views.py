@@ -7,6 +7,12 @@ from datetime import timedelta
 from messagerie.models import NotificationInterne
 
 from .models import RendezVous
+from .notifications import (
+    notifier_rdv_annule,
+    notifier_rdv_confirme,
+    notifier_rdv_programme,
+    notifier_rdv_reporte,
+)
 from .serializers import RendezVousSerializer
 
 
@@ -15,14 +21,22 @@ class RendezVousViewSet(viewsets.ModelViewSet):
     serializer_class = RendezVousSerializer
 
     def perform_create(self, serializer):
-        serializer.save(cree_par=self.request.user)
+        rdv = serializer.save(cree_par=self.request.user)
+        notifier_rdv_programme(rdv, acteur=self.request.user)
+
+    def perform_update(self, serializer):
+        rdv = serializer.save()
+        if rdv.statut == RendezVous.Statut.CONFIRME:
+            notifier_rdv_confirme(rdv, acteur=self.request.user)
 
     @action(detail=True, methods=["post"])
     def annuler(self, request, pk=None):
         rdv = self.get_object()
+        raison = request.data.get("raison_annulation", "") or ""
         rdv.statut = RendezVous.Statut.ANNULE
-        rdv.raison_annulation = request.data.get("raison_annulation", "") or ""
+        rdv.raison_annulation = raison
         rdv.save(update_fields=["statut", "raison_annulation", "modifie_le"])
+        notifier_rdv_annule(rdv, raison=raison, acteur=request.user)
         return Response(self.get_serializer(rdv).data)
 
     @action(detail=True, methods=["post"])
@@ -42,13 +56,15 @@ class RendezVousViewSet(viewsets.ModelViewSet):
         - fin: ISO datetime
         """
         rdv = self.get_object()
+        ancienne_date = rdv.debut
         serializer = self.get_serializer(
             rdv,
             data={"debut": request.data.get("debut"), "fin": request.data.get("fin"), "statut": RendezVous.Statut.REPORTE},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(statut=RendezVous.Statut.REPORTE)
+        rdv = serializer.save(statut=RendezVous.Statut.REPORTE)
+        notifier_rdv_reporte(rdv, ancienne_date=ancienne_date, acteur=request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"], url_path="generer-rappels")

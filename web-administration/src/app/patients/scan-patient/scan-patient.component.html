@@ -1,0 +1,266 @@
+<div class="scan-container">
+  <!-- En-tête -->
+  <div class="scan-header">
+    <div class="scan-title">
+      <i class="bi bi-qr-code-scan"></i>
+      <h2>Scanner un patient</h2>
+    </div>
+    <p class="scan-subtitle">Demandez au patient d'ouvrir son QR code dans l'application WARMS</p>
+  </div>
+
+  <!-- Caméra / scan actif -->
+  <div class="scan-body" [class.found]="etat === 'trouve'" [class.error]="etat === 'erreur'">
+
+    <!-- Vidéo webcam -->
+    <div class="video-wrapper" *ngIf="etat === 'scan' || etat === 'init'">
+      <video #videoEl autoplay playsinline muted class="scan-video"></video>
+      <div class="scan-overlay">
+        <div class="scan-frame">
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+          <div class="scan-line"></div>
+        </div>
+        <p class="scan-hint" *ngIf="etat === 'scan'">
+          <i class="bi bi-arrow-up-circle"></i> Pointez vers le QR code du patient
+        </p>
+        <p class="scan-hint loading" *ngIf="etat === 'init'">
+          <i class="bi bi-hourglass-split"></i> Initialisation…
+        </p>
+      </div>
+    </div>
+
+    <!-- Patient trouvé -->
+    <div class="result-found" *ngIf="etat === 'trouve' && patient">
+      <div class="result-icon success">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <h3>Patient identifié !</h3>
+      <div class="patient-card">
+        <div class="patient-avatar">
+          {{ patient.prenom[0] }}{{ patient.nom[0] }}
+        </div>
+        <div class="patient-info">
+          <p class="patient-name">{{ patient.prenom }} {{ patient.nom }}</p>
+          <p class="patient-dossier">Dossier #{{ dossierId }}</p>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn-primary" (click)="ouvrirDossier()">
+          <i class="bi bi-folder2-open"></i> Ouvrir le dossier
+        </button>
+        <button class="btn-secondary" (click)="recommencer()">
+          <i class="bi bi-arrow-repeat"></i> Scanner un autre
+        </button>
+      </div>
+    </div>
+
+    <!-- Erreur -->
+    <div class="result-error" *ngIf="etat === 'erreur'">
+      <div class="result-icon error">
+        <i class="bi bi-x-circle-fill"></i>
+      </div>
+      <h3>Erreur</h3>
+      <p>{{ messageErreur }}</p>
+      <button class="btn-primary" (click)="recommencer()">
+        <i class="bi bi-arrow-repeat"></i> Réessayer
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.scan-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  font-family: inherit;
+}
+
+.scan-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.scan-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.scan-title i {
+  font-size: 2rem;
+  color: var(--warms-accent, #14919B);
+}
+
+.scan-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0B2B2E;
+}
+
+.scan-subtitle {
+  color: #5C7A7D;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.video-wrapper {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+}
+
+.scan-video {
+  width: 100%;
+  display: block;
+  border-radius: 16px;
+}
+
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-frame {
+  position: relative;
+  width: 240px;
+  height: 240px;
+}
+
+.corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-color: #14919B;
+  border-style: solid;
+}
+.corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; }
+.corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; }
+.corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+.corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+
+@keyframes scanMove {
+  0%   { top: 8px; }
+  50%  { top: calc(100% - 8px); }
+  100% { top: 8px; }
+}
+
+.scan-line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #14919B, transparent);
+  animation: scanMove 2s ease-in-out infinite;
+}
+
+.scan-hint {
+  margin-top: 1.5rem;
+  color: rgba(255,255,255,0.9);
+  background: rgba(0,0,0,0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.result-found, .result-error {
+  text-align: center;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(20,145,155,0.12);
+}
+
+.result-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+.result-icon.success { color: #22C55E; }
+.result-icon.error   { color: #EF4444; }
+
+.result-found h3, .result-error h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0B2B2E;
+  margin: 0 0 1.25rem;
+}
+
+.patient-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #F2FBFC;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.patient-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #14919B, #0E6E76);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.patient-info { text-align: left; }
+.patient-name { font-weight: 700; color: #0B2B2E; margin: 0 0 0.25rem; }
+.patient-dossier { font-size: 0.8rem; color: #5C7A7D; margin: 0; }
+
+.result-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #14919B, #0E6E76);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.9; }
+
+.btn-secondary {
+  background: #fff;
+  color: #14919B;
+  border: 2px solid #14919B;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+.btn-secondary:hover { background: #F2FBFC; }
+
+.result-error p { color: #5C7A7D; margin-bottom: 1.5rem; }
+</style>

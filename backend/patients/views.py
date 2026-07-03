@@ -34,7 +34,19 @@ class PatientViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.action in ACTIONS_CORBEILLE:
             return Patient.objects.filter(supprime_le__isnull=False).order_by("-supprime_le")
-        return Patient.objects.filter(supprime_le__isnull=True)
+
+        user = self.request.user
+        base_qs = Patient.objects.filter(supprime_le__isnull=True)
+
+        # Patient: voit uniquement son propre dossier
+        if getattr(user, 'role', None) == Utilisateur.Role.PATIENT:
+            return base_qs.filter(user=user)
+
+        # Infirmière: voit uniquement ses patients assignés
+        if getattr(user, 'role', None) == Utilisateur.Role.INFIRMIERE:
+            return base_qs.filter(infirmiere_referente=user)
+
+        return base_qs
 
     def get_permissions(self):
         """
@@ -220,7 +232,8 @@ class PatientViewSet(viewsets.ModelViewSet):
         """
         patient = self.get_object()
         patient.supprime_le = timezone.now()
-        patient.save(update_fields=["supprime_le", "modifie_le"])
+        patient.actif = False
+        patient.save(update_fields=["supprime_le", "actif", "modifie_le"])
         journaliser(
             acteur=request.user,
             action="patient.trashed",
@@ -239,7 +252,8 @@ class PatientViewSet(viewsets.ModelViewSet):
         """
         patient = self.get_object()
         patient.supprime_le = None
-        patient.save(update_fields=["supprime_le", "modifie_le"])
+        patient.actif = True
+        patient.save(update_fields=["supprime_le", "actif", "modifie_le"])
         journaliser(
             acteur=request.user,
             action="patient.restored",
@@ -323,7 +337,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             
             # Vérifier si l'utilisateur est un patient ou superutilisateur
             user_role = getattr(request.user, 'role', None)
-            if not request.user.is_superuser and (not user_role or user_role.lower() not in ['patient', 'PATIENT']):
+            if not request.user.is_superuser and (not user_role or user_role.lower() != 'patient'):
                 return Response({"detail": "L'utilisateur n'est pas un patient."}, status=403)
             
             # Rechercher le patient lié à cet utilisateur

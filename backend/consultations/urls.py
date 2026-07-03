@@ -7,6 +7,7 @@ from .views import (
     ConsultationViewSet,
     PhotoCliniqueViewSet,
     SchemaDentaireViewSet,
+    SuiviDouleurViewSet,
     TauxAbsenteismeViewSet,
 )
 
@@ -17,6 +18,7 @@ router.register(r"schemas-dentaires", SchemaDentaireViewSet, basename="schema-de
 router.register(r"photos-cliniques", PhotoCliniqueViewSet, basename="photo-clinique")
 router.register(r"appels", AppelViewSet, basename="appel")
 router.register(r"taux-absenteisme", TauxAbsenteismeViewSet, basename="taux-absenteisme")
+router.register(r'suivis-douleur', SuiviDouleurViewSet, basename='suivis-douleur')
 
 urlpatterns = [
     path("", include(router.urls)),

@@ -17,10 +17,28 @@ import { SchemaDentaire } from '../schema-dentaire/schema-dentaire';
 import { SelecteurPatientService } from '../../noyau/services/selecteur-patient.service';
 import { SchemasDentairesService, SchemaSauvegarde } from '../../noyau/services/schemas-dentaires.service';
 import { SchemasListe } from '../schemas-liste/schemas-liste';
+import { DashboardSecretaire } from '../dashboard-secretaire/dashboard-secretaire';
+import { DashboardInfirmiere } from '../dashboard-infirmiere/dashboard-infirmiere';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+
+interface DemandePersonnel {
+  id: number;
+  prenom: string;
+  nom: string;
+  email: string;
+  role: string;
+  service: string;
+  username: string;
+  mot_de_passe_temporaire: string;
+  soumis_par_nom: string;
+  statut: string;
+  cree_le: string;
+}
 
 @Component({
   selector: 'app-tableau-de-bord',
-  imports: [CommonModule, FormsModule, BaseChartDirective, UserProfileComponent, SchemaDentaire, SchemasListe],
+  imports: [CommonModule, FormsModule, BaseChartDirective, UserProfileComponent, SchemaDentaire, SchemasListe, DashboardSecretaire, DashboardInfirmiere],
   templateUrl: './tableau-de-bord.html',
   styleUrls: ['./tableau-de-bord.scss'],
 })
@@ -34,6 +52,11 @@ export class TableauDeBord implements OnInit, OnDestroy {
   private readonly patientsService       = inject(Patients);
   readonly selecteurSvc                  = inject(SelecteurPatientService);
   private readonly schemasDentairesSvc  = inject(SchemasDentairesService);
+  private readonly http                  = inject(HttpClient);
+
+  // — Demandes de personnel en attente (chirurgien uniquement) —
+  demandesEnAttente: DemandePersonnel[] = [];
+  traitementDemandeEnCours: number | null = null;
 
   // — Opérations & schéma dentaire —
   listePatients: Patient[]               = [];
@@ -120,7 +143,28 @@ export class TableauDeBord implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.charger();
     this.chargerPatients();
+    this.chargerDemandesEnAttente();
     this.refreshInterval = setInterval(() => this.chargerSilencieux(), this.REFRESH_INTERVAL_MS);
+  }
+
+  private chargerDemandesEnAttente(): void {
+    if (this.auth.utilisateur()?.role !== 'chirurgien_dentiste') return;
+    this.http.get<DemandePersonnel[]>(`${environment.apiBaseUrl}/personnel/demandes/?statut=en_attente`).subscribe({
+      next: (data) => { this.demandesEnAttente = data; this.cdr.detectChanges(); },
+      error: () => {},
+    });
+  }
+
+  validerDemande(id: number, statut: 'approuvee' | 'rejetee'): void {
+    this.traitementDemandeEnCours = id;
+    this.http.patch(`${environment.apiBaseUrl}/personnel/demandes/${id}/valider/`, { statut }).subscribe({
+      next: () => {
+        this.demandesEnAttente = this.demandesEnAttente.filter(d => d.id !== id);
+        this.traitementDemandeEnCours = null;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.traitementDemandeEnCours = null; },
+    });
   }
 
   private chargerPatients(): void {

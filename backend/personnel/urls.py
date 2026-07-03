@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
     UtilisateurViewSet,
+    DemandePersonnelViewSet,
     CustomTokenObtainPairView,
     changer_mon_mot_de_passe,
     dashboard_stats,
@@ -27,6 +28,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r"personnel", UtilisateurViewSet, basename="personnel")
+router.register(r"demandes", DemandePersonnelViewSet, basename="demandes-personnel")
 
 urlpatterns = [
     path("ping/", ping, name="personnel-ping"),

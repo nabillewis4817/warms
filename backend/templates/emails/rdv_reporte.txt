@@ -1,0 +1,11 @@
+Bonjour {{ prenom }},
+
+Votre rendez-vous initialement prévu le {{ ancienne_str }} a été reporté.
+
+Nouveau créneau :
+  Date    : {{ nouvelle_date_str }}
+  Heure   : {{ nouvelle_heure_str }}
+
+Si ce nouveau créneau ne vous convient pas, contactez-nous via l'application.
+
+-- {{ site_name }}

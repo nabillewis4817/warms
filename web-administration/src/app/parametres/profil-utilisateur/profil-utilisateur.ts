@@ -47,6 +47,11 @@ export class ProfilUtilisateur implements OnInit {
   photoPreview: string | null = null;
   photoFile: File | null = null;
 
+  signaturePreview: string | null = null;
+  signatureFile: File | null = null;
+  signatureEnCours = false;
+  messageSignature = '';
+
   form = this.fb.group({
     first_name: [''],
     last_name: [''],
@@ -109,6 +114,8 @@ export class ProfilUtilisateur implements OnInit {
         this.profil = profil;
         this.photoPreview = profil.photo_profil;
         this.photoFile = null;
+        this.signaturePreview = (profil as any).signature_image ?? null;
+        this.signatureFile = null;
         this.form.patchValue({
           first_name: profil.prenom,
           last_name: profil.nom,
@@ -261,6 +268,57 @@ export class ProfilUtilisateur implements OnInit {
       },
       error: () => {
         this.message = 'Échec de la suppression de la photo.';
+      },
+    });
+  }
+
+  // ===== Signature numérique (chirurgien) =====
+
+  onSignatureChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) return;
+    this.signatureFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => { this.signaturePreview = e.target?.result as string; };
+    reader.readAsDataURL(file);
+  }
+
+  enregistrerSignature(): void {
+    if (!this.signatureFile) return;
+    this.signatureEnCours = true;
+    this.messageSignature = '';
+    const formData = new FormData();
+    formData.append('signature_image', this.signatureFile);
+    this.preferencesService.mettreAJourPreferencesMultipart(formData).subscribe({
+      next: () => {
+        this.signatureEnCours = false;
+        this.messageSignature = 'Signature enregistrée avec succès.';
+        this.signatureFile = null;
+        this.charger();
+      },
+      error: () => {
+        this.signatureEnCours = false;
+        this.messageSignature = "Échec de l'enregistrement de la signature.";
+      },
+    });
+  }
+
+  supprimerSignature(): void {
+    this.signatureEnCours = true;
+    this.messageSignature = '';
+    const formData = new FormData();
+    formData.append('signature_image', '');
+    this.preferencesService.mettreAJourPreferencesMultipart(formData).subscribe({
+      next: () => {
+        this.signatureEnCours = false;
+        this.signaturePreview = null;
+        this.signatureFile = null;
+        this.messageSignature = 'Signature supprimée.';
+      },
+      error: () => {
+        this.signatureEnCours = false;
+        this.messageSignature = "Échec de la suppression de la signature.";
       },
     });
   }

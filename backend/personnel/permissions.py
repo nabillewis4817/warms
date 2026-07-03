@@ -75,4 +75,15 @@ class EstUtilisateurAuthentifie(BasePermission):
         return bool(user and user.is_authenticated)
 
 
+class PeutVoirJournaux(BasePermission):
+    """Journaux d'audit réservés au chirurgien-dentiste et aux superutilisateurs."""
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser:
+            return True
+        return getattr(user, "role", None) == Utilisateur.Role.CHIRURGIEN_DENTISTE
+
+
 #EbaJioloLewis

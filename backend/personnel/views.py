@@ -9,16 +9,17 @@ from django.db.models import Q
 from journaux.utils import journaliser
 
 from .emails import envoyer_email_compte_cree, envoyer_email_mot_de_passe_modifie
-from .models import PasswordResetToken, Utilisateur
+from .models import DemandePersonnel, PasswordResetToken, Utilisateur
 
 # Import pour la gestion des patients dans l'authentification
 try:
     from patients.models import Patient
 except ImportError:
     Patient = None
-from .permissions import EstChirurgienDentiste, PeutGererComptes
+from .permissions import EstChirurgienDentiste, PeutGererComptes, PeutVoirJournaux
 from .serializers import (
     ChangerMotDePasseSerializer,
+    DemandePersonnelSerializer,
     ForgotPasswordSerializer,
     PreferencesUtilisateurSerializer,
     RegisterSerializer,
@@ -92,26 +93,7 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def list(self, request, *args, **kwargs):
-        """Override list pour ajouter des logs de débogage"""
-        print(f"DEBUG: Personnel list - User: {request.user}")
-        print(f"DEBUG: Personnel list - Is authenticated: {request.user.is_authenticated if hasattr(request.user, 'is_authenticated') else 'No user'}")
-        print(f"DEBUG: Personnel list - User role: {getattr(request.user, 'role', 'No role')}")
-        
-        try:
-            queryset = self.filter_queryset(self.get_queryset())
-            page = self.paginate_queryset(queryset)
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
-            
-            serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
-        except Exception as e:
-            print(f"ERREUR dans personnel list: {str(e)}")
-            print(f"ERREUR type: {type(e)}")
-            import traceback
-            traceback.print_exc()
-            raise e
+        return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -119,31 +101,19 @@ class UtilisateurViewSet(viewsets.ModelViewSet):
         return UtilisateurSerializer
 
     def perform_create(self, serializer):
-        try:
-            print(f"DEBUG: Utilisateur connecté: {self.request.user}")
-            print(f"DEBUG: Is authenticated: {self.request.user.is_authenticated}")
-            print(f"DEBUG: Rôle utilisateur: {getattr(self.request.user, 'role', 'None')}")
-            
-            user = serializer.save()
-            journaliser(
-                acteur=self.request.user,
-                action="user.created",
-                objet_type="Utilisateur",
-                objet_id=user.id,
-                message=f"Création du compte {user.username} ({user.role}).",
-            )
-            envoyer_email_compte_cree(
-                user,
-                mot_de_passe=getattr(user, "mot_de_passe_genere", None),
-                en_attente_validation=not user.is_active,
-            )
-            print(f"SUCCESS: Utilisateur {user.username} créé avec succès")
-        except Exception as e:
-            print(f"ERREUR lors de la création de l'utilisateur: {str(e)}")
-            print(f"ERREUR type: {type(e)}")
-            import traceback
-            traceback.print_exc()
-            raise e
+        user = serializer.save()
+        journaliser(
+            acteur=self.request.user,
+            action="user.created",
+            objet_type="Utilisateur",
+            objet_id=user.id,
+            message=f"Création du compte {user.username} ({user.role}).",
+        )
+        envoyer_email_compte_cree(
+            user,
+            mot_de_passe=getattr(user, "mot_de_passe_genere", None),
+            en_attente_validation=not user.is_active,
+        )
 
     @action(detail=True, methods=["post"])
     def desactiver(self, request, pk=None):
@@ -707,7 +677,7 @@ def specialites_list(request):
 
 # Endpoints pour les journaux
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([PeutVoirJournaux])
 def journaux_list(request):
     """Retourne la liste des journaux d'activité"""
     try:
@@ -794,7 +764,7 @@ def journaux_list(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([PeutVoirJournaux])
 def journaux_types(request):
     """Retourne les types de journaux disponibles"""
     types = ["patient", "consultation", "rendez_vous", "systeme", "personnel"]
@@ -802,7 +772,7 @@ def journaux_types(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([PeutVoirJournaux])
 def journaux_utilisateurs(request):
     """Retourne les utilisateurs disponibles pour les filtres"""
     try:
@@ -813,7 +783,7 @@ def journaux_utilisateurs(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([PeutVoirJournaux])
 def journaux_export(request):
     """Exporte les journaux en CSV"""
     try:
@@ -868,6 +838,58 @@ def get_journal_icon(action):
         return 'bi-calendar-check'
     else:
         return 'bi-circle'
+
+
+class DemandePersonnelViewSet(viewsets.ModelViewSet):
+    """
+    Demandes de création de comptes soumises par la secrétaire, validées par le chirurgien.
+    POST (secrétaire) → statut='en_attente'
+    PATCH /{id}/ (chirurgien) → statut='approuvee' | 'rejetee'
+    """
+    serializer_class = DemandePersonnelSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if getattr(user, 'role', None) == Utilisateur.Role.SECRETAIRE:
+            return DemandePersonnel.objects.filter(soumis_par=user)
+        return DemandePersonnel.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(soumis_par=self.request.user)
+
+    @action(detail=True, methods=['patch'], url_path='valider')
+    def valider(self, request, pk=None):
+        from django.utils import timezone
+        demande = self.get_object()
+        nouveau_statut = request.data.get('statut')
+        if nouveau_statut not in ('approuvee', 'rejetee'):
+            return Response({'detail': "statut doit être 'approuvee' ou 'rejetee'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if nouveau_statut == 'approuvee' and demande.statut != 'approuvee':
+            if Utilisateur.objects.filter(username=demande.username).exists():
+                return Response(
+                    {'detail': f"Le nom d'utilisateur '{demande.username}' est déjà utilisé."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            compte = Utilisateur.objects.create_user(
+                username=demande.username,
+                password=demande.mot_de_passe_temporaire,
+                role=demande.role,
+                first_name=demande.prenom,
+                last_name=demande.nom,
+                email=demande.email,
+                telephone=demande.telephone,
+                service=demande.service,
+                specialite=demande.specialite,
+            )
+            envoyer_email_compte_cree(compte, mot_de_passe=demande.mot_de_passe_temporaire)
+
+        demande.statut = nouveau_statut
+        demande.traite_le = timezone.now()
+        demande.note_traitement = request.data.get('note', '')
+        demande.save()
+        return Response(DemandePersonnelSerializer(demande).data)
 
 
 #EbaJioloLewis

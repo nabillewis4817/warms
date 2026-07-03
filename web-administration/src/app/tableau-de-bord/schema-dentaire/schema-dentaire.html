@@ -20,6 +20,40 @@
     </div>
 
     <div class="schema-header-actions">
+
+      <!-- Score santé bucale -->
+      <div class="score-sante-badge" [style.border-color]="couleurScore" [title]="'Score santé : ' + scoreSante + '% — ' + labelScoreSante">
+        <div class="score-ring-wrap">
+          <svg viewBox="0 0 36 36" class="score-ring-svg">
+            <circle cx="18" cy="18" r="15" fill="none" stroke="#e5e7eb" stroke-width="3" />
+            <circle cx="18" cy="18" r="15" fill="none"
+              [attr.stroke]="couleurScore" stroke-width="3"
+              stroke-linecap="round"
+              [attr.stroke-dasharray]="dashScoreRing"
+              stroke-dashoffset="0"
+              transform="rotate(-90 18 18)"
+            />
+          </svg>
+          <span class="score-ring-val" [style.color]="couleurScore">{{ scoreSante }}</span>
+        </div>
+        <div class="score-text">
+          <span class="score-titre">Santé</span>
+          <span class="score-label" [style.color]="couleurScore">{{ labelScoreSante }}</span>
+        </div>
+      </div>
+
+      <!-- Toggle Avant / Après -->
+      @if (peutComparer) {
+        <button class="btn-header btn-avant-apres"
+          [class.btn-avant-actif]="modeComparaison === 'avant'"
+          (click)="toggleComparaison()"
+          [title]="modeComparaison === 'avant' ? 'Revenir à l\'état actuel' : 'Voir l\'état initial (avant modifications)'"
+        >
+          <i class="bi" [ngClass]="modeComparaison === 'avant' ? 'bi-clock-history' : 'bi-arrow-left-right'"></i>
+          <span>{{ modeComparaison === 'avant' ? 'État initial' : 'Avant / Après' }}</span>
+        </button>
+      }
+
       @if (modePresentation) {
         <div class="mode-pres-badge">
           <i class="bi bi-eye-fill"></i>
@@ -30,10 +64,10 @@
         <i class="bi" [ngClass]="modePresentation ? 'bi-eye-slash' : 'bi-eye'"></i>
         <span>{{ modePresentation ? 'Quitter' : 'Présenter' }}</span>
       </button>
-      <button class="btn-header btn-header-danger" (click)="modalResetOuvert = true" title="Réinitialiser">
+      <button class="btn-header btn-header-danger" (click)="modalResetOuvert = true" title="Réinitialiser" [disabled]="modeComparaison === 'avant'">
         <i class="bi bi-arrow-counterclockwise"></i>
       </button>
-      <button class="btn-header" (click)="sauvegarder()" title="Sauvegarder">
+      <button class="btn-header" (click)="sauvegarder()" title="Sauvegarder" [disabled]="modeComparaison === 'avant'">
         <i class="bi bi-floppy2"></i>
         <span>Sauvegarder</span>
       </button>
@@ -51,11 +85,18 @@
   <div class="schema-body">
 
     <!-- ===== KIT DENTAIRE (gauche) ===== -->
-    <aside class="kit-dentaire" [class.masque]="modePresentation">
+    <aside class="kit-dentaire" [class.masque]="modePresentation" [class.kit-lecture-seule]="modeComparaison === 'avant'">
       <div class="kit-titre">
-        <i class="bi bi-tools"></i>
-        Kit dentaire
+        <i class="bi" [ngClass]="modeComparaison === 'avant' ? 'bi-clock-history' : 'bi-tools'"></i>
+        {{ modeComparaison === 'avant' ? 'Mode comparaison' : 'Kit dentaire' }}
       </div>
+      @if (modeComparaison === 'avant') {
+        <div class="kit-avant-notice">
+          <i class="bi bi-eye-fill"></i>
+          Vous consultez l'état initial.<br>
+          <small>Cliquez "État initial" pour revenir à l'édition.</small>
+        </div>
+      }
 
       @if (getOutilActif()) {
         <div class="outil-actif-info" [style.border-left-color]="getOutilActif()!.couleur">
@@ -413,22 +454,24 @@
             ></textarea>
           </div>
 
-          <div class="changer-condition-section">
-            <label>Changer la condition</label>
-            <div class="mini-outils">
-              @for (outil of outils; track outil.id) {
-                <button
-                  class="mini-outil"
-                  [class.actif]="getEtatDent(dentSelectionnee.numero).condition === outil.id"
-                  [style.--c]="outil.couleur"
-                  (click)="outilSelectionne = outil.id; onDentClick(dentSelectionnee)"
-                  [title]="outil.libelle"
-                >
-                  <i class="bi" [ngClass]="outil.icone" [style.color]="outil.couleur"></i>
-                </button>
-              }
+          @if (modeComparaison === 'apres') {
+            <div class="changer-condition-section">
+              <label>Changer la condition</label>
+              <div class="mini-outils">
+                @for (outil of outils; track outil.id) {
+                  <button
+                    class="mini-outil"
+                    [class.actif]="getEtatDent(dentSelectionnee.numero).condition === outil.id"
+                    [style.--c]="outil.couleur"
+                    (click)="outilSelectionne = outil.id; onDentClick(dentSelectionnee)"
+                    [title]="outil.libelle"
+                  >
+                    <i class="bi" [ngClass]="outil.icone" [style.color]="outil.couleur"></i>
+                  </button>
+                }
+              </div>
             </div>
-          </div>
+          }
         </div>
       } @else {
         <div class="panneau-vide">

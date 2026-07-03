@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
+import { SignatureCanvas } from '../../noyau/composants/signature-canvas/signature-canvas';
 import { DialogueService } from '../../noyau/services/dialogue.service';
 import { Patient, Patients } from '../../noyau/services/patients';
 import { Personnel, PersonnelService } from '../../noyau/services/personnel.service';
@@ -16,7 +17,7 @@ import {
 @Component({
   selector: 'app-prescriptions',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SignatureCanvas],
   templateUrl: './prescriptions.component.html',
   styleUrl: './prescriptions.component.scss',
 })
@@ -26,6 +27,8 @@ export class PrescriptionsComponent implements OnInit {
   private readonly personnelService = inject(PersonnelService);
   private readonly dialogueService = inject(DialogueService);
   private readonly fb = inject(FormBuilder);
+
+  @ViewChild('canvasSignature') canvasSignature?: SignatureCanvas;
 
   prescriptions: Prescription[] = [];
   patients: Patient[] = [];
@@ -38,6 +41,11 @@ export class PrescriptionsComponent implements OnInit {
   enregistrementEnCours = false;
   prescriptionEnEdition: Prescription | null = null;
   prescriptionEnTelechargement: number | null = null;
+
+  // Signature
+  prescriptionASign: Prescription | null = null;
+  signaturePresente = false;
+  signatureEnCours = false;
 
   alerteAllergie: { etape: 1 | 2; medicaments: string[]; allergiesPatient: string } | null = null;
   readonly today = new Date();
@@ -376,6 +384,47 @@ export class PrescriptionsComponent implements OnInit {
 
   libelleStatut(statut: StatutPrescription): string {
     return this.statuts.find((s) => s.valeur === statut)?.libelle ?? statut;
+  }
+
+  ouvrirSignature(prescription: Prescription): void {
+    this.prescriptionASign = prescription;
+    this.signaturePresente = false;
+    this.signatureEnCours = false;
+  }
+
+  fermerSignature(): void {
+    this.prescriptionASign = null;
+    this.signaturePresente = false;
+    this.signatureEnCours = false;
+    this.canvasSignature?.effacer();
+  }
+
+  signerEtImprimer(): void {
+    if (!this.prescriptionASign || !this.canvasSignature) return;
+    const b64 = this.canvasSignature.exporter();
+    if (!b64) return;
+
+    this.signatureEnCours = true;
+    this.prescriptionsService.signerPdf(this.prescriptionASign.id, b64).subscribe({
+      next: (blob) => {
+        this.signatureEnCours = false;
+        this.fermerSignature();
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url, '_blank');
+        if (w) {
+          w.addEventListener('load', () => {
+            try { w.print(); } catch { /* le viewer PDF propose l'impression */ }
+          });
+        }
+      },
+      error: () => {
+        this.signatureEnCours = false;
+        this.dialogueService.erreur({
+          titre: 'Erreur',
+          message: 'Impossible de générer le PDF signé.',
+        }).subscribe();
+      },
+    });
   }
 }
 

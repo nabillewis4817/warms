@@ -83,4 +83,31 @@ class PatientService {
       'commentaire': commentaire,
     });
   }
+
+  Future<Map<String, dynamic>> chargerMonQr() async {
+    final response = await _dio.get('/qr/carnets/mon-qr/');
+    if (response.statusCode == 200) {
+      return response.data as Map<String, dynamic>;
+    }
+    throw Exception('Impossible de charger le QR');
+  }
+
+  Future<void> signalerDouleur({
+    required int intensite,
+    required String typeDouleur,
+    required String description,
+    required String localisation,
+    required bool traitementPris,
+    int? consultationId,
+  }) async {
+    final data = <String, dynamic>{
+      'intensite': intensite,
+      'type_douleur': typeDouleur,
+      'description': description,
+      'localisation': localisation,
+      'traitement_pris': traitementPris,
+    };
+    if (consultationId != null) data['consultation'] = consultationId;
+    await _dio.post('/consultations/suivis-douleur/', data: data);
+  }
 }

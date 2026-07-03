@@ -589,3 +589,60 @@ input, select {
 
   .param-header { flex-direction: column; align-items: flex-start; }
 }
+
+// ===================================================
+// SIGNATURE NUMÉRIQUE
+// ===================================================
+
+.signature-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  margin-bottom: 4px;
+}
+
+.signature-preview-img {
+  max-height: 80px;
+  max-width: 260px;
+  object-fit: contain;
+  background: repeating-conic-gradient(#e2e8f0 0% 25%, #fff 0% 50%) 0 0 / 12px 12px;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.signature-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1.5px solid var(--warms-accent, #1e4db7);
+  color: var(--warms-accent, #1e4db7);
+  background: transparent;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  &:hover { background: rgba(30, 77, 183, 0.06); }
+}

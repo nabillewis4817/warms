@@ -1,0 +1,528 @@
+// ============================================================
+// ASSISTANT VOCAL CRUD — Wam's
+// ============================================================
+
+// --- Bouton flottant (réutilise les styles existants de app.scss)
+.ia-float-bottom-right {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #1a2e6b, #1e4db7);
+  border: none;
+  border-radius: 20px;
+  padding: 12px 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(30, 77, 183, 0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(30, 77, 183, 0.6);
+  }
+
+  .ia-pulse-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 24px;
+    border: 2px solid rgba(30, 77, 183, 0.4);
+    animation: pulse-ring 2.5s ease-in-out infinite;
+  }
+
+  .ia-icon {
+    font-size: 22px;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .ia-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.5px;
+  }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 0.15; transform: scale(1.15); }
+}
+
+// --- Backdrop
+.avc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(10, 15, 30, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+// --- Panneau générique (écoute commande, intro, succès, erreur)
+.avc-panneau {
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px 48px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  position: relative;
+  animation: slideUp 0.3s ease;
+
+  h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 16px 0 8px;
+  }
+
+  p { color: #64748b; font-size: 14px; line-height: 1.6; margin: 0; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.avc-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 10px;
+  width: 36px; height: 36px;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  &:hover { background: #e2e8f0; color: #0f172a; }
+}
+
+// --- Microphone animé (écoute commande)
+.avc-ecoute {
+  .avc-titre { font-size: 24px; }
+}
+
+.avc-mic-ring {
+  position: relative;
+  width: 120px; height: 120px;
+  margin: 0 auto 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(30, 77, 183, 0.3);
+  animation: expand 2.4s ease-in-out infinite;
+
+  &.ring-1 { width: 120px; height: 120px; animation-delay: 0s; }
+  &.ring-2 { width: 90px;  height: 90px;  animation-delay: 0.4s; }
+  &.ring-3 { width: 60px;  height: 60px;  animation-delay: 0.8s; }
+}
+
+@keyframes expand {
+  0%, 100% { opacity: 0.8; transform: scale(0.95); }
+  50%       { opacity: 0.3; transform: scale(1.05); }
+}
+
+.avc-mic-btn {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, #1a2e6b, #1e4db7);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; color: #fff;
+  box-shadow: 0 6px 20px rgba(30, 77, 183, 0.45);
+  animation: micPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.06); }
+}
+
+.avc-sous-titre { font-size: 14px; color: #94a3b8; margin-bottom: 12px; }
+
+.avc-exemples {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .exemple {
+    display: inline-block;
+    background: rgba(30, 77, 183, 0.07);
+    border: 1px solid rgba(30, 77, 183, 0.2);
+    border-radius: 50px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-style: italic;
+    color: #1e4db7;
+    font-weight: 600;
+  }
+}
+
+.avc-transcript {
+  margin-top: 20px;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #334155;
+  display: flex; align-items: center; gap: 8px;
+  i { color: #1e4db7; }
+}
+
+// --- Intro patient
+.avc-intro {
+  .avc-intro-icon {
+    width: 72px; height: 72px;
+    background: rgba(30, 77, 183, 0.08);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 32px; color: #1e4db7;
+  }
+}
+
+.avc-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #1e4db7;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 20px auto 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ============================================================
+// MODAL PATIENT — CHAMP PAR CHAMP
+// ============================================================
+
+.avc-modal-patient {
+  background: #fff;
+  border-radius: 24px;
+  width: min(680px, 95vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  animation: slideUp 0.3s ease;
+}
+
+.avc-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+
+  .avc-modal-titre {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 17px; font-weight: 800; color: #1a2e6b;
+    i { font-size: 20px; color: #1e4db7; }
+  }
+
+  .avc-progres-bar {
+    flex: 1;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+
+    .avc-progres-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1a2e6b, #1e4db7);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+  }
+}
+
+.avc-close-sm {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  &:hover { color: #0f172a; }
+}
+
+// ─── Champs ───────────────────────────────────────────────────
+.avc-champs-liste {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.avc-champ {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px 20px;
+  transition: all 0.35s ease;
+
+  &.avc-champ-flou {
+    filter: blur(2.5px);
+    opacity: 0.35;
+    pointer-events: none;
+    transform: scale(0.99);
+  }
+
+  &.avc-champ-actif {
+    border-color: #1e4db7;
+    box-shadow: 0 0 0 3px rgba(30, 77, 183, 0.12), 0 4px 20px rgba(30, 77, 183, 0.1);
+    background: #f8faff;
+    transform: scale(1.01);
+  }
+
+  &.avc-champ-rempli:not(.avc-champ-actif) {
+    border-color: #22c55e;
+    background: #f0fdf4;
+    opacity: 0.6;
+  }
+}
+
+.avc-champ-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  .avc-step-num {
+    width: 24px; height: 24px;
+    background: linear-gradient(135deg, #1a2e6b, #1e4db7);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  label {
+    font-size: 14px; font-weight: 700; color: #334155;
+    flex: 1; cursor: default;
+  }
+
+  .avc-ok { color: #22c55e; font-size: 16px; }
+}
+
+.avc-invite {
+  font-size: 13px;
+  color: #475569;
+  background: rgba(30, 77, 183, 0.05);
+  border-left: 3px solid #1e4db7;
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+// ─── Épellation ───────────────────────────────────────────────
+.avc-epellation {
+  margin-bottom: 12px;
+}
+
+.avc-lettres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 48px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #0f172a;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.avc-lettre {
+  font-size: 22px;
+  font-weight: 800;
+  color: #38bdf8;
+  font-family: monospace;
+  animation: popIn 0.15s ease;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.7) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.avc-curseur {
+  font-size: 22px;
+  color: #38bdf8;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.avc-epellation-aide {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+
+  .sep { color: #cbd5e1; }
+}
+
+// ─── Valeur input (mode texte) ────────────────────────────────
+.avc-valeur-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 15px;
+  margin-bottom: 12px;
+
+  .avc-mic-indicator {
+    color: #1e4db7;
+    font-size: 18px;
+    animation: micPulse 1.2s ease-in-out infinite;
+  }
+}
+
+// ─── Transcript inline ────────────────────────────────────────
+.avc-transcript-inline {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 10px;
+  i { color: #1e4db7; }
+}
+
+// ─── Actions champ ────────────────────────────────────────────
+.avc-champ-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.avc-valeur-resume {
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+// ─── Boutons ──────────────────────────────────────────────────
+.avc-btn-primary, .avc-btn-sec, .avc-btn-submit {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.avc-btn-sec {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  &:hover:not(:disabled) { background: #e2e8f0; }
+}
+
+.avc-btn-primary {
+  background: #1e4db7;
+  color: #fff;
+  &:hover:not(:disabled) { background: #1a3fa0; }
+}
+
+.avc-btn-submit {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(22, 163, 74, 0.45); }
+}
+
+// ─── Confirmation / Succès / Erreur ──────────────────────────
+.avc-confirmation, .avc-succes, .avc-erreur {
+  max-width: 520px;
+}
+
+.avc-confirm-icon {
+  font-size: 48px;
+  color: #1e4db7;
+  margin-bottom: 8px;
+}
+
+.avc-succes-icon { font-size: 56px; color: #22c55e; margin-bottom: 8px; }
+.avc-erreur-icon { font-size: 56px; color: #ef4444; margin-bottom: 8px; }
+
+.avc-recap-liste {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 16px;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.avc-recap-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  .avc-recap-label {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  .avc-recap-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: right;
+  }
+}
+
+.avc-confirm-voix {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 8px 0 16px;
+}
+
+.avc-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}

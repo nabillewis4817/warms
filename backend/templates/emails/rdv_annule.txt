@@ -1,0 +1,11 @@
+Bonjour {{ prenom }},
+
+Votre rendez-vous du {{ date_str }} à {{ heure_str }} au cabinet Wam's a été annulé.
+{% if raison %}
+Motif de l'annulation : {{ raison }}
+{% endif %}
+Veuillez nous contacter ou utiliser l'application pour reprogrammer un créneau.
+
+Nous nous excusons pour la gêne occasionnée.
+
+-- {{ site_name }}

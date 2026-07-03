@@ -1,0 +1,14 @@
+Bonjour {{ prenom }},
+
+Votre rendez-vous au cabinet Wam's a bien été programmé.
+
+  Date    : {{ date_str }}
+  Heure   : {{ heure_str }}
+  Avec    : {{ praticien_nom }}
+  Motif   : {{ motif }}
+
+Merci de vous présenter 5 minutes avant l'heure prévue.
+En cas d'empêchement, veuillez nous prévenir le plus tôt possible.
+
+À bientôt,
+-- {{ site_name }}
