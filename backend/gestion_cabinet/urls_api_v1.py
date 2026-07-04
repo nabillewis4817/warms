@@ -28,4 +28,5 @@ urlpatterns = [
     # Manquait entièrement ici : toutes les requêtes mobiles vers ces
     # fonctionnalités échouaient en 404.
     path("ia-shared/", include("ia_shared.urls")),
+    path("", include("comptes_rendus.urls")),
 ]

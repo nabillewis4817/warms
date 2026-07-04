@@ -3,6 +3,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { RendezVousService, RendezVous } from '../../noyau/services/rendez-vous';
+import { CompteRenduAssistantService } from '../../noyau/services/compte-rendu-assistant.service';
 import { Patients } from '../../noyau/services/patients';
 import { DialogueService } from '../../noyau/services/dialogue.service';
 
@@ -14,6 +15,7 @@ import { DialogueService } from '../../noyau/services/dialogue.service';
 })
 export class RendezVousComponent implements OnInit {
   private readonly rendezVousService = inject(RendezVousService);
+  private readonly compteRenduSvc = inject(CompteRenduAssistantService);
   private readonly patientsService = inject(Patients);
   private readonly fb = inject(FormBuilder);
   private readonly dialogueService = inject(DialogueService);
@@ -112,10 +114,24 @@ export class RendezVousComponent implements OnInit {
       : this.rendezVousService.creer(cleanData);
 
     request.subscribe({
-      next: () => {
+      next: (rdv: any) => {
         this.message = this.editingItem ? 'Rendez-vous modifié avec succès' : 'Rendez-vous créé avec succès';
         this.closeModal();
         this.loadRendezVous();
+        // Déclencher l'assistant IA si le RDV est marqué effectué
+        if (rdv && rdv.statut === 'effectue') {
+          const patient = this.patientsList.find((p: any) => p.id === (rdv.patient ?? rdv.patient_id));
+          this.compteRenduSvc.declencherGeneration({
+            type_action:    'rendez_vous',
+            reference_id:   rdv.id,
+            patient_id:     rdv.patient ?? rdv.patient_id,
+            patient_nom:    patient?.nom    ?? rdv.patient_nom    ?? '',
+            patient_prenom: patient?.prenom ?? rdv.patient_prenom ?? '',
+            date:           rdv.debut ?? rdv.date_heure ?? '',
+            motif:          rdv.motif ?? '',
+            notes:          rdv.notes ?? '',
+          });
+        }
       },
         error: (err: any) => {
         console.error('Erreur lors de la sauvegarde:', err);

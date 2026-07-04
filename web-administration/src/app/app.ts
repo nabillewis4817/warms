@@ -17,10 +17,11 @@ import { SelecteurPatientService } from './noyau/services/selecteur-patient.serv
 import { AlerteComponent } from './noyau/composants/alerte/alerte.component';
 import { GlobalTokenErrorHandlerComponent } from './noyau/composants/global-token-error-handler.component';
 import { AssistantVocalCrud } from './noyau/composants/assistant-vocal-crud/assistant-vocal-crud';
+import { CompteRenduAssistant } from './noyau/composants/compte-rendu-assistant/compte-rendu-assistant';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, DialogueModal, DialogueComponent, AlerteComponent, GlobalTokenErrorHandlerComponent, AssistantVocalCrud],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, DialogueModal, DialogueComponent, AlerteComponent, GlobalTokenErrorHandlerComponent, AssistantVocalCrud, CompteRenduAssistant],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

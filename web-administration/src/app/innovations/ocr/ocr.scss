@@ -317,18 +317,234 @@
   border-top: 1px solid #eef1f8;
   display: flex;
   justify-content: flex-end;
+  gap: 0.6rem;
 }
 
-.btn-secondaire {
-  background: #f1f4fb;
-  color: #1a2e6b;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   border: none;
   border-radius: 10px;
   padding: 0.6rem 1.2rem;
   font-weight: 600;
   cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.15s;
+
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
-.btn-secondaire:hover {
-  background: #e3e9f7;
+.btn-secondaire {
+  background: #f1f4fb;
+  color: #1a2e6b;
+  &:hover:not(:disabled) { background: #e3e9f7; }
+}
+
+.btn-import {
+  background: #14919b;
+  color: white;
+  &:hover:not(:disabled) { background: #0e6e76; }
+}
+
+.btn-valider {
+  background: #14919b;
+  color: white;
+  min-width: 180px;
+  justify-content: center;
+  &:hover:not(:disabled) { background: #0e6e76; }
+}
+
+// ---- Import bandeau ----
+.import-bandeau {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: #dcf1f3;
+  border: 1px solid rgba(20, 145, 155, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin: 0 1.6rem 0.8rem;
+  font-size: 0.87rem;
+  color: #0e6e76;
+
+  i { font-size: 1.2rem; flex-shrink: 0; }
+  strong { font-weight: 700; }
+}
+
+.import-erreur {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fff1f1;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  margin: 0 1.6rem 0.8rem;
+  font-size: 0.87rem;
+  color: #dc2626;
+}
+
+// ---- Corps formulaire import ----
+.import-corps {
+  padding: 0 1.6rem 0.4rem;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(85vh - 220px);
+}
+
+.import-section {
+  margin-bottom: 1.2rem;
+}
+
+.import-section-titre {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a2e6b;
+  margin-bottom: 0.75rem;
+
+  &--manquant { color: #92400e; }
+}
+
+.import-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem;
+}
+
+.import-champ {
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: #5a6b8c;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+
+    i { color: #14919b; }
+    .requis { color: #dc2626; margin-left: 1px; }
+  }
+
+  &--manquant label i { color: #d97706; }
+}
+
+.import-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #1a2e6b;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &--extrait {
+    background: #f8faff;
+    border: 1.5px solid rgba(20, 145, 155, 0.35);
+    &:focus { border-color: #14919b; }
+  }
+
+  &--manquant {
+    background: #fffbf0;
+    border: 1.5px solid rgba(217, 119, 6, 0.35);
+    &:focus { border-color: #d97706; }
+  }
+}
+
+// ---- Succès import ----
+.import-succes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.6rem;
+  text-align: center;
+
+  h4 {
+    margin: 0.6rem 0 0.3rem;
+    color: #1a2e6b;
+    font-size: 1.1rem;
+  }
+
+  p {
+    margin: 0 0 0.8rem;
+    color: #5a6b8c;
+    font-size: 0.9rem;
+  }
+}
+
+.succes-icone {
+  width: 60px;
+  height: 60px;
+  background: #e3f8ea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  i { font-size: 2rem; color: #16a34a; }
+}
+
+.credentials-box {
+  background: #f8faff;
+  border: 1px solid rgba(20, 145, 155, 0.3);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  width: 100%;
+  margin-bottom: 0.8rem;
+}
+
+.cred-ligne {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+
+  i { color: #14919b; font-size: 1rem; flex-shrink: 0; }
+
+  & + & { border-top: 1px solid #eef1f8; }
+}
+
+.cred-label {
+  font-size: 0.78rem;
+  color: #8b97b3;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.cred-valeur {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a2e6b;
+  background: #e8edf8;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+.succes-note {
+  font-size: 0.8rem !important;
+  color: #8b97b3 !important;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  i { color: #8b97b3; }
+}
+
+// ---- Spinner inline ----
+.spinner-sm {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }

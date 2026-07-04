@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } 
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { ConsultationsService, Consultation, ActeRealise, PhotoClinique } from '../../noyau/services/consultations.service';
+import { CompteRenduAssistantService } from '../../noyau/services/compte-rendu-assistant.service';
 import { DialogueService } from '../../noyau/services/dialogue.service';
 import { Patients, Patient } from '../../noyau/services/patients';
 import { PersonnelService, Personnel } from '../../noyau/services/personnel.service';
@@ -26,6 +27,7 @@ export class ConsultationsComponent implements OnInit {
   private readonly patientsService = inject(Patients);
   private readonly personnelService = inject(PersonnelService);
   private readonly rendezVousService = inject(RendezVousService);
+  private readonly compteRenduSvc = inject(CompteRenduAssistantService);
 
   readonly Math = Math;
 
@@ -339,6 +341,23 @@ export class ConsultationsComponent implements OnInit {
         this.afficherNotificationSucces(message);
         this.fermerFormulaire();
         this.chargerConsultations();
+        // Déclencher l'assistant IA pour la génération du compte-rendu
+        const patient = this.patients.find((p) => p.id === consultation.patient);
+        const praticien = this.praticiens.find((p) => p.id === consultation.praticien);
+        this.compteRenduSvc.declencherGeneration({
+          type_action:    'consultation',
+          reference_id:   consultation.id,
+          patient_id:     consultation.patient,
+          patient_nom:    patient?.nom    ?? consultation.patient_nom    ?? '',
+          patient_prenom: patient?.prenom ?? consultation.patient_prenom ?? '',
+          praticien_nom:  praticien ? `Dr. ${praticien.prenom} ${praticien.nom}` : '',
+          date:           consultation.date,
+          motif:          consultation.motif        ?? '',
+          observations:   consultation.observations ?? '',
+          diagnostic:     consultation.diagnostic   ?? '',
+          notes:          consultation.notes        ?? '',
+          actes:          [],
+        });
       },
       error: (error) => {
         console.error('Erreur lors de l\'enregistrement:', error);

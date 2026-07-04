@@ -9,13 +9,23 @@ export interface OCRResult {
     nom?: string;
     prenom?: string;
     date_naissance?: string;
+    sexe?: string;
     telephone?: string;
     email?: string;
     adresse?: string;
+    groupe_sanguin?: string;
+    allergies?: string;
   };
   symptomes?: string[];
   traitements?: string[];
   confiance?: number;
+}
+
+export interface ImportCarnetResult {
+  id: number;
+  prenom: string;
+  nom: string;
+  identifiants_patient?: { username: string; password: string; temporaire: boolean };
 }
 
 @Injectable({
@@ -29,8 +39,11 @@ export class OcrService {
   extraireTexte(image: File): Observable<OCRResult> {
     const formData = new FormData();
     formData.append('image', image);
-
     return this.http.post<OCRResult>(`${this.baseUrl}/ia/ocr-carnet/`, formData);
+  }
+
+  importerCarnet(donnees: Record<string, string>): Observable<ImportCarnetResult> {
+    return this.http.post<ImportCarnetResult>(`${this.baseUrl}/patients/importer-carnet/`, donnees);
   }
 
   // Méthode de secours si le backend n'est pas disponible

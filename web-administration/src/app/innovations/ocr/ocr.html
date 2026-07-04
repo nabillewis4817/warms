@@ -1,35 +1,35 @@
 <section class="ocr-page">
-  <h2>OCR Warm's</h2>
-  <p class="sous-titre">Extrayez automatiquement le texte et les informations d'un carnet médical ou d'une ordonnance scannée.</p>
+  <h2>OCR Wam's</h2>
+  <p class="sous-titre">Extrayez automatiquement le texte d'un carnet médical, puis créez directement le dossier patient numérique.</p>
 
+  <!-- Overlay chargement -->
   <div *ngIf="chargement" class="loading-overlay">
     <div class="loading-spinner">
       <i class="bi bi-arrow-clockwise"></i>
-      <p>Traitement OCR en cours...</p>
+      <p>Traitement OCR en cours…</p>
     </div>
   </div>
 
+  <!-- Zone de dépôt -->
   <div class="dropzone" [style.cursor]="chargement ? 'wait' : 'pointer'" (click)="clickFileInput()">
     <input #fileInput type="file" accept="image/*" (change)="onFileUpload($event)" [disabled]="chargement" style="display: none;">
     <i class="bi bi-plus-lg"></i>
     <p>Glissez un document ici ou cliquez pour uploader</p>
   </div>
 
+  <!-- Boutons d'action -->
   <div class="actions">
-    <button class="upload-btn" (click)="clickFileInput()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
+    <button class="upload-btn" (click)="clickFileInput()" [disabled]="chargement">
       <i class="bi bi-upload"></i>
-      <span *ngIf="operationEnCours === 'upload'">...</span>
-      <span *ngIf="operationEnCours !== 'upload'">Upload fichier</span>
+      <span>{{ operationEnCours === 'upload' ? '…' : 'Upload fichier' }}</span>
     </button>
-
-    <button class="scan-btn" (click)="scannerDocument()" [disabled]="chargement" [style.cursor]="chargement ? 'wait' : 'pointer'">
+    <button class="scan-btn" (click)="scannerDocument()" [disabled]="chargement">
       <i class="bi bi-scanner"></i>
-      <span *ngIf="operationEnCours === 'scan'">...</span>
-      <span *ngIf="operationEnCours !== 'scan'">Scanner document</span>
+      <span>{{ operationEnCours === 'scan' ? '…' : 'Scanner document' }}</span>
     </button>
   </div>
 
-  <!-- Panneau d'erreur -->
+  <!-- Panneau d'erreur OCR -->
   <div *ngIf="erreur" class="ocr-erreur">
     <i class="bi bi-exclamation-triangle-fill"></i>
     <div>
@@ -39,56 +39,182 @@
     <button class="bouton-fermer-erreur" (click)="fermerErreur()"><i class="bi bi-x-lg"></i></button>
   </div>
 
-  <!-- Panneau de résultats -->
+  <!-- ===== MODAL RÉSULTATS ===== -->
   <div *ngIf="resultat" class="modal-overlay" (click)="fermerResultat()">
     <div class="modal-resultat" (click)="$event.stopPropagation()">
+
+      <!-- En-tête -->
       <div class="resultat-entete">
         <div>
-          <h3><i class="bi bi-file-earmark-check-fill"></i> Extraction réussie</h3>
+          <h3>
+            <i class="bi bi-file-earmark-check-fill"></i>
+            {{ modeImport ? (importSucces ? 'Patient créé !' : 'Créer le dossier patient') : 'Extraction réussie' }}
+          </h3>
           <span class="nom-fichier">{{ nomFichierTraite }}</span>
         </div>
         <button class="bouton-fermer" (click)="fermerResultat()"><i class="bi bi-x-lg"></i></button>
       </div>
 
-      <div class="badge-confiance" [class]="'confiance-' + niveauConfiance">
-        <i class="bi bi-bar-chart-fill"></i>
-        Confiance de la reconnaissance : {{ pourcentageConfiance }}%
-      </div>
+      <!-- ========== VUE RÉSULTATS OCR ========== -->
+      <ng-container *ngIf="!modeImport">
+        <div class="badge-confiance" [class]="'confiance-' + niveauConfiance">
+          <i class="bi bi-bar-chart-fill"></i>
+          Confiance de la reconnaissance : {{ pourcentageConfiance }}%
+        </div>
 
-      <div class="resultat-corps">
-        <div class="resultat-section" *ngIf="champsStructures.length > 0">
-          <h4><i class="bi bi-person-vcard"></i> Informations détectées</h4>
-          <div class="grille-champs">
-            <div class="champ-detecte" *ngFor="let c of champsStructures">
-              <label>{{ c.label }}</label>
-              <span>{{ c.valeur }}</span>
+        <div class="resultat-corps">
+          <!-- Champs structurés -->
+          <div class="resultat-section" *ngIf="champsStructures.length > 0">
+            <h4><i class="bi bi-person-vcard"></i> Informations détectées</h4>
+            <div class="grille-champs">
+              <div class="champ-detecte" *ngFor="let c of champsStructures">
+                <label>{{ c.label }}</label>
+                <span>{{ c.valeur }}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="resultat-section" *ngIf="(resultat.symptomes?.length ?? 0) > 0">
-          <h4><i class="bi bi-thermometer-half"></i> Symptômes détectés</h4>
-          <div class="liste-puces">
-            <span class="puce puce-symptome" *ngFor="let s of resultat.symptomes">{{ s }}</span>
+          <!-- Symptômes -->
+          <div class="resultat-section" *ngIf="(resultat.symptomes?.length ?? 0) > 0">
+            <h4><i class="bi bi-thermometer-half"></i> Symptômes détectés</h4>
+            <div class="liste-puces">
+              <span class="puce puce-symptome" *ngFor="let s of resultat.symptomes">{{ s }}</span>
+            </div>
+          </div>
+
+          <!-- Traitements -->
+          <div class="resultat-section" *ngIf="(resultat.traitements?.length ?? 0) > 0">
+            <h4><i class="bi bi-capsule"></i> Traitements détectés</h4>
+            <div class="liste-puces">
+              <span class="puce puce-traitement" *ngFor="let t of resultat.traitements">{{ t }}</span>
+            </div>
+          </div>
+
+          <!-- Texte brut -->
+          <div class="resultat-section">
+            <h4><i class="bi bi-textarea-t"></i> Texte brut extrait</h4>
+            <pre class="texte-brut">{{ resultat.texte_extrait || 'Aucun texte détecté.' }}</pre>
           </div>
         </div>
 
-        <div class="resultat-section" *ngIf="(resultat.traitements?.length ?? 0) > 0">
-          <h4><i class="bi bi-capsule"></i> Traitements détectés</h4>
-          <div class="liste-puces">
-            <span class="puce puce-traitement" *ngFor="let t of resultat.traitements">{{ t }}</span>
+        <div class="modal-footer">
+          <button class="btn btn-secondaire" (click)="fermerResultat()">Fermer</button>
+          <button class="btn btn-import" (click)="lancerImport()">
+            <i class="bi bi-person-plus-fill"></i>
+            Créer le dossier patient
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- ========== VUE IMPORT CARNET ========== -->
+      <ng-container *ngIf="modeImport">
+
+        <!-- Succès -->
+        <div *ngIf="importSucces" class="import-succes">
+          <div class="succes-icone"><i class="bi bi-check-circle-fill"></i></div>
+          <h4>Patient enregistré avec succès</h4>
+          <p>Le dossier numérique a été créé. Voici les identifiants temporaires :</p>
+          <div class="credentials-box">
+            <div class="cred-ligne">
+              <i class="bi bi-person-circle"></i>
+              <span class="cred-label">Login</span>
+              <code class="cred-valeur">{{ importSucces.username }}</code>
+            </div>
+            <div class="cred-ligne">
+              <i class="bi bi-key-fill"></i>
+              <span class="cred-label">Mot de passe</span>
+              <code class="cred-valeur">{{ importSucces.password }}</code>
+            </div>
+          </div>
+          <p class="succes-note">
+            <i class="bi bi-envelope"></i>
+            Un e-mail a été envoyé si une adresse était renseignée.
+          </p>
+          <div class="modal-footer">
+            <button class="btn btn-secondaire" (click)="fermerResultat()">Terminer</button>
           </div>
         </div>
 
-        <div class="resultat-section">
-          <h4><i class="bi bi-textarea-t"></i> Texte brut extrait</h4>
-          <pre class="texte-brut">{{ resultat.texte_extrait || 'Aucun texte détecté.' }}</pre>
-        </div>
-      </div>
+        <!-- Formulaire d'import -->
+        <ng-container *ngIf="!importSucces">
+          <!-- Bandeau résumé -->
+          <div class="import-bandeau">
+            <i class="bi bi-document-scanner"></i>
+            <span>
+              <strong>{{ nbChampsExtraits }}</strong> champ(s) pré-rempli(s) depuis l'OCR.
+              {{ champsMissingImport.length > 0 ? 'Complétez les champs manquants si disponibles.' : 'Vérifiez les données avant de valider.' }}
+            </span>
+          </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondaire" (click)="fermerResultat()">Fermer</button>
-      </div>
+          <!-- Erreur import -->
+          <div *ngIf="importErreur" class="import-erreur">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            {{ importErreur }}
+          </div>
+
+          <div class="import-corps">
+            <!-- Champs pré-remplis -->
+            <div class="import-section">
+              <div class="import-section-titre">
+                <i class="bi bi-check-circle-fill" style="color: #16a34a"></i>
+                Données extraites — vérifiez et corrigez si nécessaire
+              </div>
+              <div class="import-grille">
+                <ng-container *ngFor="let champ of champsCarnet">
+                  <div class="import-champ" *ngIf="(donneesImport[champ.cle] ?? '').trim()">
+                    <label>
+                      <i class="bi {{ champ.icone }}"></i>
+                      {{ champ.label }}
+                      <span class="requis" *ngIf="champ.requis">*</span>
+                    </label>
+                    <input
+                      [(ngModel)]="donneesImport[champ.cle]"
+                      [type]="champ.type"
+                      [placeholder]="champ.label"
+                      class="import-input import-input--extrait"
+                    />
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+
+            <!-- Champs manquants -->
+            <div class="import-section" *ngIf="champsMissingImport.length > 0">
+              <div class="import-section-titre import-section-titre--manquant">
+                <i class="bi bi-plus-circle-fill" style="color: #d97706"></i>
+                Champs non extraits — remplissez si vous les connaissez
+              </div>
+              <div class="import-grille">
+                <div class="import-champ import-champ--manquant" *ngFor="let champ of champsMissingImport">
+                  <label>
+                    <i class="bi {{ champ.icone }}"></i>
+                    {{ champ.label }}
+                    <span class="requis" *ngIf="champ.requis">*</span>
+                  </label>
+                  <input
+                    [(ngModel)]="donneesImport[champ.cle]"
+                    [type]="champ.type"
+                    [placeholder]="'Saisir ' + champ.label.toLowerCase()"
+                    class="import-input import-input--manquant"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-secondaire" (click)="annulerImport()" [disabled]="importEnCours">
+              Retour aux résultats
+            </button>
+            <button class="btn btn-valider" (click)="soumettreImport()" [disabled]="importEnCours">
+              <span *ngIf="importEnCours" class="spinner-sm"></span>
+              <i *ngIf="!importEnCours" class="bi bi-check-lg"></i>
+              {{ importEnCours ? 'Enregistrement…' : 'Valider et enregistrer' }}
+            </button>
+          </div>
+        </ng-container>
+
+      </ng-container>
     </div>
   </div>
 </section>

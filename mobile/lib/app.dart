@@ -5,7 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'models/utilisateur.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
-import 'screens/profil/profil_screen.dart';
+import 'screens/personnel/personnel_home_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/auth_service.dart';
 import 'services/patient_service.dart';
@@ -186,7 +186,7 @@ class _AppGateState extends State<AppGate> {
             onModeSombreChange: _onModeSombreChange,
           );
         }
-        return ProfilScreen(
+        return PersonnelHomeScreen(
           utilisateur: _utilisateur,
           onDeconnexion: _deconnexion,
           onModeSombreChange: _onModeSombreChange,

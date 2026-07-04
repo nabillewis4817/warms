@@ -367,6 +367,99 @@ class PatientViewSet(viewsets.ModelViewSet):
             }, status=500)
 
 
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="importer-carnet",
+        permission_classes=[EstPersonnelCabinet],
+    )
+    def importer_carnet(self, request):
+        """
+        Crée un patient depuis les données extraites d'un carnet physique scanné.
+        Ni photo ni credentials ne sont requis : un compte temporaire est
+        auto-généré et envoyé par e-mail si l'adresse est présente.
+        """
+        import random
+        import string
+        import unicodedata
+
+        def _slug(s: str) -> str:
+            nfkd = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
+            return "".join(c.lower() for c in nfkd if c.isalnum())
+
+        prenom = (request.data.get("prenom") or "").strip()
+        nom    = (request.data.get("nom")    or "").strip()
+
+        if not prenom or not nom:
+            return Response(
+                {"detail": "Le prénom et le nom sont obligatoires."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if Patient.objects.filter(prenom__iexact=prenom, nom__iexact=nom, actif=True).exists():
+            return Response(
+                {"detail": "Un patient actif avec ces informations existe déjà."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Génération d'un compte temporaire unique
+        suffix = "".join(random.choices(string.digits, k=4))
+        username = f"{_slug(prenom)}.{_slug(nom)}{suffix}"
+        while Utilisateur.objects.filter(username=username).exists():
+            suffix = "".join(random.choices(string.digits, k=4))
+            username = f"{_slug(prenom)}.{_slug(nom)}{suffix}"
+        password = "".join(random.choices(string.ascii_letters + string.digits, k=12))
+
+        # Construction du payload patient (les champs vides sont exclus)
+        champs = {
+            "prenom":         prenom,
+            "nom":            nom,
+            "date_naissance": (request.data.get("date_naissance") or "").strip() or None,
+            "sexe":           (request.data.get("sexe")          or "M").strip(),
+            "telephone":      (request.data.get("telephone")     or "").strip() or None,
+            "email":          (request.data.get("email")         or "").strip() or None,
+            "adresse":        (request.data.get("adresse")       or "").strip() or None,
+            "groupe_sanguin": (request.data.get("groupe_sanguin") or "").strip() or None,
+        }
+        patient_data = {k: v for k, v in champs.items() if v is not None}
+
+        serializer = self.get_serializer(data=patient_data)
+        serializer.is_valid(raise_exception=True)
+        patient = serializer.save()
+
+        allergies = (request.data.get("allergies") or "").strip()
+        self._creer_dossier_qr(patient, allergies=allergies)
+
+        compte = Utilisateur.objects.create_user(
+            username=username,
+            password=password,
+            role=Utilisateur.Role.PATIENT,
+            first_name=patient.prenom,
+            last_name=patient.nom,
+            email=patient.email or "",
+            telephone=patient.telephone or "",
+        )
+        patient.user = compte
+        patient.save(update_fields=["user"])
+        envoyer_email_compte_cree(compte, mot_de_passe=password)
+
+        journaliser(
+            acteur=request.user,
+            action="patient.imported_from_carnet",
+            objet_type="Patient",
+            objet_id=patient.id,
+            message=f"Patient {patient.prenom} {patient.nom} importé via scan de carnet.",
+        )
+
+        payload = self.get_serializer(patient).data
+        payload["identifiants_patient"] = {
+            "username": username,
+            "password": password,
+            "temporaire": True,
+        }
+        return Response(payload, status=status.HTTP_201_CREATED)
+
+
 class AvisPatientViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = AvisPatient.objects.select_related("patient", "auteur").all()

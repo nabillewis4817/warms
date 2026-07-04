@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "ocr",
     "ia_avancee",
     "ia_shared",
+    "comptes_rendus",
 ]
 
 MIDDLEWARE = [

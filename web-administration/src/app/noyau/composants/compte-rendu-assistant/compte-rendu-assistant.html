@@ -1,0 +1,246 @@
+@if (etat !== 'ferme') {
+  <div class="cra-overlay" (click)="fermer()">
+    <div class="cra-modal" (click)="$event.stopPropagation()">
+
+      <!-- ══════════════════════════════════════════════
+           PHASE 1 — L'IA parle à l'acteur
+      ══════════════════════════════════════════════ -->
+      @if (etat === 'parole') {
+        <div class="cra-phase-parole">
+          <div class="cra-avatar">
+            <div class="cra-avatar-ring"></div>
+            <div class="cra-avatar-ring cra-ring2"></div>
+            <i class="bi bi-robot"></i>
+          </div>
+          <p class="cra-phrase">{{ phraseParole }}</p>
+          <div class="cra-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════
+           PHASE 2 — Génération en cours
+      ══════════════════════════════════════════════ -->
+      @if (etat === 'generation') {
+        <div class="cra-phase-generation">
+          <div class="cra-ia-chip">
+            <i class="bi bi-stars"></i> Assistant Wam's IA
+          </div>
+          <div class="cra-loader">
+            <div class="cra-loader-bar"></div>
+            <div class="cra-loader-bar cra-lb2"></div>
+            <div class="cra-loader-bar cra-lb3"></div>
+          </div>
+          <p class="cra-gen-texte">Analyse et rédaction du compte-rendu en cours…</p>
+          @if (contexte) {
+            <span class="cra-patient-chip">
+              <i class="bi bi-person-circle"></i>
+              {{ contexte.patient_prenom }} {{ contexte.patient_nom }}
+            </span>
+          }
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════
+           PHASE 3 — Édition du compte-rendu
+      ══════════════════════════════════════════════ -->
+      @if (etat === 'edition') {
+        <div class="cra-phase-edition">
+
+          <div class="cra-entete">
+            <div class="cra-entete-gauche">
+              <div class="cra-ia-chip">
+                <i class="bi bi-stars"></i> Assistant Wam's IA
+                @if (genereParIa) { <span class="cra-ia-badge">IA</span> }
+              </div>
+              <h2 class="cra-titre-modal">Compte-rendu</h2>
+              @if (contexte) {
+                <span class="cra-sous-titre">
+                  <i class="bi bi-person-circle"></i>
+                  {{ contexte.patient_prenom }} {{ contexte.patient_nom }}
+                  <span class="cra-sep">·</span>
+                  {{ libelleType(contexte.type_action) }}
+                </span>
+              }
+            </div>
+            <button class="cra-fermer" (click)="fermer()"><i class="bi bi-x-lg"></i></button>
+          </div>
+
+          <!-- Titre éditable -->
+          <div class="cra-champ-titre">
+            <input
+              type="text"
+              [(ngModel)]="titreEdite"
+              placeholder="Titre du compte-rendu"
+              class="cra-input-titre"
+            />
+          </div>
+
+          <!-- Corps éditable -->
+          <textarea
+            class="cra-textarea"
+            [(ngModel)]="contenuEdite"
+            placeholder="Contenu du compte-rendu…"
+            rows="14"
+          ></textarea>
+
+          @if (genereParIa) {
+            <p class="cra-ia-note">
+              <i class="bi bi-info-circle"></i>
+              Texte généré par IA — vérifiez et complétez si nécessaire avant d'enregistrer.
+            </p>
+          }
+
+          @if (messageRetour) {
+            <div class="cra-toast" [class.cra-toast-succes]="messageRetourSucces">
+              <i class="bi" [ngClass]="messageRetourSucces ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+              {{ messageRetour }}
+            </div>
+          }
+
+          <div class="cra-actions">
+            <div class="cra-actions-gauche">
+              <button class="cra-btn-ghost" (click)="regenerer()" title="Régénérer via IA">
+                <i class="bi bi-arrow-clockwise"></i> Régénérer
+              </button>
+              <button class="cra-btn-ghost" (click)="ouvrirHistorique()">
+                <i class="bi bi-clock-history"></i> Historique
+              </button>
+            </div>
+            <div class="cra-actions-droite">
+              @if (crSauvegarde) {
+                <button
+                  class="cra-btn-pdf"
+                  [disabled]="pdfEnCours === crSauvegarde.id"
+                  (click)="telechargerPdf(crSauvegarde.id)"
+                >
+                  @if (pdfEnCours === crSauvegarde.id) {
+                    <i class="bi bi-arrow-repeat cra-spin"></i>
+                  } @else {
+                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                  }
+                  Télécharger PDF
+                </button>
+              }
+              <button
+                class="cra-btn-primary"
+                [disabled]="enregistrementEnCours || !contenuEdite.trim()"
+                (click)="enregistrer()"
+              >
+                @if (enregistrementEnCours) {
+                  <i class="bi bi-arrow-repeat cra-spin"></i> Enregistrement…
+                } @else if (crSauvegarde) {
+                  <i class="bi bi-floppy-fill"></i> Mettre à jour
+                } @else {
+                  <i class="bi bi-floppy-fill"></i> Enregistrer
+                }
+              </button>
+            </div>
+          </div>
+
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════
+           PHASE 4 — Historique des comptes-rendus
+      ══════════════════════════════════════════════ -->
+      @if (etat === 'historique') {
+        <div class="cra-phase-historique">
+
+          <div class="cra-entete">
+            <div class="cra-entete-gauche">
+              <h2 class="cra-titre-modal">
+                <i class="bi bi-clock-history"></i> Historique des comptes-rendus
+              </h2>
+              @if (contexte) {
+                <span class="cra-sous-titre">
+                  <i class="bi bi-person-circle"></i>
+                  {{ contexte.patient_prenom }} {{ contexte.patient_nom }}
+                </span>
+              }
+            </div>
+            <div class="cra-entete-actions">
+              <button class="cra-btn-ghost" (click)="retourEdition()">
+                <i class="bi bi-pencil-square"></i> Retour à l'édition
+              </button>
+              <button class="cra-fermer" (click)="fermer()"><i class="bi bi-x-lg"></i></button>
+            </div>
+          </div>
+
+          @if (messageRetour) {
+            <div class="cra-toast" [class.cra-toast-succes]="messageRetourSucces">
+              <i class="bi" [ngClass]="messageRetourSucces ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>
+              {{ messageRetour }}
+            </div>
+          }
+
+          @if (chargementHistorique) {
+            <div class="cra-chargement">
+              <div class="cra-spinner"></div>
+              <p>Chargement de l'historique…</p>
+            </div>
+          } @else if (historique.length === 0) {
+            <div class="cra-vide">
+              <i class="bi bi-journal-x"></i>
+              <p>Aucun compte-rendu pour ce patient.</p>
+            </div>
+          } @else {
+            <div class="cra-liste">
+              @for (cr of historique; track cr.id) {
+                <div class="cra-item">
+                  <div class="cra-item-info">
+                    <span class="cra-item-titre">{{ cr.titre }}</span>
+                    <div class="cra-item-meta">
+                      <span class="cra-chip-type">{{ libelleType(cr.type_action) }}</span>
+                      @if (cr.genere_par_ia) {
+                        <span class="cra-chip-ia"><i class="bi bi-stars"></i> IA</span>
+                      }
+                      <span class="cra-item-date">{{ cr.cree_le | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    <p class="cra-item-extrait">{{ cr.contenu | slice:0:120 }}…</p>
+                  </div>
+                  <div class="cra-item-actions">
+                    <button
+                      class="cra-btn-icon"
+                      title="Modifier"
+                      (click)="editerDepuisHistorique(cr)"
+                    >
+                      <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button
+                      class="cra-btn-icon"
+                      title="Télécharger PDF"
+                      [disabled]="pdfEnCours === cr.id"
+                      (click)="telechargerPdf(cr.id)"
+                    >
+                      @if (pdfEnCours === cr.id) {
+                        <i class="bi bi-arrow-repeat cra-spin"></i>
+                      } @else {
+                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                      }
+                    </button>
+                    <button
+                      class="cra-btn-icon cra-btn-danger"
+                      title="Supprimer"
+                      [disabled]="suppressionEnCours === cr.id"
+                      (click)="supprimerCr(cr)"
+                    >
+                      @if (suppressionEnCours === cr.id) {
+                        <i class="bi bi-arrow-repeat cra-spin"></i>
+                      } @else {
+                        <i class="bi bi-trash3-fill"></i>
+                      }
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+        </div>
+      }
+
+    </div>
+  </div>
+}

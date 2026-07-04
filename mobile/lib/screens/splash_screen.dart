@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _ctrl.forward();
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted) widget.onTermine();
     });
   }
