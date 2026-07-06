@@ -47,7 +47,7 @@ class Patient(models.Model):
     sexe = models.CharField(max_length=16, blank=True)
 
     telephone = models.CharField(max_length=32, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(null=True, blank=True, unique=True)
     adresse = models.TextField(blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
     taille_cm = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)

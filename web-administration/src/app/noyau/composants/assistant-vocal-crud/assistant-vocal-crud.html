@@ -23,10 +23,18 @@
             <i class="bi bi-mic-fill"></i>
           </div>
         </div>
-        <h2 class="avc-titre">Je vous écoute…</h2>
-        <p class="avc-sous-titre">Dites par exemple :</p>
-        <div class="avc-exemples">
-          <span class="exemple">« Créer un patient »</span>
+        <h2 class="avc-titre">Que souhaitez-vous faire ?</h2>
+        <p class="avc-sous-titre">Dites l'une des commandes ci-dessous à voix haute :</p>
+        <div class="avc-actions-liste">
+          @for (cmd of commandes; track cmd.libelle) {
+            <div class="avc-action-item">
+              <i class="bi" [ngClass]="cmd.icone"></i>
+              <div>
+                <span class="avc-action-cmd">{{ cmd.libelle }}</span>
+                <span class="avc-action-desc">{{ cmd.description }}</span>
+              </div>
+            </div>
+          }
         </div>
         @if (transcriptEnCours) {
           <div class="avc-transcript">
@@ -99,6 +107,8 @@
                       <span>« effacer » = supprimer</span>
                       <span class="sep">·</span>
                       <span>« terminer » = valider</span>
+                      <span class="sep">·</span>
+                      <span>« arrêt » = stop épellation</span>
                     </div>
                   </div>
                 } @else {

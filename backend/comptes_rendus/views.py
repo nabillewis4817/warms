@@ -162,9 +162,9 @@ def _generer_pdf_cr(cr: CompteRendu) -> io.BytesIO:
     c.drawString(MARGE, y, cr.titre.upper())
     y -= 14
 
-    fc(_GRIS); c.setFont("Helvetica", 9)
-    c.drawString(MARGE, y, f"Type : {cr.get_type_action_display()}"
-                           + ("  —  Généré par IA" if cr.genere_par_ia else ""))
+    fc(_GRIS); c.setFont("Times-Roman", 9)
+    ia_tag = "  ·  Généré par IA" if cr.genere_par_ia else ""
+    c.drawString(MARGE, y, f"Type : {cr.get_type_action_display()}{ia_tag}")
     y -= 6
 
     sc(_BLEU); c.setLineWidth(1.2)
@@ -172,22 +172,27 @@ def _generer_pdf_cr(cr: CompteRendu) -> io.BytesIO:
     y -= 18
 
     # ── Contenu ───────────────────────────────────────────────────────────────
-    fc((0.1, 0.1, 0.1)); c.setFont("Helvetica", 10)
+    fc((0.1, 0.1, 0.15)); c.setFont("Times-Roman", 10)
     for ligne in cr.contenu.splitlines():
         if y < 80:
-            c.showPage(); y = height - 60; c.setFont("Helvetica", 10)
+            c.showPage(); y = height - 60; c.setFont("Times-Roman", 10)
 
         # Titres en gras si ligne commence par ** (markdown simplifié)
         if ligne.startswith("**") and ligne.endswith("**"):
             fc(_NAVY); c.setFont("Helvetica-Bold", 11)
             c.drawString(MARGE, y, ligne.replace("**", "").strip())
-            fc((0.1, 0.1, 0.1)); c.setFont("Helvetica", 10)
-            y -= 16
-        else:
-            texte = ligne.lstrip("- ").replace("**", "")
+            fc((0.1, 0.1, 0.15)); c.setFont("Times-Roman", 10)
+            y -= 17
+        elif ligne.startswith("- ") or ligne.startswith("* "):
+            texte = ligne[2:].replace("**", "").replace("  ", " ").strip()
             if texte:
-                c.drawString(MARGE + (10 if ligne.startswith("- ") else 0), y, texte[:115])
-            y -= 13
+                c.drawString(MARGE + 10, y, f"•  {texte[:112]}")
+            y -= 14
+        else:
+            texte = ligne.replace("**", "").replace("  ", " ").strip()
+            if texte:
+                c.drawString(MARGE, y, texte[:115])
+            y -= 14
 
     # ── Pied ──────────────────────────────────────────────────────────────────
     fc(_GRIS); c.setFont("Helvetica-Oblique", 8)

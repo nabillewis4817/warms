@@ -207,7 +207,11 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
+    # BLACKLIST_AFTER_ROTATION nécessite "rest_framework_simplejwt.token_blacklist"
+    # dans INSTALLED_APPS + migration. Désactivé pour l'instant (SimpleJWT silencieux
+    # si l'app n'est pas installée mais cela laisse les anciens refresh tokens valides).
+    # Pour activer : ajouter l'app à INSTALLED_APPS et lancer manage.py migrate.
+    "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,

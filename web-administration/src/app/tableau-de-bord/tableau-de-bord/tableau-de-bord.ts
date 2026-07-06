@@ -57,6 +57,7 @@ export class TableauDeBord implements OnInit, OnDestroy {
   // — Demandes de personnel en attente (chirurgien uniquement) —
   demandesEnAttente: DemandePersonnel[] = [];
   traitementDemandeEnCours: number | null = null;
+  notificationsValidation: Array<{ id: number; nom: string; statut: 'approuvee' | 'rejetee' }> = [];
 
   // — Opérations & schéma dentaire —
   listePatients: Patient[]               = [];
@@ -157,14 +158,22 @@ export class TableauDeBord implements OnInit, OnDestroy {
 
   validerDemande(id: number, statut: 'approuvee' | 'rejetee'): void {
     this.traitementDemandeEnCours = id;
+    const demande = this.demandesEnAttente.find(d => d.id === id);
+    const nom = demande ? `${demande.prenom} ${demande.nom}` : 'Inconnu';
     this.http.patch(`${environment.apiBaseUrl}/personnel/demandes/${id}/valider/`, { statut }).subscribe({
       next: () => {
         this.demandesEnAttente = this.demandesEnAttente.filter(d => d.id !== id);
         this.traitementDemandeEnCours = null;
+        this.notificationsValidation = [{ id, nom, statut }, ...this.notificationsValidation];
+        setTimeout(() => this.fermerNotificationValidation(id), 10000);
         this.cdr.detectChanges();
       },
       error: () => { this.traitementDemandeEnCours = null; },
     });
+  }
+
+  fermerNotificationValidation(id: number): void {
+    this.notificationsValidation = this.notificationsValidation.filter(n => n.id !== id);
   }
 
   private chargerPatients(): void {

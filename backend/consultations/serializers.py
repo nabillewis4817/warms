@@ -109,7 +109,7 @@ class AppelSerializer(serializers.ModelSerializer):
 
 class AppelCreateSerializer(serializers.ModelSerializer):
     """Serializer pour la création d'appels (plus restrictif)"""
-    
+
     class Meta:
         model = Appel
         fields = [
@@ -124,6 +124,9 @@ class AppelCreateSerializer(serializers.ModelSerializer):
             "duree_retard",
             "notes_appel",
         ]
+        extra_kwargs = {
+            "rendez_vous": {"required": False, "allow_null": True},
+        }
     
     def validate(self, data):
         """Validation personnalisée pour la création d'appels"""

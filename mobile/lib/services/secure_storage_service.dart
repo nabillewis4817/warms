@@ -15,6 +15,7 @@ class SecureStorageService {
 
   static const _cleAccessToken = 'warms_access';
   static const _cleRefreshToken = 'warms_refresh';
+  static const _cleServeurUrl = 'warms_server_url';
   static const _cleNom = 'user_name';
   static const _cleEmail = 'user_email';
   static const _cleTelephone = 'user_phone';
@@ -25,6 +26,10 @@ class SecureStorageService {
 
   Future<String?> lireAccessToken() => _storage.read(key: _cleAccessToken);
   Future<String?> lireRefreshToken() => _storage.read(key: _cleRefreshToken);
+
+  Future<String?> lireServeurUrl() => _storage.read(key: _cleServeurUrl);
+  Future<void> sauvegarderServeurUrl(String url) =>
+      _storage.write(key: _cleServeurUrl, value: url);
 
   Future<void> enregistrerTokens({required String access, String? refresh}) async {
     await _storage.write(key: _cleAccessToken, value: access);

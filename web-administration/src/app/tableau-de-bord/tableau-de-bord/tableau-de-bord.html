@@ -27,6 +27,23 @@
     </div>
   </header>
 
+  <!-- ========== NOTIFICATIONS VALIDATION PERSONNEL ========== -->
+  @for (n of notificationsValidation; track n.id) {
+    <div class="notif-validation" [class.notif-approuvee]="n.statut === 'approuvee'" [class.notif-rejetee]="n.statut === 'rejetee'">
+      <i class="bi" [ngClass]="n.statut === 'approuvee' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+      <span>
+        @if (n.statut === 'approuvee') {
+          <strong>{{ n.nom }}</strong> a été approuvé(e) — le compte a été créé et les identifiants envoyés par email.
+        } @else {
+          La demande de <strong>{{ n.nom }}</strong> a été rejetée.
+        }
+      </span>
+      <button class="notif-fermer" (click)="fermerNotificationValidation(n.id)">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  }
+
   @if (chargement) {
     <div class="loading-section">
       <div class="loading-container">

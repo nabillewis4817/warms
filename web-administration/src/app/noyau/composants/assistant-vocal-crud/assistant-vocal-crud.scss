@@ -176,6 +176,49 @@
   }
 }
 
+.avc-actions-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 380px;
+  margin-bottom: 8px;
+
+  .avc-action-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(30, 77, 183, 0.06);
+    border: 1px solid rgba(30, 77, 183, 0.18);
+    border-radius: 12px;
+    padding: 12px 16px;
+
+    > i {
+      font-size: 22px;
+      color: #1e4db7;
+      flex-shrink: 0;
+    }
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .avc-action-cmd {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e4db7;
+      font-style: italic;
+    }
+
+    .avc-action-desc {
+      font-size: 12px;
+      color: #64748b;
+    }
+  }
+}
+
 .avc-transcript {
   margin-top: 20px;
   padding: 10px 16px;

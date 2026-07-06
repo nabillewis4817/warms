@@ -67,7 +67,12 @@ export class App implements OnInit, OnDestroy {
         if (!this.authService.utilisateur()) {
           this.authService.chargerProfil().subscribe({
             next: (profil) => {
-              this.themeService.appliquer(!!(profil as any).mode_sombre);
+              // N'appliquer le thème serveur que si localStorage est vierge
+              // (nouveau navigateur). Sinon localStorage est la source de
+              // vérité pour éviter les basculements clair/sombre inattendus.
+              if (localStorage.getItem('warms_mode_sombre') === null) {
+                this.themeService.appliquer(!!(profil as any).mode_sombre);
+              }
               this.themeService.appliquerCouleur(((profil as any).theme_couleur ?? 'bleu') as any);
               this.traductionService.definirLangue(((profil as any).langue_interface ?? 'fr') as 'fr' | 'en');
             },

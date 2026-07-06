@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../config/api_config.dart';
+import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/profil_service.dart';
 import '../../themes/warms_theme.dart';
@@ -29,6 +31,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _serverCtrl = TextEditingController();
   final _auth = AuthService.instance;
 
   bool _motDePasseVisible = false;
@@ -39,7 +42,63 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
+    _serverCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _configurerServeur() async {
+    _serverCtrl.text = ApiConfig.apiBaseUrl;
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Adresse du serveur'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Entrez l\'adresse IP de votre serveur Wam\'s.\nEx : http://192.168.1.100:8000/api/v1',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _serverCtrl,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'URL serveur',
+                border: OutlineInputBorder(),
+                hintText: 'http://192.168.1.x:8000/api/v1',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+    if (confirme == true && mounted) {
+      final url = _serverCtrl.text.trim();
+      if (url.isNotEmpty) {
+        await ApiClient.instance.configurerServeur(url);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Serveur configuré : $url'),
+              backgroundColor: WarmsTheme.warmsAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _seConnecter() async {
@@ -185,6 +244,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     icone: Icons.login_rounded,
                     enChargement: _enCours,
                     onPressed: _seConnecter,
+                  ),
+                  const SizedBox(height: 20),
+                  // Bouton de configuration serveur (utile sur appareil physique)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: _configurerServeur,
+                      icon: const Icon(Icons.settings_ethernet, size: 16),
+                      label: const Text('Configurer l\'adresse du serveur'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: WarmsTheme.warmsGray,
+                        textStyle: const TextStyle(fontSize: 12),
+                      ),
+                    ),
                   ),
                 ],
               ),

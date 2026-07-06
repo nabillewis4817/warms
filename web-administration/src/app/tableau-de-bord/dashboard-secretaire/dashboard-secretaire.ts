@@ -27,6 +27,11 @@ export class DashboardSecretaire implements OnInit {
   dashboardStats: DashboardStats | null = null;
   chargement = false;
 
+  demandesTraitees: Array<{
+    id: number; prenom: string; nom: string; role: string;
+    statut: string; note: string; visible: boolean;
+  }> = [];
+
   nouveauPersonnel = {
     prenom: '',
     nom: '',
@@ -49,6 +54,31 @@ export class DashboardSecretaire implements OnInit {
 
   ngOnInit(): void {
     this.charger();
+    this.chargerDemandesTraitees();
+  }
+
+  chargerDemandesTraitees(): void {
+    this.http.get<any[]>(`${environment.apiBaseUrl}/personnel/demandes/`).subscribe({
+      next: (demandes) => {
+        this.demandesTraitees = demandes
+          .filter(d => d.statut === 'approuvee' || d.statut === 'rejetee')
+          .map(d => ({
+            id: d.id,
+            prenom: d.prenom,
+            nom: d.nom,
+            role: d.role,
+            statut: d.statut,
+            note: d.note_traitement ?? '',
+            visible: true,
+          }));
+      },
+      error: () => {},
+    });
+  }
+
+  fermerNotif(id: number): void {
+    const n = this.demandesTraitees.find(d => d.id === id);
+    if (n) n.visible = false;
   }
 
   charger(): void {

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'services/api_client.dart';
 
 /// Point d'entrée de WARMS Mobile.
 ///
@@ -14,8 +15,10 @@ import 'app.dart';
 ///
 /// `main.dart` ne fait plus que démarrer le binding Flutter, configurer le
 /// gestionnaire d'erreurs global, puis lancer [WarmsApp].
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Charge l'URL serveur configurée au runtime avant le premier appel réseau.
+  await ApiClient.instance.initialiser();
 
   ErrorWidget.builder = (details) => Material(
         color: const Color(0xFFF2FBFC),

@@ -30,6 +30,9 @@ export class ListePatients implements OnInit {
 
   ngOnInit(): void {
     this.charger();
+    this.patientsService.listerCorbeille().subscribe({
+      next: (items) => (this.compteurs.corbeille = items.length),
+    });
   }
 
   changerVue(vue: Vue): void {

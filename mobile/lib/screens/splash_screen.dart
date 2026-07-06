@@ -65,71 +65,29 @@ class _SplashScreenState extends State<SplashScreen>
             child: Transform.scale(scale: _echelle.value, child: child),
           ),
           child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icône principale
-                Container(
-                  width: 110,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.health_and_safety_rounded,
-                    size: 60,
-                    color: Colors.white,
-                  ),
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  width: 2,
                 ),
-                const SizedBox(height: 28),
-
-                // Nom de l'application
-                const Text(
-                  "Wam's",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 38,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.22),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Cabinet Dentaire',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 3,
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                // Indicateur discret de chargement
-                SizedBox(
-                  width: 32,
-                  height: 2,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
+              child: const Icon(
+                Icons.health_and_safety_rounded,
+                size: 68,
+                color: Colors.white,
+              ),
             ),
           ),
         ),

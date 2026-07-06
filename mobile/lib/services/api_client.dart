@@ -34,6 +34,24 @@ class ApiClient {
 
   Dio get dio => _dio;
 
+  /// Charge l'URL serveur depuis le stockage sécurisé, puis met à jour
+  /// la baseUrl de Dio. Doit être appelé au démarrage de l'application.
+  Future<void> initialiser() async {
+    final url = await _storage.lireServeurUrl();
+    if (url != null && url.isNotEmpty) {
+      ApiConfig.setRuntimeUrl(url);
+      _dio.options.baseUrl = ApiConfig.apiBaseUrl;
+    }
+  }
+
+  /// Applique une nouvelle URL serveur (configurée depuis l'UI) et la
+  /// sauvegarde pour les prochains démarrages.
+  Future<void> configurerServeur(String url) async {
+    ApiConfig.setRuntimeUrl(url);
+    _dio.options.baseUrl = ApiConfig.apiBaseUrl;
+    await _storage.sauvegarderServeurUrl(url);
+  }
+
   void definirToken(String? access) {
     if (access == null || access.isEmpty) {
       _dio.options.headers.remove('Authorization');

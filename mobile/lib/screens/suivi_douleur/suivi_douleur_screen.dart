@@ -28,13 +28,13 @@ class _SuiviDouleurScreenState extends State<SuiviDouleurScreen> {
     ('brulure', 'Brûlure'),
   ];
 
-  Color get _couleurIntensité {
+  Color get _couleurIntensite {
     if (_intensite <= 3) return const Color(0xFF22C55E);
     if (_intensite <= 6) return const Color(0xFFF59E0B);
     return const Color(0xFFEF4444);
   }
 
-  String get _labelIntensité {
+  String get _labelIntensite {
     if (_intensite == 0) return 'Aucune douleur';
     if (_intensite <= 3) return 'Légère';
     if (_intensite <= 6) return 'Modérée';
@@ -143,18 +143,18 @@ class _SuiviDouleurScreenState extends State<SuiviDouleurScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text('$_intensite',
-                      style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: _couleurIntensité)),
+                      style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: _couleurIntensite)),
                     const Text('/10', style: TextStyle(fontSize: 20, color: WarmsTheme.warmsGray)),
                   ],
                 ),
-                Text(_labelIntensité,
+                Text(_labelIntensite,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: _couleurIntensité, fontWeight: FontWeight.w700, fontSize: 14)),
+                  style: TextStyle(color: _couleurIntensite, fontWeight: FontWeight.w700, fontSize: 14)),
                 const SizedBox(height: 12),
                 Slider(
                   value: _intensite.toDouble(),
                   min: 0, max: 10, divisions: 10,
-                  activeColor: _couleurIntensité,
+                  activeColor: _couleurIntensite,
                   onChanged: (v) => setState(() => _intensite = v.round()),
                 ),
                 Row(

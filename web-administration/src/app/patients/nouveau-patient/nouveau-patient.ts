@@ -88,6 +88,20 @@ export class NouveauPatient {
     password_patient: ['', [Validators.required, Validators.minLength(6)]],
   });
 
+  constructor() {
+    this.form.get('date_naissance')!.valueChanges.subscribe((date) => {
+      if (!date) return;
+      const naissance = new Date(date);
+      const today = new Date();
+      let age = today.getFullYear() - naissance.getFullYear();
+      if (
+        today.getMonth() < naissance.getMonth() ||
+        (today.getMonth() === naissance.getMonth() && today.getDate() < naissance.getDate())
+      ) age--;
+      this.form.get('age')!.setValue(String(age), { emitEvent: false });
+    });
+  }
+
   get etapeCourante() {
     return this.etapes[this.etapeActive];
   }
@@ -173,7 +187,15 @@ export class NouveauPatient {
     this.patientsService.creer(payload, this.photoFichier).subscribe({
       next: async (patient) => {
         this.patientCree = patient;
-        this.message = 'Patient créé avec succès (dossier + QR auto générés).';
+        const emailEnvoye = (patient as any).email_envoye;
+        const emailCible = (patient as any).email;
+        if (emailEnvoye && emailCible) {
+          this.message = `Patient créé avec succès. Un email avec les identifiants a été envoyé à ${emailCible}.`;
+        } else if (emailCible) {
+          this.message = 'Patient créé avec succès. L\'envoi de l\'email a échoué — vérifiez la configuration SMTP.';
+        } else {
+          this.message = 'Patient créé avec succès (dossier + QR auto générés). Aucun email renseigné.';
+        }
         this.qrImageData = patient.qr_token
           ? await QRCode.toDataURL(patient.qr_token, { width: 220, margin: 1 })
           : '';

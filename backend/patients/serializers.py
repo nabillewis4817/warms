@@ -50,6 +50,28 @@ class PatientSerializer(serializers.ModelSerializer):
             cleaned = re.sub(r"[\s\-\(\)]", "", value)
             if not re.match(r"^\+?[0-9]{8,15}$", cleaned):
                 raise serializers.ValidationError("Le numéro de téléphone doit contenir entre 8 et 15 chiffres.")
+            # Avertissement doublon (non bloquant pour les familles partageant un n°)
+            qs = Patient.objects.filter(telephone=value)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                existing = qs.first()
+                raise serializers.ValidationError(
+                    f"Ce numéro est déjà utilisé par {existing.prenom} {existing.nom}."
+                )
+        return value
+
+    def validate_email(self, value):
+        if not value:
+            return value
+        qs = Patient.objects.filter(email=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            existing = qs.first()
+            raise serializers.ValidationError(
+                f"Cet email est déjà utilisé par {existing.prenom} {existing.nom}."
+            )
         return value
 
 

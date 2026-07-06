@@ -106,25 +106,24 @@ def _generer_pdf(prescription, sig_img=None) -> io.BytesIO:
     for idx, ligne in enumerate(prescription.lignes.all(), start=1):
         if y < 200:
             c.showPage(); y = height - 60
-        fc(_BLEU); c.setFont("Helvetica-Bold", 10)
+        fc(_BLEU); c.setFont("Times-Bold", 10)
         c.drawString(MARGE, y, f"{idx}.")
-        fc((0, 0, 0)); c.setFont("Helvetica-Bold", 10)
+        fc((0, 0, 0)); c.setFont("Times-Bold", 10)
         c.drawString(MARGE + 18, y, ligne.medicament[:80])
-        y -= 14
-        if ligne.posologie or ligne.duree:
-            fc(_GRIS); c.setFont("Helvetica", 9)
-            detail = ""
-            if ligne.posologie:
-                detail += f"Posologie : {ligne.posologie}"
-            if ligne.duree:
-                detail += f"  —  Durée : {ligne.duree}" if detail else f"Durée : {ligne.duree}"
-            c.drawString(MARGE + 18, y, detail[:110])
-            y -= 12
+        y -= 15
+        if ligne.posologie:
+            fc(_GRIS); c.setFont("Times-Roman", 9)
+            c.drawString(MARGE + 18, y, f"Posologie : {ligne.posologie}"[:110])
+            y -= 13
+        if ligne.duree:
+            fc(_GRIS); c.setFont("Times-Roman", 9)
+            c.drawString(MARGE + 18, y, f"Durée : {ligne.duree}"[:110])
+            y -= 13
         if ligne.remarques:
-            fc(_GRIS); c.setFont("Helvetica-Oblique", 9)
+            fc(_GRIS); c.setFont("Times-Italic", 9)
             c.drawString(MARGE + 18, y, f"Note : {ligne.remarques[:100]}")
-            y -= 12
-        y -= 6
+            y -= 13
+        y -= 5
 
     # ── Blocs optionnels ─────────────────────────────────────────────────────
     def _bloc(titre_bloc, contenu, couleur=_NAVY):
@@ -136,13 +135,15 @@ def _generer_pdf(prescription, sig_img=None) -> io.BytesIO:
         y -= 10
         fc(couleur); c.setFont("Helvetica-Bold", 11)
         c.drawString(MARGE, y, titre_bloc)
-        y -= 14
-        fc((0.2, 0.2, 0.2)); c.setFont("Helvetica", 10)
+        y -= 15
+        fc((0.15, 0.15, 0.2)); c.setFont("Times-Roman", 10)
         for line in contenu.splitlines():
-            c.drawString(MARGE + 10, y, line[:115])
-            y -= 13
+            texte = line.lstrip("- ").replace("  ", " ").strip()
+            if texte:
+                c.drawString(MARGE + 10, y, texte[:115])
+                y -= 14
             if y < 200:
-                c.showPage(); y = height - 60; c.setFont("Helvetica", 10)
+                c.showPage(); y = height - 60; c.setFont("Times-Roman", 10)
 
     _bloc("Notes du praticien :", prescription.note_praticien)
     _bloc("Conseils :", prescription.conseils)

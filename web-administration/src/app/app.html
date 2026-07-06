@@ -325,8 +325,10 @@
   <!-- Gestionnaire global des erreurs de token -->
   <app-global-token-error-handler></app-global-token-error-handler>
 
-  <!-- Assistant vocal CRUD Wam's -->
-  <app-assistant-vocal-crud />
+  <!-- Assistant vocal CRUD Wam's (masqué sur les pages connexion/inscription) -->
+  @if (!estPageConnexion) {
+    <app-assistant-vocal-crud />
+  }
 
   <!-- Assistant IA comptes-rendus (s'ouvre automatiquement après chaque action clinique) -->
   <app-compte-rendu-assistant />

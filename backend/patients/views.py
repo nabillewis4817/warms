@@ -104,6 +104,7 @@ class PatientViewSet(viewsets.ModelViewSet):
                 {"detail": "Le nom d'utilisateur et le mot de passe du patient sont obligatoires."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        email_envoye = False
         if not Utilisateur.objects.filter(username=username).exists():
             compte_patient = Utilisateur.objects.create_user(
                 username=username,
@@ -129,9 +130,10 @@ class PatientViewSet(viewsets.ModelViewSet):
             patient.user = compte_patient
             patient.save(update_fields=["user"])
             compte_patient.save(update_fields=["photo_profil"])
-            envoyer_email_compte_cree(compte_patient, mot_de_passe=password)
+            email_envoye = envoyer_email_compte_cree(compte_patient, mot_de_passe=password)
         payload = self.get_serializer(patient).data
         payload["identifiants_patient"] = {"username": username, "password": password}
+        payload["email_envoye"] = email_envoye
         return Response(payload, status=status.HTTP_201_CREATED)
 
     def _creer_dossier_qr(self, patient, allergies=""):
@@ -282,6 +284,14 @@ class PatientViewSet(viewsets.ModelViewSet):
         patient_id = patient.id
 
         with transaction.atomic():
+            from comptes_rendus.models import CompteRendu
+            from prescriptions.models import Prescription
+            from rendez_vous.models import RendezVous
+
+            # Supprimer dans l'ordre des dépendances (PROTECT FK)
+            CompteRendu.objects.filter(patient=patient).delete()
+            Prescription.objects.filter(patient=patient).delete()
+            RendezVous.objects.filter(patient=patient).delete()   # cascade → Appels
             Consultation.objects.filter(patient=patient).delete()
             try:
                 patient.dossier.delete()

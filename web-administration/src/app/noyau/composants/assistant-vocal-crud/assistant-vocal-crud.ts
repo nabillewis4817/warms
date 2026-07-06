@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { Authentification } from '../../services/authentification';
 
@@ -85,6 +86,14 @@ const MOIS: Record<string, string> = {
   'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12',
 };
 
+interface CommandeVocale {
+  icone: string;
+  libelle: string;
+  description: string;
+  pattern: RegExp;
+  action: () => void;
+}
+
 @Component({
   selector: 'app-assistant-vocal-crud',
   standalone: true,
@@ -95,6 +104,7 @@ const MOIS: Record<string, string> = {
 export class AssistantVocalCrud implements OnDestroy {
   private readonly http = inject(HttpClient);
   readonly auth = inject(Authentification);
+  private readonly router = inject(Router);
 
   readonly vocaleDisponible: boolean;
   private readonly SpeechCtor: any;
@@ -103,6 +113,79 @@ export class AssistantVocalCrud implements OnDestroy {
   etat: EtatModal = 'ferme';
   commandeReconnue = '';
   transcriptEnCours = '';
+
+  readonly commandes: CommandeVocale[] = [
+    {
+      icone: 'bi-person-plus-fill',
+      libelle: '« Créer un patient »',
+      description: 'Saisir un nouveau dossier patient par dictée',
+      pattern: /patient|malade|nouveau dossier|créer.*patient|ajouter.*patient/,
+      action: () => this._lancerCreationPatient(),
+    },
+    {
+      icone: 'bi-calendar-plus',
+      libelle: '« Nouveau rendez-vous »',
+      description: 'Aller au formulaire de prise de rendez-vous',
+      pattern: /rendez.?vous|rdv|consultation|prendre.*rdv|nouveau.*rdv/,
+      action: () => { this.fermer(); this.router.navigate(['/rendez-vous/nouveau']); },
+    },
+    {
+      icone: 'bi-calendar-check-fill',
+      libelle: '« Agenda »',
+      description: 'Ouvrir le planning du cabinet',
+      pattern: /agenda|planning|calendrier|programme/,
+      action: () => { this.fermer(); this.router.navigate(['/agenda']); },
+    },
+    {
+      icone: 'bi-people-fill',
+      libelle: '« Liste des patients »',
+      description: 'Accéder à la liste de tous les patients',
+      pattern: /liste.*patients|patients|voir.*patients|chercher.*patient|rechercher.*patient/,
+      action: () => { this.fermer(); this.router.navigate(['/patients']); },
+    },
+    {
+      icone: 'bi-chat-dots-fill',
+      libelle: '« Messagerie »',
+      description: 'Ouvrir la messagerie interne',
+      pattern: /messagerie|messages?|chat|écrire/,
+      action: () => { this.fermer(); this.router.navigate(['/messagerie']); },
+    },
+    {
+      icone: 'bi-speedometer2',
+      libelle: '« Tableau de bord »',
+      description: 'Retourner au tableau de bord principal',
+      pattern: /tableau.?de.?bord|accueil|dashboard|home/,
+      action: () => { this.fermer(); this.router.navigate(['/tableau-de-bord']); },
+    },
+    {
+      icone: 'bi-bar-chart-line-fill',
+      libelle: '« Statistiques »',
+      description: 'Consulter les statistiques du cabinet',
+      pattern: /statistiques?|stats?|analyse/,
+      action: () => { this.fermer(); this.router.navigate(['/statistiques']); },
+    },
+    {
+      icone: 'bi-journal-bookmark-fill',
+      libelle: '« Carnets »',
+      description: 'Accéder aux carnets de patients',
+      pattern: /carnets?|dossiers?|fiches?/,
+      action: () => { this.fermer(); this.router.navigate(['/carnets']); },
+    },
+    {
+      icone: 'bi-capsule-pill',
+      libelle: '« Prescriptions »',
+      description: 'Voir et gérer les ordonnances',
+      pattern: /prescriptions?|ordonnances?|médicaments?/,
+      action: () => { this.fermer(); this.router.navigate(['/prescriptions']); },
+    },
+    {
+      icone: 'bi-person-badge-fill',
+      libelle: '« Personnel »',
+      description: 'Gérer le personnel du cabinet',
+      pattern: /personnel|équipe|staff|employé/,
+      action: () => { this.fermer(); this.router.navigate(['/personnel']); },
+    },
+  ];
 
   // Formulaire patient
   readonly champs = CHAMPS_PATIENT;
@@ -174,11 +257,13 @@ export class AssistantVocalCrud implements OnDestroy {
   private _demarrerEcouteCommande(): void {
     this._ecouterUne((transcript) => {
       this.commandeReconnue = transcript;
-      if (/patient|malade|nouveau dossier/.test(transcript)) {
-        this._lancerCreationPatient();
+      const t = transcript.toLowerCase().trim();
+      const commande = this.commandes.find(c => c.pattern.test(t));
+      if (commande) {
+        commande.action();
       } else {
-        this._parler('Désolé, je n\'ai pas compris. Dites par exemple : Créer un patient.');
-        setTimeout(() => this._demarrerEcouteCommande(), 1500);
+        this._parler('Je n\'ai pas compris. Regardez la liste et dites la commande correspondante.');
+        setTimeout(() => this._demarrerEcouteCommande(), 1800);
       }
     });
   }
@@ -288,7 +373,7 @@ export class AssistantVocalCrud implements OnDestroy {
       if (!this.ecoute) return;
       const t = transcript.toLowerCase().trim();
 
-      if (['terminer', 'fin', 'ok', 'suivant', 'valider'].includes(t)) {
+      if (['terminer', 'fin', 'ok', 'suivant', 'valider', 'arrêt', 'arret', 'stop', 'arrêter', 'arreter'].includes(t)) {
         const champ = this.champActuel;
         this.valeurs[champ.cle] = this.lettresAccumulees;
         this._arreterEcoute();
