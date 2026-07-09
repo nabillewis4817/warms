@@ -39,10 +39,18 @@ class _QrIdentiteScreenState extends State<QrIdentiteScreen> {
         _numeroDossier = dossier?['numero_dossier'] as String?;
         _chargement = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      // 404 = aucun QR actif créé pour ce patient (normal si le dossier est
+      // récent et que la réception n'a pas encore scanné/activé le carnet).
+      String message = 'Impossible de charger votre QR code.';
+      if (e is Exception && e.toString().contains('404') ||
+          e.toString().contains('404')) {
+        message = 'Votre QR code n\'est pas encore disponible.\n'
+            'Contactez la réception pour qu\'elle active votre carnet.';
+      }
       setState(() {
-        _erreur = 'Impossible de charger votre QR code.';
+        _erreur = message;
         _chargement = false;
       });
     }

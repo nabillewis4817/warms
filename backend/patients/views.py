@@ -360,9 +360,34 @@ class PatientViewSet(viewsets.ModelViewSet):
                     "debug_role": user_role
                 }, status=404)
             
-            # Retourner les données du patient
             serializer = self.get_serializer(patient)
-            return Response(serializer.data)
+            data = dict(serializer.data)
+
+            # Injecter le token QR directement dans le profil (évite un appel
+            # séparé à /qr/carnets/mon-qr/ qui peut échouer si le dossier
+            # n'est pas encore lié via patient.user).
+            try:
+                import uuid as _uuid
+                from qr_codes.models import CarnetQRCode
+                from patients.models import DossierPatient as _DP
+                try:
+                    dossier = patient.dossier
+                except Exception:
+                    dossier = _DP.objects.create(
+                        patient=patient,
+                        numero_dossier=f"WARMS-{patient.id:06d}",
+                    )
+                qr, _ = CarnetQRCode.objects.get_or_create(dossier=dossier)
+                if not qr.actif:
+                    qr.actif = True
+                    qr.save(update_fields=["actif"])
+                data["qr_token"] = qr.token
+                data["numero_dossier"] = dossier.numero_dossier
+            except Exception:
+                data["qr_token"] = None
+                data["numero_dossier"] = None
+
+            return Response(data)
             
         except Exception as e:
             return Response({

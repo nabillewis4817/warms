@@ -39,7 +39,9 @@ class AuthService {
       await deconnexion();
       return false;
     }
-    NotificationService().envoyerTokenAuServeur();
+    try {
+      NotificationService().envoyerTokenAuServeur();
+    } catch (_) {}
     return true;
   }
 
@@ -61,7 +63,9 @@ class AuthService {
 
       await _storage.enregistrerTokens(access: access, refresh: refresh);
       _api.definirToken(access);
-      NotificationService().envoyerTokenAuServeur();
+      try {
+        NotificationService().envoyerTokenAuServeur();
+      } catch (_) {}
     } on DioException catch (e) {
       throw AuthException(_messageDepuisErreurDio(e));
     }

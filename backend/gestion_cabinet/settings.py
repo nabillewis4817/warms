@@ -245,7 +245,12 @@ CORS_ALLOWED_ORIGINS = env.list(
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:\d+$",
     r"^http://127\.0\.0\.1:\d+$",
+    r"^http://192\.168\.\d+\.\d+:\d+$",  # réseau LAN (device physique)
+    r"^http://10\.\d+\.\d+\.\d+:\d+$",   # réseau LAN alternatif
 ]
+# En mode DEBUG, accepte toutes les origines (Flutter web + builds locaux).
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 # Utilisateur applicatif (avec rôles Warm's)
 AUTH_USER_MODEL = "personnel.Utilisateur"

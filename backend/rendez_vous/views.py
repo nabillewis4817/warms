@@ -67,6 +67,25 @@ class RendezVousViewSet(viewsets.ModelViewSet):
         notifier_rdv_reporte(rdv, ancienne_date=ancienne_date, acteur=request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=["get"], url_path="mes-rdv")
+    def mes_rdv(self, request):
+        """Retourne les rendez-vous du patient connecté (trié du plus proche au plus ancien)."""
+        user = request.user
+        role = getattr(user, 'role', None)
+        if role != 'patient':
+            return Response({"detail": "Réservé aux patients."}, status=403)
+        try:
+            from patients.models import Patient
+            patient = Patient.objects.filter(user=user).first()
+            if not patient:
+                return Response([], status=200)
+            from django.utils import timezone
+            qs = self.get_queryset().filter(patient=patient).order_by('debut')
+            serializer = self.get_serializer(qs, many=True)
+            return Response(serializer.data)
+        except Exception:
+            return Response([], status=200)
+
     @action(detail=False, methods=["post"], url_path="generer-rappels")
     def generer_rappels(self, request):
         debut = timezone.now() + timedelta(hours=20)

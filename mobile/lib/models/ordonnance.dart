@@ -78,13 +78,22 @@ class Prescription {
   }
 }
 
-/// Compteurs de notifications en attente (rappels, messages, alertes critiques).
+/// Compteurs de notifications en attente (rappels, messages, alertes critiques,
+/// rendez-vous à venir, ordonnances actives).
 class Badges {
   final int rappel;
   final int message;
   final int critique;
+  final int rdv;
+  final int ordonnance;
 
-  const Badges({this.rappel = 0, this.message = 0, this.critique = 0});
+  const Badges({
+    this.rappel = 0,
+    this.message = 0,
+    this.critique = 0,
+    this.rdv = 0,
+    this.ordonnance = 0,
+  });
 
   factory Badges.fromJson(Map<String, dynamic>? json) {
     final data = json ?? const {};
@@ -92,8 +101,62 @@ class Badges {
       rappel: (data['rappel'] as int?) ?? 0,
       message: (data['message'] as int?) ?? 0,
       critique: (data['critique'] as int?) ?? 0,
+      rdv: (data['rdv'] as int?) ?? 0,
+      ordonnance: (data['ordonnance'] as int?) ?? 0,
     );
   }
 
   int get total => rappel + message + critique;
+}
+
+/// Un rendez-vous patient tel que renvoyé par GET /rendez-vous/mes-rdv/
+class RendezVousPatient {
+  final int id;
+  final DateTime debut;
+  final DateTime fin;
+  final String motif;
+  final String statut;
+  final String praticienNom;
+  final String praticienPrenom;
+
+  const RendezVousPatient({
+    required this.id,
+    required this.debut,
+    required this.fin,
+    required this.motif,
+    required this.statut,
+    required this.praticienNom,
+    required this.praticienPrenom,
+  });
+
+  factory RendezVousPatient.fromJson(Map<String, dynamic> json) {
+    return RendezVousPatient(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      debut: DateTime.tryParse((json['debut'] ?? '').toString()) ?? DateTime.now(),
+      fin: DateTime.tryParse((json['fin'] ?? '').toString()) ?? DateTime.now(),
+      motif: (json['motif'] ?? '').toString(),
+      statut: (json['statut'] ?? 'programme').toString(),
+      praticienNom: (json['praticien_nom'] ?? '').toString(),
+      praticienPrenom: (json['praticien_prenom'] ?? '').toString(),
+    );
+  }
+
+  String get nomPraticien {
+    final n = '$praticienPrenom $praticienNom'.trim();
+    return n.isEmpty ? 'Praticien non assigné' : 'Dr. $n';
+  }
+
+  bool get estFutur => debut.isAfter(DateTime.now());
+
+  String get libelleStatut {
+    const labels = {
+      'programme': 'Programmé',
+      'confirme': 'Confirmé',
+      'reporte': 'Reporté',
+      'annule': 'Annulé',
+      'absent': 'Absent',
+      'effectue': 'Effectué',
+    };
+    return labels[statut] ?? statut;
+  }
 }

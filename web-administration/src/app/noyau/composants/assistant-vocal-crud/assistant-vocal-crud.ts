@@ -11,6 +11,7 @@ type EtatModal =
   | 'intro_patient'
   | 'saisie_patient'
   | 'confirmation'
+  | 'edition_manuelle'
   | 'succes'
   | 'erreur';
 
@@ -113,6 +114,7 @@ export class AssistantVocalCrud implements OnDestroy {
   etat: EtatModal = 'ferme';
   commandeReconnue = '';
   transcriptEnCours = '';
+  texteCommande = '';
 
   readonly commandes: CommandeVocale[] = [
     {
@@ -191,6 +193,7 @@ export class AssistantVocalCrud implements OnDestroy {
   readonly champs = CHAMPS_PATIENT;
   champIndex = 0;
   valeurs: Record<string, string> = {};
+  valeursManuelle: Record<string, string> = {};
   lettresAccumulees = '';
   ecoute = false;
   soumissionEnCours = false;
@@ -228,15 +231,14 @@ export class AssistantVocalCrud implements OnDestroy {
 
   // ─── Ouverture / fermeture ─────────────────────────────────────
   ouvrir(): void {
-    if (!this.vocaleDisponible) {
-      alert('Reconnaissance vocale non disponible dans ce navigateur. Utilisez Chrome ou Edge.');
-      return;
-    }
     this.etat = 'ecoute_commande';
     this.commandeReconnue = '';
     this.transcriptEnCours = '';
-    this._parler('Bonjour ! Que souhaitez-vous faire ? Dites par exemple : Créer un patient.');
-    this._demarrerEcouteCommande();
+    this.texteCommande = '';
+    if (this.vocaleDisponible) {
+      this._parler('Bonjour ! Que souhaitez-vous faire ? Dites par exemple : Créer un patient.');
+      setTimeout(() => this._demarrerEcouteCommande(), 2000);
+    }
   }
 
   fermer(): void {
@@ -251,6 +253,25 @@ export class AssistantVocalCrud implements OnDestroy {
     this.messageErreur = '';
     this.transcriptEnCours = '';
     this.commandeReconnue = '';
+    this.texteCommande = '';
+  }
+
+  executerCommande(cmd: CommandeVocale): void {
+    this.commandeReconnue = cmd.libelle;
+    cmd.action();
+  }
+
+  envoyerTexteCommande(): void {
+    const t = this.texteCommande.toLowerCase().trim();
+    if (!t) return;
+    this.commandeReconnue = this.texteCommande;
+    this.transcriptEnCours = this.texteCommande;
+    const commande = this.commandes.find(c => c.pattern.test(t));
+    if (commande) {
+      commande.action();
+    } else {
+      this.texteCommande = '';
+    }
   }
 
   // ─── Commande générale ─────────────────────────────────────────
@@ -314,7 +335,8 @@ export class AssistantVocalCrud implements OnDestroy {
         setTimeout(() => this._ecouterUne((t2) => this._traiterValeur(t2)), 800);
       }
     } else {
-      this.valeurs[champ.cle] = transcript;
+      const valeurNormalisee = this._normaliserTexte(transcript, champ.type);
+      this.valeurs[champ.cle] = valeurNormalisee;
       this._parler(`J'ai noté.`);
       setTimeout(() => this._champSuivant(), 700);
     }
@@ -442,6 +464,22 @@ export class AssistantVocalCrud implements OnDestroy {
     this._annoncerChamp();
   }
 
+  ouvrirEditionManuelle(): void {
+    this._arreterEcoute();
+    window.speechSynthesis?.cancel();
+    this.valeursManuelle = { ...this.valeurs };
+    this.etat = 'edition_manuelle';
+  }
+
+  mettreAJourChampManuel(cle: string, valeur: string): void {
+    this.valeursManuelle[cle] = valeur;
+  }
+
+  confirmerEditionManuelle(): void {
+    this.valeurs = { ...this.valeursManuelle };
+    this.etat = 'confirmation';
+  }
+
   // ─── Speech API helpers ────────────────────────────────────────
   private _ecouterUne(callback: (transcript: string) => void): void {
     if (!this.SpeechCtor) return;
@@ -478,6 +516,39 @@ export class AssistantVocalCrud implements OnDestroy {
     utt.rate = 1.05;
     utt.pitch = 1;
     window.speechSynthesis.speak(utt);
+  }
+
+  private _normaliserTexte(transcript: string, type: TypeChamp): string {
+    let t = transcript;
+    if (type === 'texte') {
+      // Email / texte général
+      t = t.replace(/\barobase\b/gi, '@');
+      t = t.replace(/\bat\b/gi, '@');
+      t = t.replace(/\btiret\b/gi, '-');
+      t = t.replace(/\btiret bas\b/gi, '_');
+      t = t.replace(/\bunderscore\b/gi, '_');
+      t = t.replace(/\bpoint\b/gi, '.');
+      t = t.replace(/\bespace\b/gi, ' ');
+    }
+    if (type === 'telephone') {
+      const CHIFFRES: Record<string, string> = {
+        'zéro': '0', 'zero': '0', 'un': '1', 'une': '1', 'deux': '2',
+        'trois': '3', 'quatre': '4', 'cinq': '5', 'six': '6', 'sept': '7',
+        'huit': '8', 'neuf': '9', 'dix': '10', 'onze': '11', 'douze': '12',
+        'treize': '13', 'quatorze': '14', 'quinze': '15', 'seize': '16',
+        'dix-sept': '17', 'dix-huit': '18', 'dix-neuf': '19', 'vingt': '20',
+        'trente': '30', 'quarante': '40', 'cinquante': '50', 'soixante': '60',
+        'soixante-dix': '70', 'quatre-vingts': '80', 'quatre-vingt-dix': '90',
+      };
+      t = t.toLowerCase();
+      t = t.replace(/\bplus\b/g, '+');
+      Object.entries(CHIFFRES).forEach(([mot, chiffre]) => {
+        t = t.replace(new RegExp(`\\b${mot}\\b`, 'gi'), chiffre);
+      });
+      // Garde uniquement les chiffres, +, et espaces
+      t = t.replace(/[^0-9+ ]/g, '').trim().replace(/\s+/g, ' ');
+    }
+    return t;
   }
 
   private _parseDate(t: string): string | null {

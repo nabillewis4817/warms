@@ -30,8 +30,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notifications = 
       FlutterLocalNotificationsPlugin();
   
-  /// Instance de Firebase Messaging
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  /// Instance de Firebase Messaging (initialisé lazily dans _initializeFirebaseMessaging)
+  FirebaseMessaging? _firebaseMessaging;
   
   /// Stockage sécurisé pour les tokens
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -93,8 +93,9 @@ class NotificationService {
    */
   Future<void> _initializeFirebaseMessaging() async {
     try {
+      _firebaseMessaging = FirebaseMessaging.instance;
       // Demander la permission pour les notifications
-      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+      NotificationSettings settings = await _firebaseMessaging!.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -109,15 +110,15 @@ class NotificationService {
       }
 
       // Obtenir le token FCM
-      _fcmToken = await _firebaseMessaging.getToken();
+      _fcmToken = await _firebaseMessaging!.getToken();
       await _storage.write(key: 'fcm_token', value: _fcmToken ?? '');
-      
+
       if (kDebugMode) {
         print('🔑 Token FCM: $_fcmToken');
       }
 
       // Écouter les changements de token
-      _firebaseMessaging.onTokenRefresh.listen((token) {
+      _firebaseMessaging!.onTokenRefresh.listen((token) {
         _fcmToken = token;
         _storage.write(key: 'fcm_token', value: token);
         if (kDebugMode) {
@@ -152,7 +153,7 @@ class NotificationService {
   /// est indisponible : ce n'est jamais bloquant pour le reste de l'app.
   Future<void> envoyerTokenAuServeur() async {
     try {
-      _fcmToken ??= await _firebaseMessaging.getToken();
+      _fcmToken ??= await _firebaseMessaging?.getToken();
       final token = _fcmToken;
       if (token == null || token.isEmpty) return;
 
@@ -502,7 +503,8 @@ class NotificationService {
    * Vérifie les permissions de notification
    */
   Future<bool> hasPermission() async {
-    NotificationSettings settings = await _firebaseMessaging.getNotificationSettings();
+    if (_firebaseMessaging == null) return false;
+    NotificationSettings settings = await _firebaseMessaging!.getNotificationSettings();
     return settings.authorizationStatus == AuthorizationStatus.authorized;
   }
 

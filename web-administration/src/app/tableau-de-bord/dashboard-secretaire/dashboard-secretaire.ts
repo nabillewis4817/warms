@@ -133,6 +133,7 @@ export class DashboardSecretaire implements OnInit {
       next: () => {
         this.soumissionEnCours = false;
         this.soumissionReussie = true;
+        setTimeout(() => this.router.navigate(['/tableau-de-bord']), 1500);
       },
       error: (err) => {
         this.soumissionEnCours = false;

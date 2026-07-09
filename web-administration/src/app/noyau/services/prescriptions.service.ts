@@ -127,6 +127,19 @@ export class PrescriptionsService {
     return this.http.get(`${this.apiUrl}${id}/pdf/`, { responseType: 'blob' });
   }
 
+  changerStatut(id: number, statut: StatutPrescription): Observable<Prescription> {
+    return this.http.patch<Prescription>(`${this.apiUrl}${id}/changer-statut/`, { statut }).pipe(
+      tap((maj) => {
+        const courant = this.prescriptionsCache.value;
+        const index = courant.findIndex((p) => p.id === id);
+        if (index !== -1) {
+          courant[index] = maj;
+          this.prescriptionsCache.next([...courant]);
+        }
+      })
+    );
+  }
+
   /** Envoie la signature dessinée (base64 PNG) et récupère le PDF signé prêt à imprimer. */
   signerPdf(id: number, signatureBase64: string): Observable<Blob> {
     return this.http.post(

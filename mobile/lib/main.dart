@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -17,6 +18,13 @@ import 'services/api_client.dart';
 /// gestionnaire d'erreurs global, puis lancer [WarmsApp].
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Firebase est configuré pour Android (google-services.json).
+  // Sur web, pas de config Firebase donc on n'initialise pas.
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {}
+  }
   // Charge l'URL serveur configurée au runtime avant le premier appel réseau.
   await ApiClient.instance.initialiser();
 

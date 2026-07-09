@@ -47,31 +47,61 @@ class CarnetQRCodeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def mon_qr(self, request):
-        """Retourne le QR token du patient connecté (rôle patient uniquement)."""
+        """Retourne (ou crée) le QR token du patient connecté (rôle patient uniquement)."""
+        import uuid
         from personnel.models import Utilisateur
+        from patients.models import Patient, DossierPatient
+
         user = request.user
         if getattr(user, 'role', None) != Utilisateur.Role.PATIENT:
-            from rest_framework.response import Response
-            from rest_framework import status
             return Response({"detail": "Réservé aux patients."}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            from patients.models import Patient, DossierPatient
             patient = Patient.objects.get(user=user)
-            qr = CarnetQRCode.objects.get(dossier__patient=patient, actif=True)
-            return Response({
-                "token": qr.token,
-                "patient": {
-                    "id": patient.id,
-                    "prenom": patient.prenom,
-                    "nom": patient.nom,
-                },
-                "dossier": {
-                    "id": str(qr.dossier.id),
-                    "numero_dossier": qr.dossier.numero_dossier,
-                }
-            })
+        except Patient.DoesNotExist:
+            # Fallback : chercher par email et auto-lier si le profil n'a encore aucun compte
+            patient = None
+            if user.email:
+                try:
+                    candidate = Patient.objects.get(email__iexact=user.email)
+                    if not candidate.user_id:
+                        # Aucun compte lié → on relie automatiquement
+                        candidate.user = user
+                        candidate.save(update_fields=["user"])
+                        patient = candidate
+                    elif candidate.user_id == user.id:
+                        # Déjà lié au même compte (cohérence)
+                        patient = candidate
+                    # Si lié à un autre compte → on refuse (sécurité)
+                except Patient.DoesNotExist:
+                    pass
+            if patient is None:
+                return Response({"detail": "Profil patient introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Auto-créer le DossierPatient s'il n'existe pas encore
+        try:
+            dossier = patient.dossier
         except Exception:
-            from rest_framework.response import Response
-            from rest_framework import status
-            return Response({"detail": "Aucun QR code trouvé pour ce patient."}, status=status.HTTP_404_NOT_FOUND)
+            dossier = DossierPatient.objects.create(
+                patient=patient,
+                numero_dossier=f"DOS-{patient.id}-{uuid.uuid4().hex[:6].upper()}",
+            )
+
+        # Auto-créer le QR code s'il n'existe pas encore
+        qr, _ = CarnetQRCode.objects.get_or_create(dossier=dossier)
+        if not qr.actif:
+            qr.actif = True
+            qr.save(update_fields=["actif"])
+
+        return Response({
+            "token": qr.token,
+            "patient": {
+                "id": patient.id,
+                "prenom": patient.prenom,
+                "nom": patient.nom,
+            },
+            "dossier": {
+                "id": str(dossier.id),
+                "numero_dossier": dossier.numero_dossier,
+            }
+        })

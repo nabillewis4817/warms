@@ -1,5 +1,7 @@
 import '../models/ordonnance.dart';
 import 'api_client.dart';
+// ignore: unused_import
+import '../config/api_config.dart';
 
 /// Données spécifiques au tableau de bord patient et personnel : liste des
 /// patients, statistiques du cabinet, badges de notification, ordonnances.
@@ -84,12 +86,45 @@ class PatientService {
     });
   }
 
+  /// Retourne le token QR du patient.
+  /// Utilise /patients/me/ (qui inclut qr_token) comme source principale,
+  /// avec /qr/carnets/mon-qr/ en fallback.
   Future<Map<String, dynamic>> chargerMonQr() async {
+    try {
+      final rep = await _dio.get('/patients/me/');
+      final data = rep.data as Map<String, dynamic>;
+      final token = data['qr_token'] as String?;
+      if (token != null && token.isNotEmpty) {
+        return {
+          'token': token,
+          'patient': {
+            'prenom': data['prenom'] ?? '',
+            'nom': data['nom'] ?? '',
+          },
+          'dossier': {
+            'numero_dossier': data['numero_dossier'] ?? '',
+          },
+        };
+      }
+    } catch (_) {}
+    // Fallback direct
     final response = await _dio.get('/qr/carnets/mon-qr/');
     if (response.statusCode == 200) {
       return response.data as Map<String, dynamic>;
     }
-    throw Exception('Impossible de charger le QR');
+    throw Exception('QR code introuvable');
+  }
+
+  Future<List<RendezVousPatient>> chargerMesRdv() async {
+    try {
+      final rep = await _dio.get('/rendez-vous/mes-rdv/');
+      final liste = rep.data as List<dynamic>;
+      return liste
+          .map((e) => RendezVousPatient.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<void> signalerDouleur({

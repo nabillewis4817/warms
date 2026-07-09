@@ -851,9 +851,15 @@ class DemandePersonnelViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if getattr(user, 'role', None) == Utilisateur.Role.SECRETAIRE:
-            return DemandePersonnel.objects.filter(soumis_par=user)
-        return DemandePersonnel.objects.all()
+        qs = (
+            DemandePersonnel.objects.filter(soumis_par=user)
+            if getattr(user, 'role', None) == Utilisateur.Role.SECRETAIRE
+            else DemandePersonnel.objects.all()
+        )
+        statut = self.request.query_params.get('statut')
+        if statut:
+            qs = qs.filter(statut=statut)
+        return qs.order_by('-cree_le')
 
     def perform_create(self, serializer):
         serializer.save(soumis_par=self.request.user)

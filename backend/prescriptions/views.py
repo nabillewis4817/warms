@@ -247,9 +247,44 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             patient = serializer.validated_data.get("patient")
             dossier = getattr(patient, "dossier", None)
             if dossier:
-                serializer.save(dossier=dossier)
+                prescription = serializer.save(dossier=dossier)
+                self._notifier_nouvelle_prescription(prescription)
                 return
-        serializer.save()
+        prescription = serializer.save()
+        self._notifier_nouvelle_prescription(prescription)
+
+    def _notifier_nouvelle_prescription(self, prescription):
+        try:
+            patient = prescription.patient
+            if not patient.user_id:
+                return
+            from messagerie.models import NotificationInterne
+            praticien = prescription.praticien
+            nom_praticien = (
+                f"Dr. {praticien.first_name} {praticien.last_name}".strip()
+                if praticien else "votre praticien"
+            )
+            titre_ordo = prescription.titre or f"Ordonnance #{prescription.id}"
+            NotificationInterne.objects.create(
+                destinataire_id=patient.user_id,
+                titre="Nouvelle ordonnance",
+                contenu=f"{titre_ordo} prescrite par {nom_praticien}.",
+                niveau=NotificationInterne.Niveau.INFO,
+            )
+        except Exception:
+            pass
+
+    @action(detail=True, methods=["patch"], url_path="changer-statut")
+    def changer_statut(self, request, pk=None):
+        """Change le statut d'une prescription sans ouvrir le formulaire complet."""
+        prescription = self.get_object()
+        nouveau_statut = request.data.get("statut")
+        valides = [s[0] for s in Prescription.Statut.choices]
+        if nouveau_statut not in valides:
+            return Response({"detail": f"Statut invalide. Valeurs : {valides}"}, status=400)
+        prescription.statut = nouveau_statut
+        prescription.save(update_fields=["statut", "modifie_le"])
+        return Response(PrescriptionSerializer(prescription, context={"request": request}).data)
 
     @action(detail=False, methods=["get"], url_path=r"patient/(?P<patient_id>\d+)/historique")
     def historique_patient(self, request, patient_id=None):

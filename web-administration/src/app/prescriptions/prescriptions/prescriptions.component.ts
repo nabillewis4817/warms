@@ -365,6 +365,14 @@ export class PrescriptionsComponent implements OnInit {
     });
   }
 
+  changerStatut(prescription: Prescription, statut: StatutPrescription): void {
+    if (prescription.statut === statut) return;
+    this.prescriptionsService.changerStatut(prescription.id, statut).subscribe({
+      error: () =>
+        this.dialogueService.erreur({ titre: 'Erreur', message: 'Impossible de changer le statut.' }).subscribe(),
+    });
+  }
+
   ouvrirPdf(prescription: Prescription): void {
     this.prescriptionEnTelechargement = prescription.id;
     this.prescriptionsService.telechargerPdf(prescription.id).subscribe({

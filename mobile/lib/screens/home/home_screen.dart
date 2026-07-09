@@ -16,7 +16,10 @@ import '../ia_recherche_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profil/profil_screen.dart';
 import '../qr/qr_identite_screen.dart';
+import '../rappels/rappels_screen.dart';
+import '../rdv/rdv_screen.dart';
 import '../suivi_douleur/suivi_douleur_screen.dart';
+import '../prescription_detail_screen.dart';
 
 /// Écran d'accueil du patient.
 ///
@@ -43,6 +46,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _patientService = PatientService.instance;
+  final _scrollController = ScrollController();
+  final _ordonnancesKey = GlobalKey();
 
   List<Prescription> _ordonnances = [];
   Badges _badges = const Badges();
@@ -62,27 +67,35 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _minuteurBadges?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _charger() async {
     setState(() => _enChargement = true);
-    final resultats = await Future.wait([
-      _patientService.chargerOrdonnances(),
-      _patientService.chargerBadges(),
-    ]);
-    if (!mounted) return;
-    setState(() {
-      _ordonnances = resultats[0] as List<Prescription>;
-      _badges = resultats[1] as Badges;
-      _enChargement = false;
-    });
+    try {
+      final resultats = await Future.wait([
+        _patientService.chargerOrdonnances(),
+        _patientService.chargerBadges(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _ordonnances = resultats[0] as List<Prescription>;
+        _badges = resultats[1] as Badges;
+        _enChargement = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _enChargement = false);
+    }
   }
 
   Future<void> _rafraichirBadges() async {
-    final badges = await _patientService.chargerBadges();
-    if (!mounted) return;
-    setState(() => _badges = badges);
+    try {
+      final badges = await _patientService.chargerBadges();
+      if (!mounted) return;
+      setState(() => _badges = badges);
+    } catch (_) {}
   }
 
   Future<void> _ouvrirNotifications() async {
@@ -126,6 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: _charger,
         color: WarmsTheme.warmsAccent,
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             SliverToBoxAdapter(child: _enTeteMarketplace()),
             SliverToBoxAdapter(child: _carteHero()),
@@ -166,19 +180,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Votre cabinet',
-                      style: TextStyle(color: Colors.white70, fontSize: 11),
-                    ),
                     Text(
-                      'Dr. ${widget.utilisateur.nom.isNotEmpty ? widget.utilisateur.nom : "Cabinet"}',
+                      widget.utilisateur.nom.isNotEmpty ? widget.utilisateur.nom : 'Patient',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (widget.utilisateur.prenom.isNotEmpty)
+                      Text(
+                        widget.utilisateur.prenom,
+                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                   ],
                 ),
               ),
@@ -285,13 +301,21 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Bonjour, ${widget.utilisateur.prenom.isEmpty ? "patient" : widget.utilisateur.prenom} 👋',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Bonjour, ${widget.utilisateur.prenom.isEmpty ? "patient" : widget.utilisateur.prenom}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 17,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.waving_hand_rounded, color: Colors.white, size: 20),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 const Text(
@@ -363,15 +387,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _sectionServices() {
     final services = [
-      _ServiceItem(icon: Icons.folder_shared_rounded, label: 'Mon Dossier', color: const Color(0xFF14919B),
-        onTap: () {}),
-      _ServiceItem(icon: Icons.calendar_month_rounded, label: 'Mes RDV', color: const Color(0xFF6366F1),
-        onTap: () {}),
-      _ServiceItem(icon: Icons.medication_rounded, label: 'Ordonnances', color: const Color(0xFF22C55E),
-        onTap: () {}),
+      _ServiceItem(
+        icon: Icons.folder_shared_rounded,
+        label: 'Mon Dossier',
+        color: const Color(0xFF14919B),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QrIdentiteScreen())),
+      ),
+      _ServiceItem(
+        icon: Icons.calendar_month_rounded,
+        label: 'Mes RDV',
+        color: const Color(0xFF6366F1),
+        badge: _badges.rdv,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RdvScreen())),
+      ),
+      _ServiceItem(
+        icon: Icons.medication_rounded,
+        label: 'Ordonnances',
+        color: const Color(0xFF22C55E),
+        badge: _badges.ordonnance,
+        onTap: () {
+          final ctx = _ordonnancesKey.currentContext;
+          if (ctx != null) {
+            Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+          }
+        },
+      ),
       _ServiceItem(icon: Icons.smart_toy_rounded, label: 'IA Chat', color: const Color(0xFF0E6E76),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IAChatScreen()))),
       _ServiceItem(icon: Icons.chat_bubble_rounded, label: 'Messages', color: const Color(0xFFF59E0B),
+        badge: _badges.message,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessagesScreen()))),
       _ServiceItem(icon: Icons.rate_review_rounded, label: 'Avis', color: const Color(0xFFEF4444),
         onTap: () => ouvrirModalAvis(context)),
@@ -412,21 +456,49 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: s.color.withValues(alpha: 0.2)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: s.color, borderRadius: BorderRadius.circular(12)),
-              child: Icon(s.icon, color: Colors.white, size: 22),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(color: s.color, borderRadius: BorderRadius.circular(12)),
+                    child: Icon(s.icon, color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    s.label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: WarmsTheme.warmsNavy),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              s.label,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: WarmsTheme.warmsNavy),
-            ),
+            if (s.badge > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: s.color,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                  child: Text(
+                    s.badge > 99 ? '99+' : '${s.badge}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -435,6 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _sectionOrdonnances() {
     return Padding(
+      key: _ordonnancesKey,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,7 +520,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: WarmsTheme.warmsNavy),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: _ordonnances.isEmpty ? null : () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => _OrdonnancesListPage(ordonnances: _ordonnances),
+                  ),
+                ),
                 child: Text('Voir tout', style: TextStyle(color: WarmsTheme.warmsAccent, fontSize: 13)),
               ),
             ],
@@ -489,6 +567,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _badgeIcon(IconData icon, int count) {
+    if (count == 0) return Icon(icon);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        Positioned(
+          right: -6,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+            constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+            child: Text(
+              count > 9 ? '9+' : '$count',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _bottomNavBar() {
     return NavigationBarTheme(
       data: NavigationBarThemeData(
@@ -503,28 +605,28 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 8,
         shadowColor: Colors.black.withValues(alpha: 0.1),
         onDestinationSelected: _onNavTap,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Accueil',
           ),
           NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            selectedIcon: Icon(Icons.chat_bubble_rounded),
+            icon: _badgeIcon(Icons.chat_bubble_outline_rounded, _badges.message),
+            selectedIcon: _badgeIcon(Icons.chat_bubble_rounded, _badges.message),
             label: 'Messages',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.qr_code_rounded),
             selectedIcon: Icon(Icons.qr_code_rounded),
             label: 'Mon QR',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.travel_explore_outlined),
             selectedIcon: Icon(Icons.travel_explore_rounded),
             label: 'Recherche',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
             label: 'Profil',
@@ -540,5 +642,96 @@ class _ServiceItem {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _ServiceItem({required this.icon, required this.label, required this.color, required this.onTap});
+  final int badge;
+  const _ServiceItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.badge = 0,
+  });
+}
+
+class _OrdonnancesListPage extends StatelessWidget {
+  final List<Prescription> ordonnances;
+  const _OrdonnancesListPage({required this.ordonnances});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mes ordonnances'),
+        backgroundColor: WarmsTheme.warmsAccent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: ordonnances.isEmpty
+          ? const Center(
+              child: Text(
+                'Aucune ordonnance disponible.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: ordonnances.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, i) {
+                final p = ordonnances[i];
+                return Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    leading: CircleAvatar(
+                      backgroundColor: WarmsTheme.warmsAccent.withValues(alpha: 0.12),
+                      child: Icon(Icons.medication_rounded, color: WarmsTheme.warmsAccent),
+                    ),
+                    title: Text(
+                      p.titre.isNotEmpty ? p.titre : 'Ordonnance #${p.id}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (p.praticienNom.isNotEmpty)
+                          Text('Dr. ${p.praticienNom}', style: const TextStyle(fontSize: 12)),
+                        if (p.creeLe != null)
+                          Text(
+                            '${p.creeLe!.day.toString().padLeft(2, '0')}/'
+                            '${p.creeLe!.month.toString().padLeft(2, '0')}/'
+                            '${p.creeLe!.year}',
+                            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                          ),
+                      ],
+                    ),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: p.statut == 'active'
+                            ? Colors.green.withValues(alpha: 0.12)
+                            : Colors.grey.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        p.libelleStatut,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: p.statut == 'active' ? Colors.green[700] : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PrescriptionDetailScreen(prescription: p),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
 }

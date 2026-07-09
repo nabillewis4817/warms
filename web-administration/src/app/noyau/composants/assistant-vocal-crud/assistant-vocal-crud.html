@@ -27,12 +27,13 @@
         <p class="avc-sous-titre">Dites l'une des commandes ci-dessous à voix haute :</p>
         <div class="avc-actions-liste">
           @for (cmd of commandes; track cmd.libelle) {
-            <div class="avc-action-item">
+            <div class="avc-action-item avc-action-cliquable" (click)="executerCommande(cmd)" role="button" tabindex="0" (keydown.enter)="executerCommande(cmd)">
               <i class="bi" [ngClass]="cmd.icone"></i>
               <div>
                 <span class="avc-action-cmd">{{ cmd.libelle }}</span>
                 <span class="avc-action-desc">{{ cmd.description }}</span>
               </div>
+              <i class="bi bi-chevron-right avc-action-chevron"></i>
             </div>
           }
         </div>
@@ -42,6 +43,19 @@
             {{ transcriptEnCours }}
           </div>
         }
+        <div class="avc-text-fallback">
+          <input
+            class="avc-text-input"
+            type="text"
+            [placeholder]="vocaleDisponible ? 'Ou tapez une commande…' : 'Tapez une commande…'"
+            [value]="texteCommande"
+            (input)="texteCommande = $any($event.target).value"
+            (keydown.enter)="envoyerTexteCommande()"
+          />
+          <button class="avc-btn-send" (click)="envoyerTexteCommande()" [disabled]="!texteCommande.trim()">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
       </div>
     }
 
@@ -173,12 +187,12 @@
         <h2>Récapitulatif</h2>
         <div class="avc-recap-liste">
           @for (champ of champs; track champ.cle) {
-            @if (valeurAffichee(champ.cle)) {
-              <div class="avc-recap-item">
-                <span class="avc-recap-label">{{ champ.label }}</span>
-                <span class="avc-recap-val">{{ valeurAffichee(champ.cle) }}</span>
-              </div>
-            }
+            <div class="avc-recap-item" [class.avc-recap-vide]="!valeurAffichee(champ.cle)">
+              <span class="avc-recap-label">{{ champ.label }}</span>
+              <span class="avc-recap-val" [class.avc-vide]="!valeurAffichee(champ.cle)">
+                {{ valeurAffichee(champ.cle) || '—' }}
+              </span>
+            </div>
           }
         </div>
         <p class="avc-confirm-voix">Dites « confirmer » ou cliquez le bouton</p>
@@ -186,12 +200,50 @@
           <button class="avc-btn-sec" (click)="recommencer()">
             <i class="bi bi-arrow-counterclockwise"></i> Recommencer
           </button>
+          <button class="avc-btn-sec" (click)="ouvrirEditionManuelle()">
+            <i class="bi bi-pencil-fill"></i> Modifier manuellement
+          </button>
           <button class="avc-btn-submit" (click)="$event.stopPropagation(); soumettreDirect()" [disabled]="soumissionEnCours">
             @if (soumissionEnCours) {
               <i class="bi bi-hourglass-split"></i> En cours…
             } @else {
               <i class="bi bi-check2-circle"></i> Confirmer
             }
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ─── ÉDITION MANUELLE ─── -->
+    @if (etat === 'edition_manuelle') {
+      <div class="avc-modal-patient" (click)="$event.stopPropagation()">
+        <div class="avc-modal-header">
+          <div class="avc-modal-titre">
+            <i class="bi bi-pencil-square"></i>
+            <span>Modifier manuellement</span>
+          </div>
+          <button class="avc-close-sm" (click)="fermer()"><i class="bi bi-x"></i></button>
+        </div>
+        <div class="avc-champs-liste avc-edition-liste">
+          @for (champ of champs; track champ.cle) {
+            <div class="avc-edition-champ">
+              <label class="avc-edition-label">{{ champ.label }}</label>
+              <input
+                class="avc-edition-input"
+                type="text"
+                [placeholder]="champ.placeholder"
+                [value]="valeursManuelle[champ.cle] ?? ''"
+                (input)="mettreAJourChampManuel(champ.cle, $any($event.target).value)"
+              />
+            </div>
+          }
+        </div>
+        <div class="avc-edition-footer">
+          <button class="avc-btn-sec" (click)="etat = 'confirmation'">
+            <i class="bi bi-arrow-left"></i> Retour
+          </button>
+          <button class="avc-btn-submit" (click)="confirmerEditionManuelle()">
+            <i class="bi bi-check2-circle"></i> Valider les modifications
           </button>
         </div>
       </div>

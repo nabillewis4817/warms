@@ -1,7 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '../../config/api_config.dart';
 import '../../models/message.dart';
 import '../../services/conversation_service.dart';
+import '../../services/secure_storage_service.dart';
 import '../../themes/warms_theme.dart';
 import '../../widgets/skeleton_box.dart';
 
@@ -21,12 +27,18 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
   final _service = ConversationService.instance;
   final _messageCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
 
   int? _conversationId;
   List<MessageConversation> _messages = [];
   bool _enChargement = true;
   bool _envoiEnCours = false;
+  bool _wsConnecte = false;
   String _erreur = '';
+
+  WebSocketChannel? _ws;
+  Timer? _wsReconnect;
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -37,6 +49,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   void dispose() {
     _messageCtrl.dispose();
+    _scrollCtrl.dispose();
+    _wsReconnect?.cancel();
+    _pollTimer?.cancel();
+    _ws?.sink.close();
     super.dispose();
   }
 
@@ -51,6 +67,12 @@ class _MessagesScreenState extends State<MessagesScreen> {
         _messages = messages;
         _enChargement = false;
       });
+      _connecterWs(id);
+      // Polling de secours toutes les 20s si WS indisponible
+      _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+        if (!_wsConnecte) _rafraichir(silencieux: true);
+      });
+      _defilerEnBas();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -58,6 +80,77 @@ class _MessagesScreenState extends State<MessagesScreen> {
         _enChargement = false;
       });
     }
+  }
+
+  Future<void> _rafraichir({bool silencieux = false}) async {
+    final id = _conversationId;
+    if (id == null) return;
+    try {
+      final messages = await _service.chargerMessages(id);
+      if (!mounted) return;
+      final nouveaux = messages.length > _messages.length;
+      setState(() => _messages = messages);
+      if (nouveaux) _defilerEnBas();
+    } catch (_) {}
+  }
+
+  void _connecterWs(int conversationId) async {
+    final token = await SecureStorageService.instance.lireAccessToken();
+    if (token == null || token.isEmpty) return;
+
+    final wsBase = ApiConfig.apiBaseUrl
+        .replaceFirst(RegExp(r'^http://'), 'ws://')
+        .replaceFirst(RegExp(r'^https://'), 'wss://')
+        .replaceFirst('/api/v1', '');
+    final uri = Uri.tryParse('$wsBase/ws/chat/$conversationId/?token=$token');
+    if (uri == null) return;
+
+    try {
+      _ws = WebSocketChannel.connect(uri);
+      _ws!.stream.listen(
+        (data) {
+          if (!mounted) return;
+          try {
+            final decoded = json.decode(data as String) as Map<String, dynamic>;
+            final msgJson = decoded['message'] as Map<String, dynamic>?;
+            if (msgJson != null) {
+              // Le payload WS utilise auteur_username (pas envoyeur: moi/autre).
+              // On recharge les messages via REST pour conserver le flag deMoi
+              // exact calculé côté serveur. Le léger aller-retour est invisible.
+              final incomingId = msgJson['id'] as int?;
+              if (incomingId != null && !_messages.any((m) => m.id == incomingId)) {
+                _rafraichir(silencieux: true);
+              }
+            }
+          } catch (_) {}
+        },
+        onDone: () {
+          if (!mounted) return;
+          setState(() => _wsConnecte = false);
+          _ws = null;
+          _wsReconnect = Timer(const Duration(seconds: 5), () => _connecterWs(conversationId));
+        },
+        onError: (_) {
+          _ws?.sink.close();
+        },
+        cancelOnError: true,
+      );
+      if (mounted) setState(() => _wsConnecte = true);
+    } catch (_) {
+      // WS unavailable - polling covers it
+    }
+  }
+
+  void _defilerEnBas() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _envoyer() async {
@@ -69,9 +162,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
     _messageCtrl.clear();
     try {
       await _service.envoyerMessage(conversationId, texte);
-      final messages = await _service.chargerMessages(conversationId);
-      if (!mounted) return;
-      setState(() => _messages = messages);
+      // If WS is connected, the new message arrives via the socket.
+      // If not, reload to get our own message reflected.
+      if (!_wsConnecte) await _rafraichir(silencieux: true);
     } catch (_) {
       if (!mounted) return;
       setState(() => _erreur = "Échec de l'envoi du message.");
@@ -87,6 +180,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
       appBar: AppBar(
         title: const Text('Messages du cabinet'),
         backgroundColor: WarmsTheme.warmsCard,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Icon(
+              _wsConnecte ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+              color: _wsConnecte ? WarmsTheme.warmsSuccess : WarmsTheme.warmsGray,
+              size: 20,
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -115,6 +218,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
       );
     }
     return ListView.builder(
+      controller: _scrollCtrl,
       padding: const EdgeInsets.all(16),
       itemCount: _messages.length,
       itemBuilder: (context, index) => _bulle(_messages[index]),

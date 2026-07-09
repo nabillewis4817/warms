@@ -65,6 +65,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def verifier_acces(self):
         try:
             conv = Conversation.objects.get(id=self.conversation_id)
+            # Le personnel non-patient peut accéder à toute conversation de type patient
+            role = getattr(self.user, 'role', None)
+            if role and role != 'patient':
+                return True
             return conv.participants.filter(id=self.user.id).exists()
         except Conversation.DoesNotExist:
             return False

@@ -11,7 +11,6 @@ import { NotificationsService } from './noyau/services/notifications.service';
 import { ThemeService } from './noyau/services/theme';
 import { TraductionService } from './noyau/services/traduction';
 import { DateTimeService } from './noyau/services/datetime.service';
-import { AlerteService } from './noyau/services/alerte.service';
 import { SelecteurPatientService } from './noyau/services/selecteur-patient.service';
 
 import { AlerteComponent } from './noyau/composants/alerte/alerte.component';
@@ -50,8 +49,7 @@ export class App implements OnInit, OnDestroy {
     private readonly messagerie: Messagerie,
     private readonly notificationsService: NotificationsService,
     private readonly router: Router,
-    readonly dateTimeService: DateTimeService,
-    private readonly alerteService: AlerteService
+    readonly dateTimeService: DateTimeService
   ) {
     // Initialiser les propriétés DateTime après l'injection
     this.formattedDateTime$ = this.dateTimeService.formattedDateTime$;
@@ -112,6 +110,7 @@ export class App implements OnInit, OnDestroy {
   private rafraichirBadges(): void {
     this.messagerie.badges().subscribe({
       next: (b) => this.notificationsService.updateBadges(b),
+      error: () => {},
     });
   }
 

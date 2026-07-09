@@ -66,7 +66,9 @@ class ApiClient {
   ) async {
     final status = error.response?.statusCode;
     final dejaRetente = error.requestOptions.extra['retry401'] == true;
-    if (status != 401 || dejaRetente) {
+    // 401 = token expiré/invalide ; 403 peut arriver quand le header Auth a
+    // été retiré avant que le token soit rafraîchi (race condition au démarrage).
+    if ((status != 401 && status != 403) || dejaRetente) {
       return handler.next(error);
     }
 

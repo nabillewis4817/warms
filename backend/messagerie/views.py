@@ -2,7 +2,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from journaux.utils import journaliser
 from patients.models import Patient
@@ -25,10 +25,14 @@ class ConversationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         base = Conversation.objects.select_related("patient").prefetch_related("participants")
-        # Confidentialité stricte: un utilisateur ne voit que ses conversations,
-        # sauf superuser.
         if user.is_superuser:
             return base.all()
+        role = getattr(user, 'role', None)
+        if role and role != 'patient':
+            # Le personnel voit ses propres conversations + toutes les conversations patient
+            return base.filter(
+                Q(participants=user) | Q(type_conversation=Conversation.TypeConversation.PATIENT)
+            ).distinct()
         return base.filter(participants=user).distinct()
 
     def perform_create(self, serializer):
@@ -38,14 +42,27 @@ class ConversationViewSet(viewsets.ModelViewSet):
             utilisateur=self.request.user,
             defaults={"est_admin": True},
         )
-        # Conversation patient: ajouter automatiquement le patient lié comme participant.
+
+        # Si c'est un patient qui crée la conversation, auto-lier son profil Patient
+        role = getattr(self.request.user, 'role', None)
+        if conversation.type_conversation == Conversation.TypeConversation.PATIENT and role == 'patient':
+            try:
+                patient = Patient.objects.get(user=self.request.user)
+                if not conversation.patient_id:
+                    conversation.patient = patient
+                    conversation.save(update_fields=['patient'])
+            except Exception:
+                pass
+
+        # Conversation patient: ajouter l'utilisateur patient lié comme participant
         if conversation.type_conversation == Conversation.TypeConversation.PATIENT and conversation.patient_id:
             patient_user_id = getattr(conversation.patient, "user_id", None)
-            if patient_user_id:
+            if patient_user_id and patient_user_id != self.request.user.id:
                 ParticipantConversation.objects.get_or_create(
                     conversation=conversation,
                     utilisateur_id=patient_user_id,
                 )
+
         # Conversation interne: ajouter les membres d'équipe sélectionnés.
         participants_ids = self.request.data.get("participants_ids") or []
         for utilisateur_id in participants_ids:
@@ -219,6 +236,31 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 for user in destinataires
             ]
         )
+
+        # Diffuser en temps réel via WebSocket (pour les clients déjà connectés
+        # au canal — mobile ou web en polling n'en bénéficient pas, mais les
+        # onglets web ouverts sur cette conversation reçoivent le message
+        # instantanément sans attendre le cycle de polling de 30 s).
+        try:
+            from asgiref.sync import async_to_sync
+            from channels.layers import get_channel_layer
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                msg_data = {
+                    "id": message.id,
+                    "contenu": message.contenu,
+                    "auteur_username": request.user.username,
+                    "cree_le": message.cree_le.isoformat(),
+                    "conversation_id": conversation.id,
+                    "est_lu": message.lu,
+                }
+                async_to_sync(channel_layer.group_send)(
+                    f"chat_{conversation.id}",
+                    {"type": "chat_message", "message": msg_data},
+                )
+        except Exception:
+            pass  # Ne jamais faire échouer l'envoi à cause du WS
+
         return Response(
             MessageSerializer(message, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -253,11 +295,34 @@ class NotificationInterneViewSet(
     def badges(self, request):
         qs = self.get_queryset().filter(lu=False)
         counts = qs.values("niveau").annotate(total=Count("id"))
-        resume = {"rappel": 0, "message": 0, "critique": 0}
+        resume = {"rappel": 0, "message": 0, "critique": 0, "rdv": 0, "ordonnance": 0}
         for row in counts:
             niveau = row["niveau"]
             if niveau in resume:
                 resume[niveau] = row["total"]
+
+        # Pour les patients : compter les RDV à venir et ordonnances actives
+        user = request.user
+        role = getattr(user, 'role', None)
+        if role == 'patient':
+            try:
+                from patients.models import Patient
+                from django.utils import timezone
+                patient = Patient.objects.filter(user=user).first()
+                if patient:
+                    from rendez_vous.models import RendezVous
+                    from prescriptions.models import Prescription
+                    resume["rdv"] = RendezVous.objects.filter(
+                        patient=patient,
+                        debut__gte=timezone.now(),
+                        statut__in=["programme", "confirme"],
+                    ).count()
+                    resume["ordonnance"] = Prescription.objects.filter(
+                        patient=patient, statut="active"
+                    ).count()
+            except Exception:
+                pass
+
         return Response(resume)
 
 

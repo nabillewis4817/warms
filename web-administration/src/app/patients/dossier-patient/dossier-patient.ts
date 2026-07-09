@@ -264,7 +264,9 @@ export class DossierPatient implements OnInit {
       return;
     }
     this.enregistrementEnCours = true;
-    const payload = this.formIdentite.getRawValue();
+    const payload: Record<string, unknown> = { ...this.formIdentite.getRawValue() };
+    const ageCalc = this.calculerAge(payload['date_naissance'] as string | undefined);
+    if (ageCalc !== null) payload['age'] = ageCalc;
     this.patientsService.modifier(this.patientId, payload as any).subscribe({
       next: (patient) => {
         this.patient = patient;

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { Authentification } from '../../noyau/services/authentification';
 import { PersonnelCompte, PersonnelService } from '../../noyau/services/personnel';
@@ -15,6 +16,7 @@ import { CapturePhoto } from '../../noyau/composants/capture-photo/capture-photo
 export class GestionPersonnel implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly personnelService = inject(PersonnelService);
+  private readonly router = inject(Router);
   readonly auth = inject(Authentification);
   comptes: PersonnelCompte[] = [];
   message = '';
@@ -69,7 +71,7 @@ export class GestionPersonnel implements OnInit {
 
   valider(compte: PersonnelCompte): void {
     this.personnelService.valider(compte.id).subscribe({
-      next: () => this.recharger(),
+      next: () => this.router.navigate(['/tableau-de-bord']),
       error: () => (this.message = 'Validation refusée (réservé au chirurgien).'),
     });
   }
