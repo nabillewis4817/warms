@@ -20,12 +20,12 @@ from .serializers import (
     PrescriptionSerializer,
 )
 
-# ── Palette PDF ──────────────────────────────────────────────────────────────
-_NAVY  = (0.102, 0.176, 0.42)
-_BLEU  = (0.118, 0.302, 0.718)
-_GRIS  = (0.28, 0.33, 0.41)
+# ── Palette PDF — correspond aux couleurs Wam's (#0A3080 / #1954C8) ──────────
+_NAVY  = (0.039, 0.188, 0.502)   # #0A3080
+_BLEU  = (0.098, 0.329, 0.784)   # #1954C8
+_GRIS  = (0.28, 0.33, 0.41)      # #475569
 _BLANC = (1, 1, 1)
-_LEGER = (0.937, 0.953, 1.0)
+_LEGER = (0.941, 0.961, 1.0)     # #F0F5FF
 
 
 def _generer_pdf(prescription, sig_img=None) -> io.BytesIO:
@@ -45,18 +45,24 @@ def _generer_pdf(prescription, sig_img=None) -> io.BytesIO:
 
     # ── En-tête ──────────────────────────────────────────────────────────────
     sc(_NAVY); fc(_NAVY)
-    c.rect(0, height - 90, width, 90, fill=1, stroke=0)
+    c.rect(0, height - 100, width, 100, fill=1, stroke=0)
+
+    # Bande titre bleue sous le navy
+    fc(_BLEU); sc(_BLEU)
+    c.rect(0, height - 120, width, 20, fill=1, stroke=0)
 
     fc(_BLANC)
-    c.setFont("Helvetica-Bold", 22)
-    c.drawString(MARGE, height - 42, "Wam's — Cabinet Dentaire")
+    c.setFont("Helvetica-Bold", 24)
+    c.drawString(MARGE, height - 40, "Cabinet Dentaire Wam's")
     c.setFont("Helvetica", 10)
-    c.drawString(MARGE, height - 62, "Ordonnance médicale")
-    c.setFont("Helvetica-Oblique", 9)
-    c.drawRightString(width - MARGE, height - 42, f"N° {prescription.id:05d}")
-    c.drawRightString(width - MARGE, height - 62, f"Date : {prescription.cree_le:%d/%m/%Y}")
+    c.drawString(MARGE, height - 58, "Soins · Qualité · Confiance")
 
-    y = height - 110
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(MARGE, height - 110, "ORDONNANCE MÉDICALE")
+    c.setFont("Helvetica-Oblique", 9)
+    c.drawRightString(width - MARGE, height - 110, f"N° {prescription.id:05d}  ·  {prescription.cree_le:%d/%m/%Y}")
+
+    y = height - 140
 
     # ── Infos patient + praticien ────────────────────────────────────────────
     patient   = prescription.patient
@@ -205,8 +211,9 @@ def _generer_pdf(prescription, sig_img=None) -> io.BytesIO:
     c.line(MARGE, y_sig - 2, box_x - 14, y_sig - 2)
 
     fc(_GRIS); c.setFont("Helvetica-Oblique", 8)
-    c.drawString(MARGE, y_sig + 40, "Document généré par Wam's — Cabinet Dentaire")
-    c.drawString(MARGE, y_sig + 26, f"Ordonnance N° {prescription.id:05d}  ·  {prescription.cree_le:%d/%m/%Y %H:%M}")
+    c.drawString(MARGE, y_sig + 52, "Cabinet Dentaire Wam's  ·  Soins · Qualité · Confiance")
+    c.drawString(MARGE, y_sig + 40, "Rue des Orchidées, Makepe II, Yaoundé  ·  +237 6 99 99 99 99  ·  contact@wamsdental.cm")
+    c.drawString(MARGE, y_sig + 26, f"Ordonnance N° {prescription.id:05d}  ·  Émise le {prescription.cree_le:%d/%m/%Y à %H:%M}")
     c.drawString(MARGE, y_sig + 12, "Ce document est valable 3 mois à compter de la date d'émission.")
 
     c.showPage()

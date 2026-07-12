@@ -271,9 +271,54 @@
 
 .carte-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.4rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.carte-actions-icones {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.statut-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.btn-statut {
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  border: 1.5px solid currentColor;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { opacity: 0.85; }
+
+  &.btn-statut-active {
+    color: #16a34a;
+    border-color: #16a34a;
+    &:hover { background: #dcfce7; }
+  }
+
+  &.btn-statut-terminee {
+    color: #6366f1;
+    border-color: #6366f1;
+    &:hover { background: #ede9fe; }
+  }
+
+  &.btn-statut-annulee {
+    color: #dc2626;
+    border-color: #dc2626;
+    &:hover { background: #fee2e2; }
+  }
 }
 
 .btn-icone {

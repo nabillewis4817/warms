@@ -10,6 +10,13 @@ class PatientSerializer(serializers.ModelSerializer):
     qr_token = serializers.CharField(source="dossier.qr.token", read_only=True)
     dossier_id = serializers.CharField(source="dossier.id", read_only=True)
     allergies = serializers.CharField(source="dossier.allergies", read_only=True, default="")
+    praticien_referent_nom = serializers.SerializerMethodField()
+
+    def get_praticien_referent_nom(self, obj):
+        p = obj.praticien_referent
+        if not p:
+            return ""
+        return f"{p.first_name} {p.last_name}".strip() or p.username
 
     class Meta:
         model = Patient
@@ -34,6 +41,8 @@ class PatientSerializer(serializers.ModelSerializer):
             "derniere_consultation_lieu",
             "derniere_consultation_details",
             "infirmiere_referente",
+            "praticien_referent",
+            "praticien_referent_nom",
             "numero_dossier",
             "dossier_id",
             "qr_token",
@@ -43,7 +52,7 @@ class PatientSerializer(serializers.ModelSerializer):
             "cree_le",
             "modifie_le",
         ]
-        read_only_fields = ["supprime_le"]
+        read_only_fields = ["supprime_le", "praticien_referent_nom"]
 
     def validate_telephone(self, value):
         if value:

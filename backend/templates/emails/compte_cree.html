@@ -1,56 +1,69 @@
 {% extends "emails/base_email.html" %}
 {% block titre %}Votre compte {{ site_name }} a été créé{% endblock %}
+{% block titre_bandeau %}Création de compte{% endblock %}
+
 {% block contenu %}
-  <h1 style="margin:0 0 8px; font-size:21px; color:#0d1b3e;">Bienvenue, {{ prenom }} !</h1>
+  <!-- Salutation -->
+  <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:#0A3080;">Bienvenue, {{ prenom }} !</h1>
+  <div style="width:40px;height:3px;background:#1954C8;border-radius:2px;margin-bottom:20px;"></div>
+
   {% if en_attente_validation %}
-  <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#475569;">
-    Nous avons le plaisir de vous confirmer que votre compte {{ role_label }} sur
-    <strong>{{ site_name }}</strong> a été créé avec succès. Il est actuellement en
-    attente de validation par un chirurgien-dentiste ; vous pourrez vous connecter
-    dès son approbation.
+  <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#334155;">
+    Votre compte <strong style="color:#0A3080;">{{ role_label }}</strong> sur <strong>{{ site_name }}</strong>
+    a été créé avec succès. Il est actuellement <strong>en attente de validation</strong>
+    par un chirurgien-dentiste. Vous recevrez un email dès son approbation.
   </p>
   {% else %}
-  <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#475569;">
-    Nous avons le plaisir de vous confirmer que votre compte {{ role_label }} sur
-    <strong>{{ site_name }}</strong> a été créé et approuvé avec succès. Vous pouvez
-    dès maintenant vous connecter et accéder à votre espace.
+  <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#334155;">
+    Votre compte <strong style="color:#0A3080;">{{ role_label }}</strong> sur <strong>{{ site_name }}</strong>
+    a été créé et <strong>approuvé</strong> avec succès. Vous pouvez dès maintenant
+    vous connecter et accéder à votre espace personnel.
   </p>
   {% endif %}
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff; border-radius:12px; margin-bottom:24px;">
+  <!-- Encart identifiants -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0F5FF;border:1px solid #C8D9F5;border-left:4px solid #0A3080;border-radius:4px;margin-bottom:24px;">
     <tr>
       <td style="padding:20px 24px;">
-        <p style="margin:0 0 8px; font-size:13px; color:#64748b;">Identifiant de connexion</p>
-        <p style="margin:0 0 16px; font-size:16px; font-weight:600; color:#1e4db7;">{{ username }}</p>
-        {% if mot_de_passe %}
-        <p style="margin:0 0 8px; font-size:13px; color:#64748b;">Mot de passe temporaire</p>
-        <p style="margin:0; font-size:16px; font-weight:600; color:#1e4db7; letter-spacing:0.5px;">{{ mot_de_passe }}</p>
-        {% endif %}
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#4A6FA5;margin-bottom:14px;">Vos identifiants de connexion</div>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#4A6FA5;width:160px;">Identifiant :</td>
+            <td style="padding:6px 0;font-size:15px;font-weight:700;color:#0A3080;">{{ username }}</td>
+          </tr>
+          {% if mot_de_passe %}
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#4A6FA5;">Mot de passe temporaire :</td>
+            <td style="padding:6px 0;">
+              <span style="font-size:15px;font-weight:700;color:#0A3080;background:#ffffff;border:1px solid #C8D9F5;padding:4px 12px;border-radius:4px;letter-spacing:1px;font-family:monospace;">{{ mot_de_passe }}</span>
+            </td>
+          </tr>
+          {% endif %}
+        </table>
       </td>
     </tr>
   </table>
 
   {% if mot_de_passe %}
-  <p style="margin:0 0 24px; font-size:14px; line-height:1.6; color:#475569;">
-    Pour votre sécurité, nous vous recommandons de changer ce mot de passe dès
-    votre première connexion.
+  <p style="margin:0 0 24px;font-size:13.5px;line-height:1.6;color:#64748b;background:#FFF8E1;border-left:3px solid #F59E0B;padding:10px 14px;border-radius:0 4px 4px 0;">
+    ⚠️ Pour votre sécurité, nous vous recommandons de <strong>changer ce mot de passe</strong> dès votre première connexion.
   </p>
   {% endif %}
 
   {% if not en_attente_validation %}
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;">
+  <table role="presentation" cellpadding="0" cellspacing="0">
     <tr>
-      <td style="border-radius:10px; background:linear-gradient(135deg,#1e4db7,#2563eb);">
-        <a href="{{ frontend_url }}" style="display:inline-block; padding:14px 32px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">
-          Se connecter à {{ site_name }}
+      <td style="border-radius:4px;background:#0A3080;">
+        <a href="{{ frontend_url }}" style="display:inline-block;padding:14px 32px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.5px;">
+          🔑 Se connecter à {{ site_name }}
         </a>
       </td>
     </tr>
   </table>
   {% endif %}
 
-  <p style="margin:24px 0 0; font-size:14px; line-height:1.6; color:#475569;">
-    Si vous avez la moindre question, notre équipe reste à votre entière
-    disposition. Bienvenue parmi nous !
+  <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#475569;">
+    Notre équipe reste à votre entière disposition pour toute question.
+    Bienvenue parmi nous !
   </p>
 {% endblock %}

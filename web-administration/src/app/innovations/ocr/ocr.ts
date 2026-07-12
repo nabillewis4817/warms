@@ -3,6 +3,7 @@ import { Component, ViewChild, ElementRef, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DOCUMENT } from '@angular/common';
 import { OcrService, OCRResult, ImportCarnetResult } from '../../noyau/services/ocr';
+import { PersonnelService, PersonnelCompte } from '../../noyau/services/personnel';
 
 interface ChampCarnet {
   cle: string;
@@ -43,6 +44,9 @@ export class Ocr {
   importEnCours = false;
   importSucces: { username: string; password: string } | null = null;
   importErreur = '';
+  praticienChoisi: number | null = null;
+  praticienNomOcr = '';
+  praticiens: PersonnelCompte[] = [];
 
   readonly champsCarnet = CHAMPS_CARNET;
 
@@ -50,8 +54,15 @@ export class Ocr {
 
   constructor(
     @Inject(DOCUMENT) private document: Document,
-    private ocrService: OcrService
-  ) {}
+    private ocrService: OcrService,
+    private personnelService: PersonnelService,
+  ) {
+    this.personnelService.lister().subscribe({
+      next: (liste) => {
+        this.praticiens = liste.filter(p => p.role === 'chirurgien_dentiste' && p.is_active);
+      },
+    });
+  }
 
   // ---------------------------------------------------------------------------
   // OCR existant
@@ -165,6 +176,7 @@ export class Ocr {
       ['Adresse',          d.adresse],
       ['Groupe sanguin',   d.groupe_sanguin],
       ['Allergies',        d.allergies],
+      ['Praticien (détecté)', (d as any).praticien_nom],
     ];
     return map.filter(([, v]) => !!v).map(([label, valeur]) => ({ label, valeur: valeur! }));
   }
@@ -177,6 +189,7 @@ export class Ocr {
     this.modeImport = true;
     this.importSucces = null;
     this.importErreur = '';
+    this.praticienChoisi = null;
 
     // Pré-remplir depuis le backend + parsing regex du texte brut
     const d = this.resultat?.donnees_structurees ?? {};
@@ -187,12 +200,17 @@ export class Ocr {
       const val = (d as Record<string, string>)[champ.cle] ?? parseExtra[champ.cle] ?? '';
       this.donneesImport[champ.cle] = val;
     }
+
+    // Nom du praticien extrait par l'OCR (hint pour l'utilisateur)
+    this.praticienNomOcr = (d as any)['praticien_nom'] ?? parseExtra['praticien_nom'] ?? '';
   }
 
   annulerImport(): void {
     this.modeImport = false;
     this.importSucces = null;
     this.importErreur = '';
+    this.praticienChoisi = null;
+    this.praticienNomOcr = '';
   }
 
   soumettreImport(): void {
@@ -208,10 +226,13 @@ export class Ocr {
     this.importErreur = '';
 
     // Filtrer les champs vides
-    const payload: Record<string, string> = {};
+    const payload: Record<string, string | number> = {};
     for (const [cle, val] of Object.entries(this.donneesImport)) {
       const v = (val ?? '').trim();
       if (v) payload[cle] = v;
+    }
+    if (this.praticienChoisi) {
+      payload['praticien_referent'] = this.praticienChoisi;
     }
 
     this.ocrService.importerCarnet(payload).subscribe({
@@ -244,30 +265,100 @@ export class Ocr {
     return this.champsCarnet.filter(c => !(this.donneesImport[c.cle] ?? '').trim());
   }
 
-  // Parsing client-side du texte brut pour les champs non fournis par le backend
+  // Parsing client-side du texte brut — même logique que le backend Python.
+  // Sert de filet de sécurité pour les champs non extraits par le backend.
   private _parseTexteCarnet(texte: string): Record<string, string> {
     const out: Record<string, string> = {};
 
-    // Groupe sanguin
+    // Borne de fin : MAJ(2+) suivies optionnellement de "(X)" puis ":" ou "-"
+    const STOP = String.raw`(?=\s{1,3}[A-ZÀ-Ÿ]{2}[A-ZÀ-Ÿ\s]{0,30}(?:\([A-Z]+\))?\s*[:\-]|\n\n|$)`;
+
+    const extraire = (labelRx: string): string | null => {
+      const rx = new RegExp(
+        `(?:^|\\n|\\s)(?:${labelRx})\\s*[:\\-]\\s*([^\\n:\\{\\}]{1,120}?)${STOP}`,
+        'im'
+      );
+      const m = texte.match(rx);
+      if (!m) return null;
+      const v = m[1].replace(/\s{3,}/g, ' ').trim();
+      return v.length >= 1 ? v : null;
+    };
+
+    // NOM
+    const nom = extraire(String.raw`NOM`);
+    if (nom) {
+      const nomPropre = nom.split(/\s{2,}/)[0].trim();
+      if (nomPropre.length >= 2) out['nom'] = nomPropre.toUpperCase();
+    }
+
+    // PRÉNOM(S)
+    const prenom = extraire(String.raw`PR[EÉ]NOM\(?S?\)?`);
+    if (prenom) {
+      const prenomPropre = prenom.split(/\s{2,}/)[0].trim();
+      if (prenomPropre.length >= 2) out['prenom'] = prenomPropre;
+    }
+
+    // DATE DE NAISSANCE / NÉ(E) LE
+    const dateM = texte.match(
+      /(?:DATE\s+DE\s+NAISSANCE|N[EÉ]E?\s+LE|DDN)\s*[:\-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i
+    );
+    if (dateM) {
+      const parts = dateM[1].split(/[\/\-\.]/);
+      if (parts.length === 3)
+        out['date_naissance'] = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    }
+
+    // SEXE
+    const sexeM = texte.match(/SEXE\s*[:\-]\s*(M(?:asculin)?|F(?:[eé]minin)?)/i);
+    if (sexeM) out['sexe'] = /^[Ff]/i.test(sexeM[1]) ? 'F' : 'M';
+
+    // TÉLÉPHONE
+    const telM = texte.match(
+      /T[EÉ]L(?:[EÉ]PHONE?)?\s*[:\-]\s*(\+?(?:237|33|229|225|221|228|226|223|224|227)\s?\d[\d\s]{5,13}|\b0\d{9}\b)/i
+    );
+    if (telM) {
+      const tel = telM[1].replace(/\s/g, '');
+      if (tel.length >= 8) out['telephone'] = tel;
+    } else {
+      const telFallback = texte.match(/(\+?(?:237|33|229|225|221|228|226|223|224|227)\s?\d[\d\s]{5,13})/);
+      if (telFallback) {
+        const tel = telFallback[1].replace(/\s/g, '');
+        if (tel.length >= 8) out['telephone'] = tel;
+      }
+    }
+
+    // EMAIL (déjà robuste, on le garde en fallback)
+    const emailM = texte.match(/[\w.\-]+@[\w.\-]+\.\w{2,}/);
+    if (emailM) out['email'] = emailM[0].toLowerCase();
+
+    // GROUPE SANGUIN
     const gsM = texte.match(/\b(AB[+\-]|A[+\-]|B[+\-]|O[+\-])\b/);
     if (gsM) out['groupe_sanguin'] = gsM[1];
 
-    // Sexe
-    const sexeM = texte.match(/[Ss]exe\s*[:\-]?\s*(M(?:asculin)?|F(?:[eé]minin)?|\bH\b)/);
-    if (sexeM) out['sexe'] = /^[Ff]/.test(sexeM[1]) ? 'F' : 'M';
+    // ADRESSE
+    const adresse = extraire(String.raw`ADRESSE`);
+    if (adresse && adresse.length >= 5) out['adresse'] = adresse;
 
-    // Allergies
-    const allerM = texte.match(/[Aa]llergies?\s*[:\-]?\s*(.{2,100}?)(?=\n[A-Z]|\n\n|$)/);
-    if (allerM) {
-      const v = allerM[1].trim();
-      if (v && !/^(?:aucune?|n[eé]ant|rAS|\/|-)$/i.test(v)) out['allergies'] = v;
+    // ALLERGIES — on rejette les valeurs trop courtes ou manifestement du bruit OCR
+    const allergies = extraire(String.raw`ALLERGI[EÈ]S?`);
+    if (allergies) {
+      const propre = allergies.split(/\s{2,}/)[0].trim();
+      if (
+        propre.length >= 3 &&
+        !/^(?:aucune?|n[eé]ant|RAS|\/|-|[A-Z]{5,})$/i.test(propre) &&
+        // Rejeter le bruit OCR : séquences de lettres majuscules sans voyelle
+        !/^[^aeiouyAEIOUYaeiouéèàù]{4,}$/.test(propre)
+      ) {
+        out['allergies'] = propre;
+      }
     }
 
-    // Date de naissance (jj/mm/aaaa → aaaa-mm-jj si non fournie par le backend)
-    const dateM = texte.match(/(?:[Nn][ée]\(e\)\s+le|[Dd]ate\s+de\s+naissance\s*[:\-]?\s*)(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4})/);
-    if (dateM) {
-      const parts = dateM[1].split(/[\/\-\.]/);
-      if (parts.length === 3) out['date_naissance'] = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    // PRATICIEN RÉFÉRENT
+    const praticienRx = /(?:PRATICIEN|M[EÉ]DECIN\s+TRAITANT|CHIRURGIEN|DENTISTE)\s*[:\-]\s*((?:Dr\.?\s*)?[A-ZÀ-Ÿa-zà-ÿ][A-ZÀ-Ÿa-zà-ÿ\s\.\-]{1,60}?)(?=\s{3,}[A-ZÀÂÉ]|\n|$)/im;
+    const praticienM = texte.match(praticienRx);
+    if (praticienM) {
+      const pv = praticienM[1].trim();
+      if (pv.length >= 3) out['praticien_nom'] = pv;
     }
 
     return out;

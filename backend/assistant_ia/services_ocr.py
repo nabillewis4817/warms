@@ -1,14 +1,11 @@
+import re
 from typing import Tuple
 
 import pytesseract
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
-# TESSDATA_PREFIX (langues) est posée par gestion_cabinet.settings au
-# démarrage. Seul le chemin du binaire reste à configurer ici (utile sur
-# Windows où l'installeur ne met pas toujours à jour le PATH des process
-# déjà lancés).
 _tesseract_path = getattr(settings, "TESSERACT_PATH", None)
 if _tesseract_path:
     pytesseract.pytesseract.tesseract_cmd = _tesseract_path
@@ -21,17 +18,10 @@ class TesseractIndisponible(Exception):
 def extraire_texte_image(image_file: InMemoryUploadedFile, lang: str = "fra") -> Tuple[str, float]:
     """
     Extrait le texte d'une image avec Tesseract OCR.
-
-    Args:
-        image_file: Fichier image uploadé
-        lang: Code langue pour Tesseract ('fra' pour français)
-
-    Returns:
-        Tuple (texte_extrait, confiance) où confiance est un taux réel
-        (moyenne des scores de confiance Tesseract par mot détecté, 0.0-1.0).
-
-    Raises:
-        TesseractIndisponible: si le binaire Tesseract n'est pas installé/accessible.
+    Lance deux passes (PSM 3 + PSM 6) et fusionne leurs résultats : chaque mode
+    capture différemment les tableaux à colonnes et les textes en bloc,
+    la fusion maximise la couverture des champs.
+    Retourne (texte_fusionné, confiance 0-1).
     """
     try:
         pytesseract.get_tesseract_version()
@@ -43,177 +33,234 @@ def extraire_texte_image(image_file: InMemoryUploadedFile, lang: str = "fra") ->
     image = Image.open(image_file)
     image = _pretraiter_image(image)
 
-    texte = pytesseract.image_to_string(image, lang=lang, config="--psm 6")
+    textes = []
+    confiances_totales: list[float] = []
 
-    donnees = pytesseract.image_to_data(image, lang=lang, config="--psm 6", output_type=pytesseract.Output.DICT)
-    confiances = [float(c) for c in donnees.get("conf", []) if c not in ("-1", -1) and float(c) >= 0]
-    confiance = (sum(confiances) / len(confiances) / 100) if confiances else 0.0
+    for psm in (3, 6):
+        config = f"--psm {psm} --oem 3 -c preserve_interword_spaces=1"
+        t = pytesseract.image_to_string(image, lang=lang, config=config).strip()
+        if t:
+            textes.append(t)
+        d = pytesseract.image_to_data(image, lang=lang, config=config,
+                                       output_type=pytesseract.Output.DICT)
+        confiances_totales += [
+            float(c) for c in d.get("conf", [])
+            if c not in ("-1", -1) and float(c) >= 0
+        ]
 
-    return texte.strip(), confiance
+    # Fusion : on concatène les deux textes pour que les regex profitent
+    # des deux lectures. Un séparateur clair évite les collisions de tokens.
+    texte = "\n\n---\n\n".join(textes)
+    confiance = (sum(confiances_totales) / len(confiances_totales) / 100) if confiances_totales else 0.0
+
+    return texte, confiance
 
 
 def _pretraiter_image(image: Image.Image) -> Image.Image:
     """
-    Améliore la qualité de l'image pour un meilleur OCR.
+    Pré-traitement adapté aux formulaires médicaux :
+    - agrandissement si trop petite (Tesseract préfère 300 dpi min)
+    - conversion en niveaux de gris
+    - légère amélioration contraste + netteté
+    On évite volontairement la binarisation fixe (seuil 128) qui détruit
+    les tableaux à fond légèrement grisé et fait chuter la précision sur les
+    cellules adjacentes.
     """
-    # Convertir en niveaux de gris si nécessaire
+    w, h = image.size
+    # Résolution cible : au moins 2000px de large pour un scan A4
+    if w < 2000:
+        facteur = 2000 / w
+        image = image.resize(
+            (int(w * facteur), int(h * facteur)), Image.LANCZOS
+        )
+
     if image.mode != 'L':
         image = image.convert('L')
-    
-    # Augmenter le contraste
-    from PIL import ImageEnhance
-    enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(2.0)
-    
-    # Binarisation (seuil adaptatif)
-    image = image.point(lambda x: 0 if x < 128 else 255, '1')
-    
+
+    # Contraste modéré (1.5) pour les tableaux sans écraser les tons clairs
+    image = ImageEnhance.Contrast(image).enhance(1.5)
+    # Légère netteté pour améliorer la détection des bords de caractères
+    image = ImageEnhance.Sharpness(image).enhance(1.8)
+
     return image
+
+
+# ---------------------------------------------------------------------------
+# Parsing structuré
+# ---------------------------------------------------------------------------
+
+# Borne de fin générique : toute séquence MAJ(2+) optionnellement suivie
+# d'un suffixe entre parenthèses (ex: "(S)") puis d'un signe ":"/"-".
+# Cela gère PRÉNOM(S) :, DATE DE NAISSANCE :, etc. sans énumérer chaque label.
+_STOP = r'(?=\s{1,3}[A-ZÀ-Ÿ]{2}[A-ZÀ-Ÿ\s]{0,30}(?:\([A-Z]+\))?\s*[:\-]|\n\n|$)'
+
+
+def _extraire(texte: str, pattern_label: str) -> str | None:
+    """
+    Extrait la valeur associée à un label dans le texte OCR.
+    Stratégie : LABEL [:-] <valeur jusqu'au prochain label ou fin de ligne>
+    """
+    rx = re.compile(
+        rf'(?:^|\n|\s)(?:{pattern_label})\s*[:\-]\s*'
+        rf'([^\n:{{}}]{{1,120}}?)'
+        rf'{_STOP}',
+        re.IGNORECASE | re.MULTILINE,
+    )
+    m = rx.search(texte)
+    if not m:
+        return None
+    val = m.group(1).strip()
+    # Rejeter les valeurs parasites (trop courtes ou contenant un autre label)
+    if len(val) < 1:
+        return None
+    # Nettoyer les espaces multiples résidus de colonnes de tableau
+    val = re.sub(r'\s{3,}', ' ', val).strip()
+    return val if val else None
 
 
 def analyser_carnet_medical(texte: str) -> dict:
     """
-    Analyse le texte extrait d'un carnet médical pour structurer les informations.
-    
-    Args:
-        texte: Texte brut extrait par OCR
-    
-    Returns:
-        Dictionnaire avec les informations structurées
+    Parse le texte OCR d'un carnet/formulaire médical.
+    Gère les formulaires à colonnes (label et valeur sur la même ligne),
+    les labels all-caps (NOM : vs Nom :) et les variantes d'orthographe
+    (PRÉNOM / PRENOM / PRÉNOM(S)).
     """
     if not texte:
         return {"erreur": "Aucun texte à analyser"}
-    
-    result = {
-        "texte_brut": texte,
-        "donnees_structurees": {},
-        "symptomes": [],
-        "traitements": [],
+
+    donnees: dict[str, str] = {}
+
+    # ── NOM ────────────────────────────────────────────────────────────────
+    # Capture un ou deux mots (nom composé), s'arrête avant le prochain label.
+    v = _extraire(texte, r'NOM')
+    if v:
+        # Garder seulement le premier token (évite de capturer le label suivant)
+        nom = re.split(r'\s{2,}|\s+(?=[A-ZÀ-Ÿ]{2,}\s*[:\-])', v)[0].strip()
+        if len(nom) >= 2:
+            donnees['nom'] = nom.upper()
+
+    # ── PRÉNOM ─────────────────────────────────────────────────────────────
+    # Gère PRÉNOM / PRENOM / PRÉNOM(S) / PRENOM(S)
+    v = _extraire(texte, r'PR[EÉ]NOM\(?S?\)?')
+    if v:
+        prenom = re.split(r'\s{2,}', v)[0].strip()
+        if len(prenom) >= 2:
+            donnees['prenom'] = prenom.title()
+
+    # ── DATE DE NAISSANCE ──────────────────────────────────────────────────
+    # Gère "DATE DE NAISSANCE :" (all-caps) et "Né(e) le" et "DDN"
+    date_rx = re.compile(
+        r'(?:DATE\s+DE\s+NAISSANCE|N[EÉ]E?\s+LE|DDN)\s*[:\-]?\s*'
+        r'(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})',
+        re.IGNORECASE,
+    )
+    m = date_rx.search(texte)
+    if m:
+        raw = m.group(1)
+        parties = re.split(r'[\/\-\.]', raw)
+        if len(parties) == 3:
+            jj, mm, aaaa = parties
+            donnees['date_naissance'] = f'{aaaa}-{mm.zfill(2)}-{jj.zfill(2)}'
+
+    # ── SEXE ───────────────────────────────────────────────────────────────
+    # "SEXE : M ☑ M ☐ F" → capture le 1er M ou F après le label.
+    sexe_rx = re.compile(
+        r'SEXE\s*[:\-]\s*(M(?:asculin)?|F(?:[eé]minin)?)',
+        re.IGNORECASE,
+    )
+    m = sexe_rx.search(texte)
+    if m:
+        donnees['sexe'] = 'F' if m.group(1).upper().startswith('F') else 'M'
+
+    # ── TÉLÉPHONE ──────────────────────────────────────────────────────────
+    # Priorité : label explicite, sinon numéro international repéré dans le texte.
+    tel_label_rx = re.compile(
+        r'T[EÉ]L(?:[EÉ]PHONE?)?\s*[:\-]\s*'
+        r'(\+?(?:237|33|229|225|221|228|226|223|224|227)\s?\d[\d\s]{5,14}|\b0\d{9}\b)',
+        re.IGNORECASE,
+    )
+    m = tel_label_rx.search(texte)
+    if m:
+        tel = re.sub(r'\s', '', m.group(1))
+        if len(tel) >= 8:
+            donnees['telephone'] = tel
+    else:
+        tel_rx = re.compile(
+            r'(\+?(?:237|33|229|225|221|228|226|223|224|227)\s?\d[\d\s]{5,14})'
+        )
+        m = tel_rx.search(texte)
+        if m:
+            tel = re.sub(r'\s', '', m.group(1))
+            if len(tel) >= 8:
+                donnees['telephone'] = tel
+
+    # ── EMAIL ──────────────────────────────────────────────────────────────
+    email_rx = re.compile(r'[\w.\-]+@[\w.\-]+\.\w{2,}')
+    m = email_rx.search(texte)
+    if m:
+        donnees['email'] = m.group(0).lower()
+
+    # ── GROUPE SANGUIN ─────────────────────────────────────────────────────
+    gs_rx = re.compile(r'\b(AB[+\-]|A[+\-]|B[+\-]|O[+\-])\b')
+    m = gs_rx.search(texte)
+    if m:
+        donnees['groupe_sanguin'] = m.group(1)
+
+    # ── ADRESSE ────────────────────────────────────────────────────────────
+    v = _extraire(texte, r'ADRESSE')
+    if v and len(v) >= 5:
+        donnees['adresse'] = v
+
+    # ── ALLERGIES ──────────────────────────────────────────────────────────
+    v = _extraire(texte, r'ALLERGI[EÈ]S?')
+    if v and not re.match(r'^(?:aucune?|n[eé]ant|RAS|\/|-)$', v, re.IGNORECASE):
+        donnees['allergies'] = v
+
+    # ── PRATICIEN RÉFÉRENT ─────────────────────────────────────────────────
+    # Ex: "PRATICIEN : Dr. NGONO Samuel" ou "MÉDECIN TRAITANT : Dupont Jean"
+    praticien_rx = re.compile(
+        r'(?:PRATICIEN|M[EÉ]DECIN\s+TRAITANT|CHIRURGIEN|DENTISTE)\s*[:\-]\s*'
+        r'((?:Dr\.?\s*)?[A-Z\xC0-\xFF a-z\xe0-\xff][A-Z\xC0-\xFF a-z\xe0-\xff\s\.\-]{1,60}?)'
+        r'(?=\s{3,}[A-Z\xC0-\xD6\xD8-\xDE]|\n|$)',
+        re.IGNORECASE,
+    )
+    m = praticien_rx.search(texte)
+    if m:
+        praticien_v = m.group(1).strip()
+        if len(praticien_v) >= 3:
+            donnees['praticien_nom'] = praticien_v
+
+    # ── Symptômes (détection par mots-clés) ────────────────────────────────
+    symptomes_cles = [
+        'douleur', 'sensibilité', 'gonflement', 'saignement', 'fracture',
+        'carie', 'abcès', 'malaise', 'fièvre', 'fatigue', 'nausée',
+        'migraine', 'céphalée', 'vertige', 'pulpite', 'pulpe',
+    ]
+    symptomes = [
+        ligne.strip() for ligne in texte.split('\n')
+        if any(mot in ligne.lower() for mot in symptomes_cles)
+        and len(ligne.strip()) > 8
+    ]
+
+    # ── Traitements ─────────────────────────────────────────────────────────
+    traitements_cles = [
+        'obturation', 'extraction', 'détartrage', 'antibiotique',
+        'anti-inflammatoire', 'analgésique', 'traitement', 'chirurgie',
+        'radiographie', 'suivi',
+    ]
+    traitements = [
+        ligne.strip() for ligne in texte.split('\n')
+        if any(mot in ligne.lower() for mot in traitements_cles)
+        and len(ligne.strip()) > 8
+    ]
+
+    return {
+        "donnees_structurees": donnees,
+        "symptomes": list(dict.fromkeys(symptomes)),   # déduplique
+        "traitements": list(dict.fromkeys(traitements)),
         "notes": [],
-        "dates": [],
+        "dates": re.findall(r'\d{2}/\d{2}/\d{4}|\d{4}-\d{2}-\d{2}', texte),
     }
-    
-    lignes = texte.split('\n')
-    
-    # Extraction des informations personnelles
-    donnees_perso = {}
-    
-    for ligne in lignes:
-        ligne = ligne.strip()
-        if not ligne:
-            continue
-            
-        # Extraction du nom et prénom
-        import re
-        # Patterns pour noms/prénoms
-        nom_patterns = [
-            r'Nom\s*[:]\s*([A-Za-zÀ-ÿ\s-]+)',
-            r'Nom\s*([A-Za-zÀ-ÿ\s-]+)',
-            r'Patient\s*[:]\s*([A-Za-zÀ-ÿ\s-]+)',
-        ]
-        
-        prenom_patterns = [
-            r'Prénom\s*[:]\s*([A-Za-zÀ-ÿ\s-]+)',
-            r'Prénom\s*([A-Za-zÀ-ÿ\s-]+)',
-        ]
-        
-        for pattern in nom_patterns:
-            match = re.search(pattern, ligne, re.IGNORECASE)
-            if match:
-                donnees_perso['nom'] = match.group(1).strip().upper()
-                break
-                
-        for pattern in prenom_patterns:
-            match = re.search(pattern, ligne, re.IGNORECASE)
-            if match:
-                donnees_perso['prenom'] = match.group(1).strip().capitalize()
-                break
-        
-        # Extraction de la date de naissance
-        date_naissance_patterns = [
-            r'Date\s*de\s*naissance\s*[:]\s*(\d{2}/\d{2}/\d{4})',
-            r'Né\([e]?\)\s*le\s*(\d{2}/\d{2}/\d{4})',
-            r'DDN\s*[:]\s*(\d{2}/\d{2}/\d{4})',
-        ]
-        
-        for pattern in date_naissance_patterns:
-            match = re.search(pattern, ligne, re.IGNORECASE)
-            if match:
-                donnees_perso['date_naissance'] = match.group(1)
-                break
-        
-        # Extraction du téléphone
-        telephone_patterns = [
-            r'Téléphone\s*[:]\s*([0-9\s\.\-]+)',
-            r'Tel\s*[:]\s*([0-9\s\.\-]+)',
-            r'(\d{2}[\s\.\-]?\d{2}[\s\.\-]?\d{2}[\s\.\-]?\d{2}[\s\.\-]?\d{2})',
-        ]
-        
-        for pattern in telephone_patterns:
-            match = re.search(pattern, ligne, re.IGNORECASE)
-            if match:
-                tel = re.sub(r'[\s\.\-]', '', match.group(1))
-                if len(tel) == 10 and tel.startswith('0'):
-                    donnees_perso['telephone'] = tel
-                break
-        
-        # Extraction de l'email
-        email_patterns = [
-            r'Email\s*[:]\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',
-            r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',
-        ]
-        
-        for pattern in email_patterns:
-            match = re.search(pattern, ligne, re.IGNORECASE)
-            if match:
-                donnees_perso['email'] = match.group(1).lower()
-                break
-        
-        # Extraction de l'adresse
-        adresse_patterns = [
-            r'Adresse\s*[:]\s*([0-9]+\s+[A-Za-zÀ-ÿ\s\'-]+)',
-            r'([0-9]+\s+[A-Za-zÀ-ÿ\s\'-]+,\s*[0-9]+\s+[A-Za-zÀ-ÿ\s\'-]+)',
-        ]
-        
-        for pattern in adresse_patterns:
-            match = re.search(pattern, ligne, re.IGNORECASE)
-            if match:
-                donnees_perso['adresse'] = match.group(1).strip()
-                break
-            
-        # Extraction des symptômes (mots clés médicaux)
-        symptomes_cles = [
-            'douleur', 'sensibilité', 'gonflement', 'saignement', 'fracture', 'carie', 'abcès',
-            'malaise', 'fièvre', 'fatigue', 'nausée', 'vomissement', 'toux', 'essoufflement',
-            'migraine', 'céphalée', 'vertige', 'éruption', 'démangeaison', 'brûlure'
-        ]
-        
-        if any(mot in ligne.lower() for mot in symptomes_cles):
-            result["symptomes"].append(ligne)
-        
-        # Extraction des traitements médicaux
-        traitements_cles = [
-            'antibiotique', 'anti-inflammatoire', 'analgésique', 'détartrage', 'obturation', 'extraction',
-            'médicament', 'traitement', 'thérapie', 'chirurgie', 'radiographie', 'injection',
-            'pansement', 'suture', 'biopsie', 'endoscopie', 'échographie'
-        ]
-        
-        if any(mot in ligne.lower() for mot in traitements_cles):
-            result["traitements"].append(ligne)
-        
-        # Extraction des dates (format JJ/MM/AAAA ou AAAA-MM-JJ)
-        dates = re.findall(r'\d{2}/\d{2}/\d{4}|\d{4}-\d{2}-\d{2}', ligne)
-        result["dates"].extend(dates)
-        
-        # Notes générales (lignes informatives)
-        if len(ligne) > 10 and ligne not in result["symptomes"] and ligne not in result["traitements"]:
-            result["notes"].append(ligne)
-    
-    # Ajouter les données personnelles structurées si trouvées
-    if donnees_perso:
-        result["donnees_structurees"] = donnees_perso
-    
-    return result
 
 
-#EbaJioloLewis
+# #EbaJioloLewis

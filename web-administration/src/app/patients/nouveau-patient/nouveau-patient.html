@@ -158,6 +158,15 @@
             <span>Antécédents / consultations précédentes</span>
             <textarea formControlName="consultations_precedentes" placeholder="Historique médical pertinent..." rows="2"></textarea>
           </label>
+          <label class="form-field pleine-largeur">
+            <span><i class="bi bi-person-badge-fill"></i> Praticien référent</span>
+            <select formControlName="praticien_referent">
+              <option [ngValue]="null">— Aucun praticien assigné —</option>
+              @for (p of praticiens; track p.id) {
+                <option [ngValue]="p.id">Dr. {{ p.first_name }} {{ p.last_name }}</option>
+              }
+            </select>
+          </label>
         </div>
       </div>
     }

@@ -9,7 +9,7 @@ import 'api_client.dart';
 ///
 /// Enchaîne trois responsabilités :
 /// 1. OCR via google_mlkit_text_recognition sur l'image capturée
-/// 2. Parsing regex du texte brut pour extraire les champs structurés
+/// 2. Parsing du texte brut pour extraire les champs structurés
 /// 3. Envoi au backend via POST /patients/importer-carnet/
 class CarnetService {
   CarnetService._();
@@ -36,33 +36,46 @@ class CarnetService {
   }
 
   // ---------------------------------------------------------------------------
-  // Parsing regex
+  // Parsing
   // ---------------------------------------------------------------------------
 
   CarnetScanResult _parseTexte(String texte) {
     final extraits = <String, String>{};
 
-    // --- NOM ---
-    final nomRx = RegExp(
-      r'(?:^|\n)\s*(?:NOM\s*[:\-]?\s*)([A-ZÀ-Ÿ][A-ZÀ-Ÿa-zà-ÿ\s\-]{1,40})',
-      multiLine: true,
-    );
-    _firstMatch(nomRx, texte)?.let((v) => extraits[ChampsCarnet.nom] = v.trim());
-
-    // --- PRÉNOM ---
-    final prenomRx = RegExp(
-      r'(?:^|\n)\s*(?:PR[ÉE]NOM[S]?\s*[:\-]?\s*)([A-ZÀ-Ÿa-zà-ÿ][A-ZÀ-Ÿa-zà-ÿ\s\-]{1,40})',
-      multiLine: true,
+    // ── NOM ──────────────────────────────────────────────────────────────────
+    // Gère "NOM : EWANE" dans une ligne de tableau all-caps.
+    // S'arrête sur le prochain label connu (3+ espaces + majuscule ou retour ligne).
+    final nomM = RegExp(
+      r'\bNOM\s*[:\-]\s*([A-ZÀ-Ÿa-zà-ÿ][A-ZÀ-Ÿa-zà-ÿ\-]{0,29}'
+      r'(?:\s+[A-ZÀ-Ÿ][A-ZÀ-Ÿa-zà-ÿ\-]{1,20})?)',
       caseSensitive: false,
-    );
-    _firstMatch(prenomRx, texte)?.let((v) => extraits[ChampsCarnet.prenom] = v.trim());
+    ).firstMatch(texte);
+    if (nomM != null) {
+      final v = nomM.group(1)!.trim();
+      if (v.length >= 2) extraits[ChampsCarnet.nom] = v;
+    }
 
-    // --- DATE DE NAISSANCE ---
-    final dateRx = RegExp(
-      r'(?:N[ÉE]\([eE]\)\s+le|[Dd]ate\s+de\s+naissance\s*[:\-]?\s*|[Nn][ÉE]\s+le\s*)'
-      r'(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4})',
-    );
-    final dateM = dateRx.firstMatch(texte);
+    // ── PRÉNOM ───────────────────────────────────────────────────────────────
+    // Gère PRÉNOM, PRENOM, PRÉNOM(S), PRENOM(S).
+    // S'arrête dès qu'il y a 3+ espaces (séparation de colonne MLKit) ou retour ligne.
+    final prenomM = RegExp(
+      r'\bPR[EÉ]NOM\(?S?\)?\s*[:\-]\s*'
+      r'([A-ZÀ-Ÿa-zà-ÿ][A-ZÀ-Ÿa-zà-ÿ\s\-]{0,39}?)'
+      r'(?=\s{3,}[A-ZÀÂÉÈÊËÎÏÔÙÛÜ]|\n|$)',
+      caseSensitive: false,
+    ).firstMatch(texte);
+    if (prenomM != null) {
+      final v = prenomM.group(1)!.trim();
+      if (v.length >= 2) extraits[ChampsCarnet.prenom] = v;
+    }
+
+    // ── DATE DE NAISSANCE ────────────────────────────────────────────────────
+    // Gère "DATE DE NAISSANCE :" (all-caps) et "Né(e) le" dans tous les formats.
+    final dateM = RegExp(
+      r'(?:DATE\s+DE\s+NAISSANCE|N[EÉ]E?\s+LE)\s*[:\-]?\s*'
+      r'(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})',
+      caseSensitive: false,
+    ).firstMatch(texte);
     if (dateM != null) {
       final raw = dateM.group(1)!;
       final parts = raw.split(RegExp(r'[\/\-\.]'));
@@ -73,78 +86,83 @@ class CarnetService {
       }
     }
 
-    // --- SEXE ---
-    final sexeRx = RegExp(
-      r'[Ss]exe\s*[:\-]?\s*(M(?:asculin)?|F(?:[eé]minin)?|\bH\b)',
+    // ── SEXE ──────────────────────────────────────────────────────────────────
+    // "SEXE : M ☑ M ☐ F" → capture le premier M ou F après le label.
+    // Les symboles de case à cocher (☑ ☐ ✓) sont ignorés naturellement.
+    final sexeM = RegExp(
+      r'\bSEXE\s*[:\-]\s*(M(?:asculin)?|F(?:[eé]minin)?)',
       caseSensitive: false,
-    );
-    final sexeM = sexeRx.firstMatch(texte);
+    ).firstMatch(texte);
     if (sexeM != null) {
       final s = sexeM.group(1)!.toUpperCase();
-      if (s.startsWith('F')) {
-        extraits[ChampsCarnet.sexe] = 'F';
-      } else {
-        extraits[ChampsCarnet.sexe] = 'M';
+      extraits[ChampsCarnet.sexe] = s.startsWith('F') ? 'F' : 'M';
+    }
+
+    // ── TÉLÉPHONE ────────────────────────────────────────────────────────────
+    // Le label est optionnel (le numéro peut apparaître sans contexte de label).
+    // Priorité au numéro précédé du label TÉLÉPHONE / TÉL.
+    final telLabelM = RegExp(
+      r'T[EÉ]L(?:[EÉ]PHONE?)?\s*[:\-]\s*'
+      r'(\+?(?:237|33|229|225|221|228|226|223|224|227)\s?\d[\d\s]{5,13}|\b0\d{9}\b)',
+      caseSensitive: false,
+    ).firstMatch(texte);
+    if (telLabelM != null) {
+      final tel = telLabelM.group(1)!.replaceAll(RegExp(r'\s'), '');
+      if (tel.length >= 8) extraits[ChampsCarnet.telephone] = tel;
+    } else {
+      // Fallback : cherche un numéro international sans label
+      final telM = RegExp(
+        r'(\+?(?:237|33|229|225|221|228|226|223|224|227)\s?\d[\d\s]{5,13})',
+      ).firstMatch(texte);
+      if (telM != null) {
+        final tel = telM.group(1)!.replaceAll(RegExp(r'\s'), '');
+        if (tel.length >= 8) extraits[ChampsCarnet.telephone] = tel;
       }
     }
 
-    // --- TÉLÉPHONE ---
-    final telRx = RegExp(
-      r'(?:[Tt][eé]l(?:[eé]phone?)?\s*[:\-]?\s*)?'
-      r'(\+?(?:237|33|229|225|221|228|226|223|224|227)\s?\d[\d\s]{6,13}|\b0\d{9}\b)',
-    );
-    final telM = telRx.firstMatch(texte);
-    if (telM != null) {
-      final tel = telM.group(1)!.replaceAll(RegExp(r'\s'), '');
-      if (tel.length >= 8) extraits[ChampsCarnet.telephone] = tel;
-    }
-
-    // --- EMAIL ---
-    final emailRx = RegExp(r'[\w.\-]+@[\w.\-]+\.\w{2,}');
-    final emailM = emailRx.firstMatch(texte);
+    // ── EMAIL ─────────────────────────────────────────────────────────────────
+    final emailM = RegExp(r'[\w.\-]+@[\w.\-]+\.\w{2,}').firstMatch(texte);
     if (emailM != null) extraits[ChampsCarnet.email] = emailM.group(0)!;
 
-    // --- GROUPE SANGUIN ---
-    final gsRx = RegExp(r'\b(AB[+\-]|A[+\-]|B[+\-]|O[+\-])\b');
-    final gsM = gsRx.firstMatch(texte);
+    // ── GROUPE SANGUIN ────────────────────────────────────────────────────────
+    final gsM = RegExp(r'\b(AB[+\-]|A[+\-]|B[+\-]|O[+\-])\b').firstMatch(texte);
     if (gsM != null) extraits[ChampsCarnet.groupeSanguin] = gsM.group(0)!;
 
-    // --- ADRESSE ---
-    final adrRx = RegExp(
-      r'[Aa]dresse\s*[:\-]?\s*(.{5,80}?)(?=\n[A-Z]|\n\n|$)',
+    // ── ADRESSE ───────────────────────────────────────────────────────────────
+    // S'arrête à 3+ espaces (séparation colonne) ou retour ligne.
+    final adrM = RegExp(
+      r'\bADRESSE\s*[:\-]\s*(.{5,80}?)(?=\s{3,}[A-ZÀÂÉ]|\n[A-ZÀÂÉ]|\n\n|$)',
+      caseSensitive: false,
       dotAll: false,
-    );
-    _firstMatch(adrRx, texte)?.let((v) {
-      final cleaned = v.trim();
-      if (cleaned.length > 4) extraits[ChampsCarnet.adresse] = cleaned;
-    });
+    ).firstMatch(texte);
+    if (adrM != null) {
+      final v = adrM.group(1)!.trim();
+      if (v.length > 4) extraits[ChampsCarnet.adresse] = v;
+    }
 
-    // --- ALLERGIES ---
-    final allergyRx = RegExp(
-      r'[Aa]llergies?\s*[:\-]?\s*(.{2,120}?)(?=\n[A-Z]|\n\n|$)',
+    // ── ALLERGIES ─────────────────────────────────────────────────────────────
+    final allerM = RegExp(
+      r'\bALLERGIES?\s*[:\-]\s*(.{2,120}?)(?=\s{3,}[A-ZÀÂÉ]|\n[A-ZÀÂÉ]|\n\n|$)',
+      caseSensitive: false,
       dotAll: false,
-    );
-    _firstMatch(allergyRx, texte)?.let((v) {
-      final val = v.trim();
-      if (val.isNotEmpty &&
-          !RegExp(r'^(?:aucune?|n[eé]ant|rAS|\/|-)$', caseSensitive: false).hasMatch(val)) {
-        extraits[ChampsCarnet.allergies] = val;
+    ).firstMatch(texte);
+    if (allerM != null) {
+      final v = allerM.group(1)!.trim();
+      if (v.isNotEmpty &&
+          !RegExp(r'^(?:aucune?|n[eéè]ant|RAS|\/|-)$', caseSensitive: false)
+              .hasMatch(v)) {
+        extraits[ChampsCarnet.allergies] = v;
       }
-    });
+    }
 
     final manquants = ChampsCarnet.tous
         .where((c) => !extraits.containsKey(c))
         .toList();
 
-    return CarnetScanResult(champsExtraits: extraits, champsManquants: manquants);
+    return CarnetScanResult(
+      champsExtraits: extraits,
+      champsManquants: manquants,
+      texteOcr: texte,
+    );
   }
-
-  String? _firstMatch(RegExp rx, String text) {
-    final m = rx.firstMatch(text);
-    return m?.groupCount != null && m!.groupCount >= 1 ? m.group(1) : null;
-  }
-}
-
-extension _Let<T> on T {
-  R let<R>(R Function(T) fn) => fn(this);
 }

@@ -202,6 +202,31 @@
             </div>
           </div>
 
+          <!-- Praticien référent (sélection depuis la liste du personnel) -->
+          <div class="import-section">
+            <div class="import-section-titre">
+              <i class="bi bi-person-badge-fill" style="color: #6366f1"></i>
+              Praticien référent — facultatif
+            </div>
+            <div class="import-grille">
+              <div class="import-champ import-champ--praticien">
+                <label>
+                  <i class="bi bi-person-badge-fill"></i>
+                  Chirurgien-dentiste traitant
+                  @if (praticienNomOcr) {
+                    <span class="praticien-hint"> (OCR : {{ praticienNomOcr }})</span>
+                  }
+                </label>
+                <select [(ngModel)]="praticienChoisi">
+                  <option [ngValue]="null">— Aucun praticien —</option>
+                  @for (p of praticiens; track p.id) {
+                    <option [ngValue]="p.id">Dr. {{ p.first_name }} {{ p.last_name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div class="modal-footer">
             <button class="btn btn-secondaire" (click)="annulerImport()" [disabled]="importEnCours">
               Retour aux résultats

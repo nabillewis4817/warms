@@ -28,6 +28,7 @@ class _CarnetConfirmationScreenState extends State<CarnetConfirmationScreen> {
   final Map<String, TextEditingController> _ctrl = {};
   bool _enregistrement = false;
   bool _manquantsOuverts = true;
+  bool _ocrTexteOuvert = false;
 
   @override
   void initState() {
@@ -172,7 +173,12 @@ class _CarnetConfirmationScreenState extends State<CarnetConfirmationScreen> {
       appBar: AppBar(
         backgroundColor: WarmsTheme.warmsAccent,
         foregroundColor: Colors.white,
-        title: const Text('Confirmer les données'),
+        title: const Text(
+          'Confirmer les données',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -180,7 +186,11 @@ class _CarnetConfirmationScreenState extends State<CarnetConfirmationScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ---- Bandeau résumé ----
-            _BandeauOcr(nbExtraits: nbExtraits, nbManquants: nbManquants),
+            _BandeauOcr(
+              nbExtraits: nbExtraits,
+              nbManquants: nbManquants,
+              score: widget.scanResult.scoreConfiance,
+            ),
             const SizedBox(height: 16),
 
             // ---- Données extraites ----
@@ -237,6 +247,60 @@ class _CarnetConfirmationScreenState extends State<CarnetConfirmationScreen> {
                       for (final champ in widget.scanResult.champsManquants)
                         _buildChampField(champ, extrait: false),
                     ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+            ],
+
+            // ---- Texte brut OCR ----
+            if (widget.scanResult.texteOcr.isNotEmpty) ...[
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => setState(() => _ocrTexteOuvert = !_ocrTexteOuvert),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.text_snippet_outlined,
+                      size: 16,
+                      color: WarmsTheme.warmsGray,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Texte brut reconnu par l\'OCR',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: WarmsTheme.warmsGray,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _ocrTexteOuvert ? Icons.expand_less : Icons.expand_more,
+                      color: WarmsTheme.warmsGray,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              ),
+              if (_ocrTexteOuvert) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F3F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: WarmsTheme.warmsGray.withValues(alpha: 0.2)),
+                  ),
+                  child: SelectableText(
+                    widget.scanResult.texteOcr,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: WarmsTheme.warmsNavy,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],
@@ -382,38 +446,94 @@ class _CarnetConfirmationScreenState extends State<CarnetConfirmationScreen> {
 class _BandeauOcr extends StatelessWidget {
   final int nbExtraits;
   final int nbManquants;
+  final int score;
 
-  const _BandeauOcr({required this.nbExtraits, required this.nbManquants});
+  const _BandeauOcr({
+    required this.nbExtraits,
+    required this.nbManquants,
+    required this.score,
+  });
+
+  Color get _couleurScore {
+    if (score >= 78) return WarmsTheme.warmsSuccess;
+    if (score >= 44) return WarmsTheme.warmsWarning;
+    return WarmsTheme.warmsError;
+  }
+
+  String get _libelleScore {
+    if (score >= 78) return 'Bonne extraction';
+    if (score >= 44) return 'Extraction partielle';
+    return 'Extraction faible';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WarmsTheme.warmsAccentTint,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: WarmsTheme.warmsAccent.withValues(alpha: 0.3)),
+        color: _couleurScore.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _couleurScore.withValues(alpha: 0.3)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.document_scanner_rounded, color: WarmsTheme.warmsAccent),
-          const SizedBox(width: 10),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(color: WarmsTheme.warmsBlue, fontSize: 13),
-                children: [
-                  TextSpan(
-                    text: '$nbExtraits champ(s) extrait(s)',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(
-                    text: nbManquants > 0
-                        ? ' — $nbManquants non détecté(s). Vérifiez et complétez si nécessaire.'
-                        : '. Vérifiez les informations avant de valider.',
-                  ),
-                ],
+          Row(
+            children: [
+              Icon(Icons.document_scanner_rounded,
+                  color: _couleurScore, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _libelleScore,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: _couleurScore,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      nbManquants > 0
+                          ? '$nbExtraits champ(s) détecté(s), $nbManquants à compléter'
+                          : 'Tous les champs ont été extraits — vérifiez avant de valider',
+                      style: TextStyle(
+                        color: WarmsTheme.warmsNavy.withValues(alpha: 0.75),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              // Badge score
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _couleurScore.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '$score%',
+                  style: TextStyle(
+                    color: _couleurScore,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: score / 100,
+              backgroundColor: WarmsTheme.warmsGray.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(_couleurScore),
+              minHeight: 6,
             ),
           ),
         ],

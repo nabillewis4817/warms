@@ -465,6 +465,14 @@ class PatientViewSet(viewsets.ModelViewSet):
         allergies = (request.data.get("allergies") or "").strip()
         self._creer_dossier_qr(patient, allergies=allergies)
 
+        praticien_id = request.data.get("praticien_referent")
+        if praticien_id:
+            try:
+                patient.praticien_referent_id = int(praticien_id)
+                patient.save(update_fields=["praticien_referent"])
+            except (ValueError, TypeError):
+                pass
+
         compte = Utilisateur.objects.create_user(
             username=username,
             password=password,

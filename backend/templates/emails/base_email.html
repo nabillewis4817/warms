@@ -4,47 +4,113 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block titre %}{{ site_name }}{% endblock %}</title>
+<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
-<body style="margin:0; padding:0; background-color:#eff6ff; font-family:'Segoe UI', Helvetica, Arial, sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff; padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; background-color:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 12px 32px rgba(30,77,183,0.12);">
+<body style="margin:0;padding:0;background-color:#EEF3FF;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
 
-          <!-- En-tête -->
-          <tr>
-            <td style="background:linear-gradient(135deg,#1e4db7,#3b82f6); padding:36px 40px; text-align:center;">
-              <div style="font-size:26px; font-weight:700; color:#ffffff; letter-spacing:1px;">
-                &#10084;&#65039; Wam&#x2019;s
-              </div>
-              <div style="font-size:13px; color:#dbeafe; margin-top:6px;">
-                Plateforme dentaire certifiée
-              </div>
-            </td>
-          </tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#EEF3FF;padding:40px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:4px;overflow:hidden;box-shadow:0 4px 24px rgba(10,40,120,0.10);border:1px solid #C8D9F5;">
 
-          <!-- Contenu -->
-          <tr>
-            <td style="padding:40px;">
-              {% block contenu %}{% endblock %}
-            </td>
-          </tr>
+        <!-- ══ EN-TÊTE ══ -->
+        <tr>
+          <td style="background:#0A3080;padding:0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <!-- Logo + nom cabinet -->
+                <td style="padding:22px 28px 18px;vertical-align:middle;width:70%;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <!-- Icône dent SVG -->
+                      <td style="vertical-align:middle;padding-right:14px;">
+                        <div style="width:50px;height:50px;background:#ffffff;border-radius:50%;display:table-cell;vertical-align:middle;text-align:center;">
+                          <span style="font-size:24px;line-height:1;">🦷</span>
+                        </div>
+                      </td>
+                      <td style="vertical-align:middle;">
+                        <div style="font-size:11px;letter-spacing:2px;color:#90B8F8;text-transform:uppercase;font-weight:600;margin-bottom:2px;">Cabinet Dentaire</div>
+                        <div style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:1px;line-height:1.1;">WAM'S</div>
+                        <div style="font-size:9.5px;color:#90B8F8;letter-spacing:2.5px;text-transform:uppercase;margin-top:2px;">Soins · Qualité · Confiance</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <!-- Caducée déco -->
+                <td style="padding:16px 28px 16px 0;vertical-align:middle;text-align:right;">
+                  <span style="font-size:42px;opacity:0.25;color:#ffffff;">⚕</span>
+                </td>
+              </tr>
+            </table>
 
-          <!-- Pied de page -->
-          <tr>
-            <td style="background-color:#f8fafc; padding:24px 40px; text-align:center; border-top:1px solid #e2e8f0;">
-              <p style="margin:0; font-size:12px; color:#94a3b8;">
-                Cet email a été envoyé automatiquement par {{ site_name }}, merci de ne pas y répondre.
-              </p>
-              <p style="margin:6px 0 0; font-size:12px; color:#94a3b8;">
-                &copy; {{ annee }} Wam&#x2019;s &mdash; Tous droits réservés
-              </p>
-            </td>
-          </tr>
+            <!-- Bande titre -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#1954C8;padding:10px 28px;text-align:center;border-top:1px solid #3070E8;">
+                  <span style="font-size:13px;font-weight:700;color:#ffffff;letter-spacing:2px;text-transform:uppercase;">{% block titre_bandeau %}Notification{% endblock %}</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+        <!-- ══ CONTENU ══ -->
+        <tr>
+          <td style="padding:36px 32px 28px;">
+            {% block contenu %}{% endblock %}
+          </td>
+        </tr>
+
+        <!-- ══ SÉPARATEUR ══ -->
+        <tr>
+          <td style="padding:0 32px;">
+            <div style="border-top:2px solid #0A3080;"></div>
+          </td>
+        </tr>
+
+        <!-- ══ PIED DE PAGE ══ -->
+        <tr>
+          <td style="background:#F0F5FF;padding:20px 28px;border-top:none;">
+            <!-- Adresse -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" style="padding-bottom:10px;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:0 16px;border-right:1px solid #C8D9F5;vertical-align:middle;">
+                        <span style="font-size:11px;color:#4A6FA5;">
+                          📍 Rue des Orchidées, Makepe II, Yaoundé – Cameroun
+                        </span>
+                      </td>
+                      <td style="padding:0 16px;border-right:1px solid #C8D9F5;vertical-align:middle;">
+                        <span style="font-size:11px;color:#4A6FA5;">
+                          📞 +237 6 99 99 99 99
+                        </span>
+                      </td>
+                      <td style="padding:0 16px;vertical-align:middle;">
+                        <span style="font-size:11px;color:#4A6FA5;">
+                          ✉ contact&#64;wamsdental.cm
+                        </span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+            <!-- Copyright -->
+            <p style="margin:8px 0 0;text-align:center;font-size:11px;color:#8FA8CC;">
+              Cet email est généré automatiquement par <strong>{{ site_name }}</strong> — merci de ne pas y répondre directement.
+            </p>
+            <p style="margin:4px 0 0;text-align:center;font-size:11px;color:#8FA8CC;">
+              &copy; {{ annee }} Wam's &mdash; Tous droits réservés
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
 </body>
 </html>

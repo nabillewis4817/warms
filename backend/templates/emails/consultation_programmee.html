@@ -1,46 +1,53 @@
 {% extends "emails/base_email.html" %}
 {% block titre %}Votre consultation du {{ date_str }} — {{ site_name }}{% endblock %}
+{% block titre_bandeau %}Consultation enregistrée{% endblock %}
+
 {% block contenu %}
-  <h1 style="margin:0 0 8px; font-size:21px; color:#0d1b3e;">Bonjour, {{ prenom }} !</h1>
-  <p style="margin:0 0 20px; font-size:15px; line-height:1.6; color:#475569;">
-    Votre consultation au cabinet <strong>{{ site_name }}</strong> a bien été enregistrée
-    dans votre dossier. Retrouvez les détails ci-dessous.
+  <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:#0A3080;">Bonjour, {{ prenom }} !</h1>
+  <div style="width:40px;height:3px;background:#1954C8;border-radius:2px;margin-bottom:20px;"></div>
+
+  <p style="margin:0 0 20px;font-size:15px;line-height:1.7;color:#334155;">
+    Votre consultation au cabinet <strong style="color:#0A3080;">{{ site_name }}</strong>
+    a bien été <strong>enregistrée</strong> dans votre dossier.
+    Retrouvez les détails ci-dessous.
   </p>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-         style="background:#f0fdf4; border-radius:12px; margin-bottom:24px;">
-    <tr><td style="padding:20px 24px;">
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="font-size:13px; color:#64748b; padding-bottom:4px;">📅 Date</td>
-          <td style="font-size:16px; font-weight:700; color:#16a34a; text-align:right;">{{ date_str }}</td>
-        </tr>
-        <tr>
-          <td style="font-size:13px; color:#64748b; padding-bottom:4px;">🕐 Heure</td>
-          <td style="font-size:16px; font-weight:700; color:#16a34a; text-align:right;">{{ heure_str }}</td>
-        </tr>
-        <tr>
-          <td style="font-size:13px; color:#64748b; padding-bottom:4px;">👨‍⚕️ Praticien</td>
-          <td style="font-size:15px; font-weight:600; color:#0d1b3e; text-align:right;">{{ praticien_nom }}</td>
-        </tr>
-        <tr>
-          <td style="font-size:13px; color:#64748b;">🦷 Motif</td>
-          <td style="font-size:15px; color:#334155; text-align:right;">{{ motif }}</td>
-        </tr>
-      </table>
-    </td></tr>
+  <!-- Encart détails consultation -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0F5FF;border:1px solid #C8D9F5;border-left:4px solid #0A3080;border-radius:4px;margin-bottom:24px;">
+    <tr>
+      <td style="padding:20px 24px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#4A6FA5;margin-bottom:16px;">Détails de la consultation</div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #DDE8F8;">
+            <td style="padding:10px 0;font-size:13px;color:#4A6FA5;width:130px;">📅 Date</td>
+            <td style="padding:10px 0;font-size:15px;font-weight:700;color:#0A3080;">{{ date_str }}</td>
+          </tr>
+          <tr style="border-bottom:1px solid #DDE8F8;">
+            <td style="padding:10px 0;font-size:13px;color:#4A6FA5;">🕐 Heure</td>
+            <td style="padding:10px 0;font-size:15px;font-weight:700;color:#0A3080;">{{ heure_str }}</td>
+          </tr>
+          <tr style="border-bottom:1px solid #DDE8F8;">
+            <td style="padding:10px 0;font-size:13px;color:#4A6FA5;">👨‍⚕️ Praticien</td>
+            <td style="padding:10px 0;font-size:15px;font-weight:600;color:#1A2B5E;">{{ praticien_nom }}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;font-size:13px;color:#4A6FA5;">🦷 Motif</td>
+            <td style="padding:10px 0;font-size:14px;color:#334155;">{{ motif }}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
   </table>
 
-  <p style="margin:0 0 20px; font-size:14px; line-height:1.6; color:#475569;">
-    Pour toute question, n'hésitez pas à nous contacter via l'application ou par téléphone.
-    Votre compte-rendu de consultation sera disponible dans votre espace patient.
+  <p style="margin:0 0 24px;font-size:13.5px;line-height:1.6;color:#475569;background:#F0FDF4;border-left:3px solid #10B981;padding:10px 14px;border-radius:0 4px 4px 0;">
+    📋 Le compte-rendu de votre consultation sera disponible dans votre <strong>espace patient</strong> dès sa validation par le praticien.
   </p>
 
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;">
+  <table role="presentation" cellpadding="0" cellspacing="0">
     <tr>
-      <td style="border-radius:10px; background:linear-gradient(135deg,#16a34a,#22c55e);">
-        <a href="{{ frontend_url }}" style="display:inline-block; padding:14px 32px; font-size:15px; font-weight:600; color:#fff; text-decoration:none;">
-          Voir mon dossier
+      <td style="border-radius:4px;background:#0A3080;">
+        <a href="{{ frontend_url }}" style="display:inline-block;padding:14px 32px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.5px;">
+          📂 Voir mon dossier
         </a>
       </td>
     </tr>

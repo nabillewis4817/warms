@@ -1,0 +1,336 @@
+<!-- ══════════════════════════════════════════
+   WAM'S LANDING PAGE
+══════════════════════════════════════════ -->
+
+<!-- ── NAVBAR ── -->
+<nav class="wams-nav" [class.scrolled]="!navTransparente">
+  <div class="nav-inner">
+    <a class="nav-brand" (click)="scrollTo('hero')">
+      <span class="brand-icon"><i class="bi bi-tooth"></i></span>
+      <span class="brand-text">Wam<span class="apostrophe">'</span>s</span>
+    </a>
+    <ul class="nav-links" [class.open]="menuOuvert">
+      <li><a (click)="scrollTo('features')">Fonctionnalités</a></li>
+      <li><a (click)="scrollTo('screenshots')">Captures</a></li>
+      <li><a (click)="scrollTo('mobile')">Mobile</a></li>
+      <li><a (click)="scrollTo('stats-section')">À propos</a></li>
+      <li class="nav-cta"><a (click)="scrollTo('cta')">Demander une démo <i class="bi bi-arrow-right"></i></a></li>
+    </ul>
+    <button class="burger" (click)="menuOuvert = !menuOuvert" [class.active]="menuOuvert">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero" id="hero">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-content">
+    <div class="hero-text">
+      <div class="hero-badge">
+        <i class="bi bi-stars"></i>
+        Cabinet Dentaire Digital &middot; Cameroun
+      </div>
+      <h1 class="hero-title">
+        La gestion de votre cabinet,<br><span class="gradient-text">réinventée</span>
+      </h1>
+      <p class="hero-desc">
+        Wam's centralise dossiers patients, agenda, prescriptions, IA et application mobile
+        en une seule plateforme pensée pour les cabinets dentaires africains.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary" (click)="scrollTo('cta')">
+          <i class="bi bi-rocket-takeoff-fill"></i>
+          Découvrir la plateforme
+        </button>
+        <button class="btn-ghost" (click)="scrollTo('screenshots')">
+          <i class="bi bi-play-circle-fill"></i>
+          Voir en action
+        </button>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item"><i class="bi bi-shield-check-fill"></i> Données sécurisées</div>
+        <div class="trust-sep">&middot;</div>
+        <div class="trust-item"><i class="bi bi-phone-fill"></i> Web + Mobile</div>
+        <div class="trust-sep">&middot;</div>
+        <div class="trust-item"><i class="bi bi-cpu-fill"></i> IA intégrée</div>
+      </div>
+    </div>
+
+    <div class="hero-mockup">
+      <div class="mockup-browser">
+        <div class="mockup-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <div class="mockup-url">wams.cm/dashboard</div>
+        </div>
+        <div class="mockup-screen">
+          <img src="assets/web/Dashboard chirugien 1.png" alt="Dashboard Wam's">
+        </div>
+      </div>
+      <div class="mockup-phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <img src="assets/mobile/dash.png" alt="App mobile Wam's">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <span>Défiler</span>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="features-section" id="features">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-badge"><i class="bi bi-grid-3x3-gap-fill"></i> Fonctionnalités</div>
+      <h2>Tout ce dont votre cabinet a besoin</h2>
+      <p>Une suite complète d'outils conçus pour simplifier chaque aspect de la gestion dentaire.</p>
+    </div>
+    <div class="features-grid">
+      @for (f of features; track f.titre; let i = $index) {
+        <div class="feature-card reveal" [class]="'card-' + f.couleur">
+          <div class="feature-icon">
+            <i class="bi {{ f.icone }}"></i>
+          </div>
+          <h3>{{ f.titre }}</h3>
+          <p>{{ f.desc }}</p>
+          <div class="feature-glow"></div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ── SCREENSHOTS ── -->
+<section class="screenshots-section" id="screenshots">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-badge"><i class="bi bi-display-fill"></i> Interface Web</div>
+      <h2>Un tableau de bord pensé pour l'efficacité</h2>
+      <p>Interface moderne, réactive et accessible depuis n'importe quel navigateur.</p>
+    </div>
+    <div class="screenshot-viewer reveal">
+      <div class="screenshot-nav">
+        @for (s of screenshots; track s.label; let i = $index) {
+          <button class="screenshot-nav-item" [class.active]="screenshotActif === i" (click)="setScreenshot(i)">
+            <span class="nav-dot"></span>
+            {{ s.label }}
+          </button>
+        }
+      </div>
+      <div class="screenshot-display">
+        <div class="display-frame">
+          <div class="display-bar">
+            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+            <span class="display-url">app.wams.cm</span>
+          </div>
+          <div class="display-screen">
+            @for (s of screenshots; track s.src; let i = $index) {
+              <img [src]="s.src" [alt]="s.label" class="screenshot-img" [class.active]="screenshotActif === i">
+            }
+          </div>
+        </div>
+        <div class="screenshot-info">
+          <h4>{{ screenshots[screenshotActif].label }}</h4>
+          <p>{{ screenshots[screenshotActif].desc }}</p>
+          <div class="screenshot-controls">
+            <button (click)="prevScreenshot()"><i class="bi bi-chevron-left"></i></button>
+            <span>{{ screenshotActif + 1 }} / {{ screenshots.length }}</span>
+            <button (click)="nextScreenshot()"><i class="bi bi-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── AVANTAGES BANNER ── -->
+<section class="avantages-section">
+  <div class="container">
+    <div class="avantages-grid">
+      @for (a of avantages; track a.titre) {
+        <div class="avantage-item reveal">
+          <div class="avantage-icon"><i class="bi {{ a.icone }}"></i></div>
+          <div>
+            <h4>{{ a.titre }}</h4>
+            <p>{{ a.desc }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ── MOBILE ── -->
+<section class="mobile-section" id="mobile">
+  <div class="container">
+    <div class="mobile-layout">
+      <div class="mobile-text">
+        <div class="section-badge reveal"><i class="bi bi-phone-fill"></i> Application Mobile</div>
+        <h2 class="reveal">Votre cabinet dans la <span class="gradient-text">poche</span></h2>
+        <p class="reveal">
+          Les patients accèdent à leur dossier, reçoivent des rappels pour leurs médicaments,
+          consultent leurs prescriptions et communiquent avec l'équipe soignante.
+        </p>
+        <ul class="mobile-features reveal">
+          <li><i class="bi bi-check-circle-fill"></i> Dossier médical personnel</li>
+          <li><i class="bi bi-check-circle-fill"></i> Rappels médicaments intelligents</li>
+          <li><i class="bi bi-check-circle-fill"></i> Assistant IA conversationnel</li>
+          <li><i class="bi bi-check-circle-fill"></i> Messagerie cabinet sécurisée</li>
+          <li><i class="bi bi-check-circle-fill"></i> Suivi des traitements en temps réel</li>
+          <li><i class="bi bi-check-circle-fill"></i> Score santé gamifié</li>
+        </ul>
+        <div class="mobile-thumbs reveal">
+          @for (m of mobileScreenshots; track m.label; let i = $index) {
+            <button class="mobile-thumb" [class.active]="mobileActif === i" (click)="setMobile(i)">
+              <img [src]="m.src" [alt]="m.label">
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="mobile-mockup-wrap reveal">
+        <div class="phone-glow"></div>
+        <div class="phone-device">
+          <div class="phone-frame">
+            <div class="phone-speaker"></div>
+            <div class="phone-camera"></div>
+            <div class="phone-inner">
+              @for (m of mobileScreenshots; track m.src; let i = $index) {
+                <img [src]="m.src" [alt]="m.label" class="phone-screen-img" [class.active]="mobileActif === i">
+              }
+            </div>
+            <div class="phone-home-bar"></div>
+          </div>
+        </div>
+        <button class="phone-nav phone-nav-prev" (click)="prevMobile()"><i class="bi bi-chevron-left"></i></button>
+        <button class="phone-nav phone-nav-next" (click)="nextMobile()"><i class="bi bi-chevron-right"></i></button>
+        <div class="phone-label">{{ mobileScreenshots[mobileActif].label }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<section class="stats-section" id="stats-section">
+  <div class="stats-bg">
+    <div class="orb orb-stats-1"></div>
+    <div class="orb orb-stats-2"></div>
+  </div>
+  <div class="container">
+    <div class="stats-grid">
+      @for (s of stats; track s.label; let i = $index) {
+        <div class="stat-card reveal">
+          <div class="stat-icon"><i class="bi {{ s.icone }}"></i></div>
+          <div class="stat-number">
+            <span class="stat-val">{{ statsAffichees[i] }}</span><span class="stat-sfx">{{ s.suffixe }}</span>
+          </div>
+          <p class="stat-label">{{ s.label }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ── OCR SPOTLIGHT ── -->
+<section class="ocr-section">
+  <div class="container">
+    <div class="ocr-layout">
+      <div class="ocr-visual reveal">
+        <div class="ocr-frame">
+          <img src="assets/web/OCR.png" alt="OCR Wam's">
+          <div class="ocr-scan-line"></div>
+        </div>
+        <div class="ocr-badge">
+          <i class="bi bi-cpu-fill"></i> Extraction IA
+        </div>
+      </div>
+      <div class="ocr-text">
+        <div class="section-badge reveal"><i class="bi bi-magic"></i> Intelligence Artificielle</div>
+        <h2 class="reveal">Numérisez un carnet physique en <span class="gradient-text">quelques secondes</span></h2>
+        <p class="reveal">
+          Photographiez un ancien carnet médical papier et l'IA de Wam's extrait automatiquement
+          nom, prénom, date de naissance, groupe sanguin, allergies et crée le dossier numérique complet.
+        </p>
+        <div class="ocr-steps reveal">
+          <div class="step"><span class="step-num">01</span><span>Photographiez ou uploadez le carnet</span></div>
+          <div class="step"><span class="step-num">02</span><span>L'OCR analyse et extrait les données</span></div>
+          <div class="step"><span class="step-num">03</span><span>Vérifiez et enregistrez le dossier</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta-section" id="cta">
+  <div class="cta-orb"></div>
+  <div class="container">
+    <div class="cta-box reveal">
+      <div class="cta-icon"><i class="bi bi-tooth"></i></div>
+      <h2>Prêt à digitaliser votre cabinet ?</h2>
+      <p>Rejoignez Wam's et offrez à votre équipe et à vos patients une expérience médicale moderne.</p>
+      <div class="cta-actions">
+        <a href="mailto:contact@wams.cm" class="btn-primary btn-large">
+          <i class="bi bi-envelope-fill"></i>
+          Contacter l'équipe
+        </a>
+        <a href="tel:+237600000000" class="btn-ghost btn-large">
+          <i class="bi bi-telephone-fill"></i>
+          +237 6XX XXX XXX
+        </a>
+      </div>
+      <p class="cta-note">Démonstration gratuite &middot; Installation accompagnée &middot; Support continu</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="wams-footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="brand-logo">
+          <i class="bi bi-tooth"></i> Wam<span>'</span>s
+        </div>
+        <p>Plateforme de gestion digitale pour cabinets dentaires. Conçue avec soin pour l'Afrique.</p>
+        <div class="footer-socials">
+          <a href="#"><i class="bi bi-facebook"></i></a>
+          <a href="#"><i class="bi bi-instagram"></i></a>
+          <a href="#"><i class="bi bi-linkedin"></i></a>
+          <a href="#"><i class="bi bi-twitter-x"></i></a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h5>Plateforme</h5>
+          <ul>
+            <li><a (click)="scrollTo('features')">Fonctionnalités</a></li>
+            <li><a (click)="scrollTo('screenshots')">Interface Web</a></li>
+            <li><a (click)="scrollTo('mobile')">Application Mobile</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h5>Contact</h5>
+          <ul>
+            <li><a href="mailto:contact@wams.cm"><i class="bi bi-envelope"></i> contact&#64;wams.cm</a></li>
+            <li><a href="tel:+237600000000"><i class="bi bi-telephone"></i> +237 6XX XXX XXX</a></li>
+            <li><span><i class="bi bi-geo-alt"></i> Yaoundé, Cameroun</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Wam's &mdash; Tous droits réservés</p>
+      <p class="footer-tech">Construit avec <i class="bi bi-heart-fill"></i> &middot; Angular &middot; Django &middot; Flutter</p>
+    </div>
+  </div>
+</footer>

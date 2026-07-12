@@ -38,12 +38,22 @@ class CarnetScanResult {
   /// Champs standard qui n'ont PAS été trouvés dans le texte OCR.
   final List<String> champsManquants;
 
+  /// Texte brut retourné par MLKit (pour affichage debug / correction manuelle).
+  final String texteOcr;
+
   const CarnetScanResult({
     required this.champsExtraits,
     required this.champsManquants,
+    this.texteOcr = '',
   });
 
   bool get estValide =>
       champsExtraits.containsKey(ChampsCarnet.prenom) ||
       champsExtraits.containsKey(ChampsCarnet.nom);
+
+  /// Score OCR de 0 à 100 basé sur les champs extraits.
+  int get scoreConfiance {
+    final total = ChampsCarnet.tous.length;
+    return ((champsExtraits.length / total) * 100).round();
+  }
 }

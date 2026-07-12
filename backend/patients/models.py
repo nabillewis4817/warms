@@ -78,6 +78,15 @@ class Patient(models.Model):
         help_text="Infirmière référente (prise en charge / suivi).",
     )
 
+    praticien_referent = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="patients_en_charge",
+        help_text="Praticien référent (chirurgien-dentiste traitant).",
+    )
+
     actif = models.BooleanField(default=True, help_text="Archivé = inactif.")
     supprime_le = models.DateTimeField(
         null=True, blank=True, help_text="Date de mise à la corbeille (suppression douce)."

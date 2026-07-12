@@ -15,6 +15,7 @@ export interface OCRResult {
     adresse?: string;
     groupe_sanguin?: string;
     allergies?: string;
+    praticien_nom?: string;
   };
   symptomes?: string[];
   traitements?: string[];
@@ -42,7 +43,7 @@ export class OcrService {
     return this.http.post<OCRResult>(`${this.baseUrl}/ia/ocr-carnet/`, formData);
   }
 
-  importerCarnet(donnees: Record<string, string>): Observable<ImportCarnetResult> {
+  importerCarnet(donnees: Record<string, string | number>): Observable<ImportCarnetResult> {
     return this.http.post<ImportCarnetResult>(`${this.baseUrl}/patients/importer-carnet/`, donnees);
   }
 

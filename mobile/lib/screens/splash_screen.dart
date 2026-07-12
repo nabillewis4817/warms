@@ -31,9 +31,10 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
     );
 
-    _ctrl.forward();
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) widget.onTermine();
+    _ctrl.forward().whenComplete(() {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) widget.onTermine();
+      });
     });
   }
 

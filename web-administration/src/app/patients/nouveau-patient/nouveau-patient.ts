@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 import { Patient, Patients } from '../../noyau/services/patients';
 import { DialogueService } from '../../noyau/services/dialogue.service';
 import { CapturePhoto } from '../../noyau/composants/capture-photo/capture-photo';
+import { PersonnelService, PersonnelCompte } from '../../noyau/services/personnel';
 
 function telephoneValidator(control: AbstractControl): ValidationErrors | null {
   const valeur = control.value;
@@ -28,7 +29,9 @@ export class NouveauPatient {
   private readonly patientsService = inject(Patients);
   private readonly router = inject(Router);
   private readonly dialogueService = inject(DialogueService);
+  private readonly personnelService = inject(PersonnelService);
 
+  praticiens: PersonnelCompte[] = [];
   message = '';
   patientCree: Patient | null = null;
   patientCredentials: { username: string; password: string } | null = null;
@@ -51,7 +54,7 @@ export class NouveauPatient {
   private readonly champsParEtape: Record<CleEtape, string[]> = {
     identite: ['prenom', 'nom', 'date_naissance', 'age', 'sexe'],
     contact: ['telephone', 'email', 'adresse'],
-    medical: ['groupe_sanguin', 'taille_cm', 'poids_kg', 'symptomes', 'consultations_precedentes', 'allergies'],
+    medical: ['groupe_sanguin', 'taille_cm', 'poids_kg', 'symptomes', 'consultations_precedentes', 'allergies', 'praticien_referent'],
     compte: ['username_patient', 'password_patient'],
     photo: [],
   };
@@ -84,11 +87,20 @@ export class NouveauPatient {
     consultations_precedentes: [''],
     allergies: [''],
     groupe_sanguin: ['inconnu'],
+    praticien_referent: [null as number | null],
     username_patient: ['', Validators.required],
     password_patient: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   constructor() {
+    this.personnelService.lister().subscribe({
+      next: (liste) => {
+        this.praticiens = liste.filter(
+          p => p.role === 'chirurgien_dentiste' && p.is_active
+        );
+      },
+    });
+
     this.form.get('date_naissance')!.valueChanges.subscribe((date) => {
       if (!date) return;
       const naissance = new Date(date);
