@@ -940,7 +940,7 @@ class _IARechercheScreenState extends State<IARechercheScreen>
                       children: [
                         _buildMetadataChip(
                           Icons.star,
-                          '${(result['relevance'] ?? 0.8 * 100).toInt()}%',
+                          '${((result['relevance'] ?? 0.8) * 100).toInt()}%',
                           Colors.orange[600]!,
                         ),
                         const SizedBox(width: 8),

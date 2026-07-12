@@ -101,7 +101,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
     final wsBase = ApiConfig.apiBaseUrl
         .replaceFirst(RegExp(r'^http://'), 'ws://')
         .replaceFirst(RegExp(r'^https://'), 'wss://')
-        .replaceFirst('/api/v1', '');
+        .replaceFirst(RegExp(r'/api/v1/?$'), '');
     final uri = Uri.tryParse('$wsBase/ws/chat/$conversationId/?token=$token');
     if (uri == null) return;
 
@@ -128,6 +128,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           if (!mounted) return;
           setState(() => _wsConnecte = false);
           _ws = null;
+          _wsReconnect?.cancel();
           _wsReconnect = Timer(const Duration(seconds: 5), () => _connecterWs(conversationId));
         },
         onError: (_) {

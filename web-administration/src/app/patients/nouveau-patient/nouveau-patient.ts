@@ -7,7 +7,7 @@ import QRCode from 'qrcode';
 import { Patient, Patients } from '../../noyau/services/patients';
 import { DialogueService } from '../../noyau/services/dialogue.service';
 import { CapturePhoto } from '../../noyau/composants/capture-photo/capture-photo';
-import { PersonnelService, PersonnelCompte } from '../../noyau/services/personnel';
+import { PersonnelService, PersonnelCompte } from '../../noyau/services/personnel.service';
 
 function telephoneValidator(control: AbstractControl): ValidationErrors | null {
   const valeur = control.value;

@@ -79,7 +79,7 @@ class PatientService {
     int note = 5,
     String commentaire = 'Merci pour la prise en charge.',
   }) async {
-    await _dio.post('/avis/', data: {
+    await _dio.post('/avis/avis/', data: {
       'patient': patientId,
       'note': note,
       'commentaire': commentaire,

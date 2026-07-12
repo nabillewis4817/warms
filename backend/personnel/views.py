@@ -627,9 +627,6 @@ def dashboard_stats(request):
 @permission_classes([IsAuthenticated])
 def services_list(request):
     """Retourne la liste des services disponibles"""
-    print(f"DEBUG: Services - User: {request.user}")
-    print(f"DEBUG: Services - Is authenticated: {request.user.is_authenticated if hasattr(request.user, 'is_authenticated') else 'No user'}")
-    
     services = [
         {"id": 1, "nom": "Consultation", "description": "Services de consultation dentaire"},
         {"id": 2, "nom": "Chirurgie", "description": "Services chirurgicaux"},
@@ -644,15 +641,10 @@ def services_list(request):
 @permission_classes([IsAuthenticated])
 def roles_list(request):
     """Retourne la liste des rôles disponibles"""
-    print(f"DEBUG: Rôles - User: {request.user}")
-    print(f"DEBUG: Rôles - Is authenticated: {request.user.is_authenticated if hasattr(request.user, 'is_authenticated') else 'No user'}")
-    
     roles = [
         {"id": "chirurgien_dentiste", "nom": "Chirurgien-Dentiste", "description": "Médecin dentiste"},
         {"id": "secretaire", "nom": "Secrétaire", "description": "Personnel administratif"},
         {"id": "infirmiere", "nom": "Infirmière", "description": "Personnel infirmier"},
-        {"id": "assistant", "nom": "Assistant", "description": "Assistant dentaire"},
-        {"id": "admin", "nom": "Administrateur", "description": "Administration générale"},
     ]
     return Response(roles)
 
@@ -662,9 +654,6 @@ def roles_list(request):
 @permission_classes([IsAuthenticated])
 def specialites_list(request):
     """Retourne la liste des spécialités disponibles"""
-    print(f"DEBUG: Spécialités - User: {request.user}")
-    print(f"DEBUG: Spécialités - Is authenticated: {request.user.is_authenticated if hasattr(request.user, 'is_authenticated') else 'No user'}")
-    
     specialites = [
         {"id": 1, "nom": "Odontologie générale", "description": "Soins dentaires généraux"},
         {"id": 2, "nom": "Chirurgie orale", "description": "Chirurgie de la bouche"},
@@ -793,13 +782,18 @@ def journaux_export(request):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="journaux.csv"'
         
+        from journaux.models import LogActivite
         writer = csv.writer(response)
         writer.writerow(['ID', 'Date', 'Utilisateur', 'Action', 'Détails', 'Type'])
-        
-        # Données de test pour l'export
-        writer.writerow([1, '2026-05-04 10:30', 'Secrétaire', 'Création Infirmière', 'Création du compte pour l\'infirmière', 'personnel'])
-        writer.writerow([2, '2026-05-04 10:25', 'Dr. Martin', 'Connexion', 'Connexion au système', 'systeme'])
-        
+        for log in LogActivite.objects.select_related('acteur').order_by('-cree_le')[:500]:
+            writer.writerow([
+                log.id,
+                log.cree_le.strftime('%Y-%m-%d %H:%M'),
+                log.acteur.username if log.acteur else '—',
+                log.action,
+                log.message,
+                get_journal_type(log.action),
+            ])
         return response
         
     except Exception as e:

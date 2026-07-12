@@ -512,13 +512,11 @@ class NotificationService {
    * Ouvre les paramètres de notification de l'app
    */
   Future<void> openNotificationSettings() async {
-    // Note: Ceci nécessiterait une implémentation spécifique à la plateforme
+    if (kIsWeb) return;
     if (Platform.isAndroid) {
       // Ouvrir les paramètres de notification Android
-      // await _openAndroidNotificationSettings();
     } else if (Platform.isIOS) {
       // Ouvrir les paramètres de notification iOS
-      // await _openIOSNotificationSettings();
     }
   }
 

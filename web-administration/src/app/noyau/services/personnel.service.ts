@@ -3,6 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface PersonnelCompte {
+  id: number;
+  username: string;
+  role: string;
+  first_name: string;
+  last_name: string;
+  est_valide_par_chirurgien?: boolean;
+  is_active: boolean;
+}
+
 export interface Personnel {
   id: number;
   prenom: string;
@@ -132,6 +142,33 @@ export class PersonnelService {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 
+  supprimer(id: number): Observable<void> {
+    return this.supprimerPersonnel(id);
+  }
+
+  // Méthodes compatibles avec l'ancienne interface (gestion-personnel, OCR, nouveau-patient)
+  lister(): Observable<PersonnelCompte[]> {
+    return this.http.get<PersonnelCompte[]>(this.apiUrl);
+  }
+
+  creer(payload: any, photo?: File | null): Observable<PersonnelCompte> {
+    if (!photo) {
+      return this.http.post<PersonnelCompte>(this.apiUrl, payload);
+    }
+    const formData = new FormData();
+    Object.entries(payload as Record<string, unknown>).forEach(([cle, valeur]) => {
+      if (valeur !== undefined && valeur !== null && valeur !== '') {
+        formData.append(cle, String(valeur));
+      }
+    });
+    formData.append('photo_profil', photo, photo.name);
+    return this.http.post<PersonnelCompte>(this.apiUrl, formData);
+  }
+
+  valider(id: number): Observable<PersonnelCompte> {
+    return this.http.post<PersonnelCompte>(`${this.apiUrl}${id}/valider/`, {});
+  }
+
   // Charger les options depuis le backend
   getRoles(): Observable<Role[]> {
     return this.http.get<Role[]>(`${environment.apiBaseUrl}/personnel/roles/`);
@@ -143,26 +180,6 @@ export class PersonnelService {
 
   getSpecialites(): Observable<Specialite[]> {
     return this.http.get<Specialite[]>(`${environment.apiBaseUrl}/personnel/specialites/`);
-  }
-
-  // Exporter le personnel
-  exporterPersonnel(filters?: PersonnelFilters): Observable<Blob> {
-    let params = '';
-    if (filters) {
-      const queryParams = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          queryParams.append(key, value);
-        }
-      });
-      params = `?${queryParams.toString()}`;
-    }
-    return this.http.get(`${this.apiUrl}/exporter${params}`, { responseType: 'blob' });
-  }
-
-  // Obtenir les statistiques du personnel
-  getStatistiques(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/statistiques`);
   }
 
   private mapApiToPersonnel(item: PersonnelApi): Personnel {

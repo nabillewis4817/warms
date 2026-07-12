@@ -90,20 +90,19 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        patient = serializer.save()
-        self._creer_dossier_qr(patient, allergies=(request.data.get("allergies") or "").strip())
-
+        # Valider username/password AVANT de persister quoi que ce soit en base
         username = (request.data.get("username_patient") or "").strip()
         password = (request.data.get("password_patient") or "").strip()
-
-        # Rendre username et password obligatoires
         if not username or not password:
             return Response(
                 {"detail": "Le nom d'utilisateur et le mot de passe du patient sont obligatoires."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        patient = serializer.save()
+        self._creer_dossier_qr(patient, allergies=(request.data.get("allergies") or "").strip())
         email_envoye = False
         if not Utilisateur.objects.filter(username=username).exists():
             compte_patient = Utilisateur.objects.create_user(

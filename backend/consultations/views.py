@@ -124,7 +124,7 @@ class ActeRealiseViewSet(viewsets.ModelViewSet):
 
 
 class SchemaDentaireViewSet(
-    mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+    mixins.CreateModelMixin, mixins.ListModelMixin, mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
 ):
     queryset = SchemaDentaire.objects.select_related("consultation").all()
     serializer_class = SchemaDentaireSerializer

@@ -236,9 +236,11 @@ class _IAChatScreenState extends State<IAChatScreen>
         conversationId: conversationId,
         message: message,
       );
-      final iaMessage = _depuisMessageIA(
-        response['message_ia'] as Map<String, dynamic>,
-      );
+      final raw = response['message_ia'];
+      if (raw is! Map<String, dynamic>) {
+        throw Exception('Réponse IA invalide : message_ia absent ou mal formé');
+      }
+      final iaMessage = _depuisMessageIA(raw);
 
       setState(() {
         _messages.add(iaMessage);
@@ -737,7 +739,7 @@ class _IAChatScreenState extends State<IAChatScreen>
       child: Column(
         children: [
           // Suggestions rapides
-          if (_messages.isEmpty) _buildSuggestions(),
+          if (_messages.every((m) => m['type'] != 'user')) _buildSuggestions(),
 
           // Champ de saisie
           Row(

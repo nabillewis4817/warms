@@ -16,7 +16,6 @@ import '../ia_recherche_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profil/profil_screen.dart';
 import '../qr/qr_identite_screen.dart';
-import '../rappels/rappels_screen.dart';
 import '../rdv/rdv_screen.dart';
 import '../suivi_douleur/suivi_douleur_screen.dart';
 import '../prescription_detail_screen.dart';
@@ -28,7 +27,7 @@ import '../prescription_detail_screen.dart';
 /// services" ; liste ("Mes ordonnances") ; barre de navigation flottante.
 class HomeScreen extends StatefulWidget {
   final Utilisateur utilisateur;
-  final int patientId;
+  final int? patientId;
   final VoidCallback onDeconnexion;
   final ValueChanged<bool>? onModeSombreChange;
 

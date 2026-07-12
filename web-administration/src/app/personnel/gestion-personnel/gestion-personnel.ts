@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { Authentification } from '../../noyau/services/authentification';
-import { PersonnelCompte, PersonnelService } from '../../noyau/services/personnel';
+import { PersonnelCompte, PersonnelService } from '../../noyau/services/personnel.service';
 import { CapturePhoto } from '../../noyau/composants/capture-photo/capture-photo';
 
 @Component({

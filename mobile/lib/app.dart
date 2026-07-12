@@ -181,7 +181,7 @@ class _AppGateState extends State<AppGate> {
         if (_utilisateur.estPatient) {
           return HomeScreen(
             utilisateur: _utilisateur,
-            patientId: _patientId ?? 0,
+            patientId: _patientId,
             onDeconnexion: _deconnexion,
             onModeSombreChange: _onModeSombreChange,
           );

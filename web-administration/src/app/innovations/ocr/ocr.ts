@@ -3,7 +3,7 @@ import { Component, ViewChild, ElementRef, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DOCUMENT } from '@angular/common';
 import { OcrService, OCRResult, ImportCarnetResult } from '../../noyau/services/ocr';
-import { PersonnelService, PersonnelCompte } from '../../noyau/services/personnel';
+import { PersonnelService, PersonnelCompte } from '../../noyau/services/personnel.service';
 
 interface ChampCarnet {
   cle: string;

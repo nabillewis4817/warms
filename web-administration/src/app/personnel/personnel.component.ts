@@ -306,28 +306,6 @@ export class PersonnelComponent implements OnInit {
     });
   }
 
-  // ===== Export =====
-
-  exporterPersonnel(): void {
-    const filters: PersonnelFilters = this.form.value;
-    this.personnelService.exporterPersonnel(filters).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `personnel_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      },
-      error: (error) => {
-        console.error('Erreur lors de l\'exportation du personnel:', error);
-        this.alerteService.afficherErreurTechnique("Impossible d'exporter le personnel", error);
-      }
-    });
-  }
-
   // ===== Helpers d'affichage =====
 
   private getNomChamp(key: string): string {

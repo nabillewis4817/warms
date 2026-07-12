@@ -80,7 +80,10 @@ class AvisViewSet(viewsets.ModelViewSet):
         return AvisSerializer
     
     def perform_create(self, serializer):
-        """Crée un avis avec l'utilisateur connecté"""
+        """Crée un avis — seuls les patients peuvent en soumettre."""
+        from rest_framework.exceptions import PermissionDenied
+        if getattr(self.request.user, 'role', '') != 'patient':
+            raise PermissionDenied("Seuls les patients peuvent soumettre un avis.")
         serializer.save(patient=self.request.user)
     
     @action(detail=False, methods=['get'])

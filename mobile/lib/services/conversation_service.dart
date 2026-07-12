@@ -14,7 +14,10 @@ class ConversationService {
   /// en la créant si elle n'existe pas encore.
   Future<int> obtenirOuCreerConversation() async {
     final rep = await _dio.get('/conversations/');
-    final conversations = rep.data as List<dynamic>;
+    final raw = rep.data;
+    final conversations = raw is Map
+        ? (raw['results'] as List<dynamic>? ?? [])
+        : raw as List<dynamic>;
     if (conversations.isNotEmpty) {
       return (conversations.first as Map<String, dynamic>)['id'] as int;
     }

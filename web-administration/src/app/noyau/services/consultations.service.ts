@@ -79,9 +79,9 @@ export interface ConsultationUpdate {
 })
 export class ConsultationsService {
   private readonly apiUrl = `${environment.apiBaseUrl}/consultations/`;
-  private readonly actesUrl = `${environment.apiBaseUrl}/actes/`;
-  private readonly schemasUrl = `${environment.apiBaseUrl}/schemas-dentaires/`;
-  private readonly photosUrl = `${environment.apiBaseUrl}/photos-cliniques/`;
+  private readonly actesUrl = `${environment.apiBaseUrl}/actes`;
+  private readonly schemasUrl = `${environment.apiBaseUrl}/schemas-dentaires`;
+  private readonly photosUrl = `${environment.apiBaseUrl}/photos-cliniques`;
 
   // Cache pour les consultations
   private consultationsCache = new BehaviorSubject<Consultation[]>([]);
@@ -127,7 +127,6 @@ export class ConsultationsService {
         const current = this.consultationsCache.value;
         this.consultationsCache.next([...current, newConsultation]);
       }),
-      catchError(this.handleError<Consultation>('createConsultation'))
     );
   }
 
@@ -141,7 +140,6 @@ export class ConsultationsService {
           this.consultationsCache.next([...current]);
         }
       }),
-      catchError(this.handleError<Consultation>(`updateConsultation id=${id}`))
     );
   }
 
@@ -151,7 +149,6 @@ export class ConsultationsService {
         const current = this.consultationsCache.value;
         this.consultationsCache.next(current.filter(c => c.id !== id));
       }),
-      catchError(this.handleError<void>(`deleteConsultation id=${id}`))
     );
   }
 
